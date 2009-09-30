@@ -59,8 +59,12 @@ void RightPanel::doLUAFile(const char* filename)
 
 	double min_gap=L.getValue<double>("MIN_gap");
 	double margin=L.getValue<double>("margin");
-	int nColumns=L.getValue<int>("N_columns");
+	double nColumns=L.getValue<double>("N_columns");
 	int white_point=L.getValue<int>("white_point");
+	double cropT=L.getValue<double>("crop_T");
+	double cropB=L.getValue<double>("crop_B");
+	double cropL=L.getValue<double>("crop_L");
+	double cropR=L.getValue<double>("crop_R");
 	std::string option=L.getValue<std::string>("option");
 
 	FlLayout* layout=findLayout("Automatic segmentation");
@@ -68,6 +72,10 @@ void RightPanel::doLUAFile(const char* filename)
 	layout->findSlider("Margin")->value(margin);
 	layout->findSlider("N columns")->value(nColumns);
 	layout->findSlider("white point")->value(white_point);
+	layout->findSlider("Crop T")->value(cropT);
+	layout->findSlider("Crop B")->value(cropB);
+	layout->findSlider("Crop L")->value(cropL);
+	layout->findSlider("Crop R")->value(cropR);
 	find<Fl_Input>("Option_Input")->value(processOption(option.c_str()));
 
 	redraw();
@@ -97,11 +105,25 @@ RightPanel::RightPanel(int x, int y, int w, int h, PDFwin* pdfwin)
 	layout(0)->create("Value_Slider", "Margin","Margin");
 	layout(0)->slider(0)->range(0.5, 10.0);
 	layout(0)->create("Value_Slider", "N columns","N columns");
-	layout(0)->slider(0)->range(1, 10);
-	layout(0)->slider(0)->step(1);
+	layout(0)->slider(0)->range(0.7, 10);
+	layout(0)->slider(0)->step(0.1);
 	layout(0)->create("Value_Slider", "white point","white point");
 	layout(0)->slider(0)->range(230, 255);
 	layout(0)->slider(0)->step(1);
+
+	layout(0)->create("Value_Slider", "Crop T","Crop Top");
+	layout(0)->slider(0)->range(0, 20);
+	layout(0)->slider(0)->step(0.1);
+	layout(0)->create("Value_Slider", "Crop B","Crop Bttm");
+	layout(0)->slider(0)->range(0, 20);
+	layout(0)->slider(0)->step(0.1);
+	layout(0)->create("Value_Slider", "Crop L","Crop Left");
+	layout(0)->slider(0)->range(0, 20);
+	layout(0)->slider(0)->step(0.1);
+	layout(0)->create("Value_Slider", "Crop R","Crop Right");
+	layout(0)->slider(0)->range(0, 20);
+	layout(0)->slider(0)->step(0.1);
+
 	layout(0)->create("Button", "update","update");
 	layout(0)->updateLayout();
 
@@ -271,7 +293,8 @@ void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int 
 				.def("getNumPages", &PDFwin::getNumPages)
 				.def("getNumRects", &PDFwin::getNumRects)
 				.def("setCurPage", &PDFwin::setCurPage)
-				.def("deleteAllFiles", &PDFwin::deleteAllFiles),
+				.def("deleteAllFiles", &PDFwin::deleteAllFiles)
+				.def("deleteAllFilesWithoutConfirm", &PDFwin::deleteAllFilesWithoutConfirm),
 			class_<PDFWriter>("PDFWriter")
 				.def(constructor<>())
 				.def("init", &PDFWriter::init)

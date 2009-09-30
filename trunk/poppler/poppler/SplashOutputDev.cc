@@ -1174,7 +1174,7 @@ void SplashOutputDev::doUpdateFont(GfxState *state) {
     if (code < 256) {
       w1 = ((Gfx8BitFont *)gfxFont)->getWidth(code);
       w2 = font->getGlyphAdvance(code);
-      if (!gfxFont->isSymbolic() && w2 > 0) {
+      if (!gfxFont->isSymbolic() && w2 > 0 && w2<=1) {
         // if real font is substantially narrower than substituted
         // font, reduce the font size accordingly
         if (w1 > 0.01 && w1 < 0.9 * w2) {

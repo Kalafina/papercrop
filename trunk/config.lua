@@ -4,31 +4,126 @@ device_height=800
 scroll_overlap_pixels=40
 output_format=".gif"
 output_to_pdf=true -- output to a pdf file, instead of multiple image files when possible.
-max_vspace=6 -- pixels
+nr_of_pages_per_pdf_book = 100;
+max_vspace=16 -- pixels
+
+---------------------------------------------------------------------
+-- split books                                                     --
+---------------------------------------------------------------------
 
 
-outpdf=PDFWriter()
+book_pages = {
+  book_part_nr,
+  nr_of_pages
+};
+
+function book_pages:init(part_nr)
+  self.book_part_nr = part_nr;
+  self.nr_of_pages = 0;
+  self.outpdf=PDFWriter()
+  self.outpdf:init()
+end
+
+function book_pages:init_for_next_part()
+  self:init(self.book_part_nr + 1);
+end
+
+function book_pages:add_page (image, outdir)
+  self.nr_of_pages = self.nr_of_pages + 1;
+  self.outpdf:addPage(image)
+  collectgarbage();
+end
+
+function book_pages:writeToFile(outdir)
+  if self.nr_of_pages > 0 then
+    local outpdf = PDFWriter();
+    self.outpdf:save(outdir .. "_" .. self.book_part_nr .. ".pdf");
+    collectgarbage();
+  end;
+end
+--[[
+
+function book_pages:init(part_nr)
+  self.book_part_nr = part_nr;
+  self.nr_of_pages = 0;
+end
+
+function book_pages:init_for_next_part()
+  self:init(self.book_part_nr + 1);
+end
+
+function book_pages:add_page (image, outdir)
+  self.nr_of_pages = self.nr_of_pages + 1;
+  image:Save(string.format("%s/%05d_%05d%s",outdir,self.book_part_nr,self.nr_of_pages,output_format));
+  collectgarbage();
+end
+
+function book_pages:writeToFile(outdir)
+  if self.nr_of_pages > 0 then
+    local outpdf = PDFWriter();
+    outpdf:init();
+    images = {};
+    for j = 1, self.nr_of_pages do
+      local image = CImage();
+      image:Load(string.format("%s/%05d_%05d%s",outdir,self.book_part_nr,j,output_format));
+      --- strange, but the loaded image seems to be mirrored (a bug in CImage:Load ?) ---
+      --- as a quick fix, we save and load it again to undo the mirroring             ---
+      image:Save(string.format("%s/%05d_%05d_ttt%s",outdir,self.book_part_nr,j,output_format));
+      image = CImage();
+      collectgarbage();
+      image:Load(string.format("%s/%05d_%05d_ttt%s",outdir,self.book_part_nr,j,output_format));
+      images[j] = image; -- prevent image from being garbage collected
+                         -- (I guess that 'outpdf' does not keep a reference to it, but still needs it?)
+      ---
+      outpdf:addPage(image);
+    end
+    outpdf:save(outdir .. "_" .. self.book_part_nr .. ".pdf");
+    win:deleteAllFilesWithoutConfirm()
+    images = {};
+    collectgarbage();
+  end;
+end
+
+]]--
+---------------------------------------------------------------------
+
+
+--outpdf=PDFWriter()
 
 function initializeOutput(outdir)
 	if output_to_pdf then
-		outpdf:init()
-	else
+		--vv--outpdf:init();
+    book_pages:init(1);
+    --^^--
+  else
 		win:deleteAllFiles()
 	end
 end
 
 function outputImage(image, outdir, pageNo, rectNo)
-	if output_to_pdf and outpdf:isValid() then
-		outpdf:addPage(image)
+
+  if output_to_pdf then ----if output_to_pdf and outpdf:isValid() then
+		--vv--outpdf:addPage(image)
+    if (book_pages.nr_of_pages < nr_of_pages_per_pdf_book) then
+      book_pages:add_page(image, outdir);
+    else
+      book_pages:writeToFile(outdir);
+      book_pages:init_for_next_part();
+    end
+    --^^--
 	else
 		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
 	end
 end
 
 function finalizeOutput(outdir)
-	if output_to_pdf and outpdf:isValid() then
-		outpdf:save(outdir.."_output.pdf")
+--vv--if output_to_pdf and outpdf:isValid() then
+--vv--  outpdf:save(outdir.."_output.pdf")
+  if output_to_pdf then
+    book_pages:writeToFile(outdir);
+    book_pages:init(0);
 	end
+--^^--
 end
 
 function postprocessImage(image)

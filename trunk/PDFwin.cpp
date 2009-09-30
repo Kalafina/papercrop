@@ -716,6 +716,12 @@ void PDFwin::deleteAllFiles()
 	DeleteAllFiles(mOutDir, "*",true);
 }
 
+void PDFwin::deleteAllFilesWithoutConfirm()
+{
+	DeleteAllFiles(mOutDir, "*",false);
+
+}
+
 void PDFwin::setCurPage(int pageNo)
 {
 	mCurrPage=pageNo;
@@ -823,8 +829,7 @@ void PDFwin::pageChanged()
 
 		SummedAreaTable t(*bmp);//bmp->getWidth(), bmp->getHeight(), bmp->getDataPtr(), bmp->getRowSize());
 
-		TRect domain(0,0, bmp->GetWidth(), bmp->GetHeight());
-
+		
 		
 
 
@@ -833,7 +838,17 @@ void PDFwin::pageChanged()
 		double margin_percentage=layout->findSlider("Margin")->value();
 		int thr_white=layout->findSlider("white point")->value();
 		double max_width=1.0/layout->findSlider("N columns")->value();
-		
+		double cropT=layout->findSlider("Crop T")->value()/100.0;
+		double cropB=layout->findSlider("Crop B")->value()/100.0;
+		double cropL=layout->findSlider("Crop L")->value()/100.0;
+		double cropR=layout->findSlider("Crop R")->value()/100.0;
+
+
+//		TRect domain(0,0, bmp->GetWidth(), bmp->GetHeight());
+
+		TRect domain(cropL*bmp->GetWidth(),cropT*bmp->GetHeight(), (1-cropR)*bmp->GetWidth()
+, (1-cropB)*bmp->GetHeight());
+
 	
 		ImageSegmentation s(t, true, domain, 0, min_gap_percentage, thr_white);
 		s.segment();
@@ -994,4 +1009,21 @@ void PDFwin::draw()
 	temp.format("selected %d", mSelectedRect);
 	fl_draw(temp, 0,0,w(), h(), FL_ALIGN_CENTER);
 	*/
+
+	
+FlLayout* layout=mLayout->findLayout("Automatic segmentation");
+double cropT=layout->findSlider("Crop T")->value()/100.0;
+double cropB=layout->findSlider("Crop B")->value()/100.0;
+double cropL=layout->findSlider("Crop L")->value()/100.0;
+double cropR=layout->findSlider("Crop R")->value()/100.0;
+
+int wCropL=toWindowCoord(cropL,cropT).x;
+int wCropT=toWindowCoord(cropL,cropT).y;
+int wCropR=toWindowCoord(cropR,cropB).x;
+int wCropB=toWindowCoord(cropR,cropB).y;
+
+fl_draw_box( FL_BORDER_FRAME, 0, 0, ww, wCropT, FL_BLACK);
+fl_draw_box( FL_BORDER_FRAME, 0, hh-wCropB, ww, wCropB, FL_BLACK);
+fl_draw_box( FL_BORDER_FRAME, 0, 0, wCropL, hh, FL_BLACK);
+fl_draw_box( FL_BORDER_FRAME, ww-wCropR, 0, wCropR, hh, FL_BLACK);
 }
