@@ -63,6 +63,7 @@ public:
 	
 	// LUA interface functions.
 	void deleteAllFiles();
+	void deleteAllFilesWithoutConfirm();
 	void setCurPage(int pageNo);
 	
 //private:
