@@ -28,7 +28,7 @@
 #include <il/il.h>
 #include <il/ilu.h>
 
-#define CHECK_VALID ASSERT((!_dataPtr || _dataPtr==ilGetData()) && GetWidth()==ilGetInteger(IL_IMAGE_WIDTH) && GetHeight()==ilGetInteger(IL_IMAGE_HEIGHT))
+#define CHECK_VALID ASSERT(!_dataPtr || (_dataPtr==ilGetData() && GetWidth()==ilGetInteger(IL_IMAGE_WIDTH) && GetHeight()==ilGetInteger(IL_IMAGE_HEIGHT)))
 
 CPixelsView CPixels::range(int start, int end, int step)
 {
