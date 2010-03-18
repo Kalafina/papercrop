@@ -504,6 +504,8 @@ void trimVertSpaces(CImage& inout, int min_gap, int max_gap, int thr_white)
 	int h=0;
 	for(int l=0; l<lines.size(); l++) h+=lines.end(l)-lines.start(l);
 
+	if (h==0) h=10;
+
 	inout.Create(in.GetWidth(), h);
 
 	h=0;
