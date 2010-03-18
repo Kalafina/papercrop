@@ -1,11 +1,26 @@
+---------------------------------------------------------------------
+-- user settings
+---------------------------------------------------------------------
 
 device_width=600
 device_height=800
 scroll_overlap_pixels=40
-output_format=".gif"
+output_format=".jpg"
 output_to_pdf=true -- output to a pdf file, instead of multiple image files when possible.
 nr_of_pages_per_pdf_book = 100;
 max_vspace=16 -- pixels
+landscapeRotate="rotateLeft"
+
+---------------------------------------------------------------------
+-- utility functions
+---------------------------------------------------------------------
+
+if landscapeRotate=="rotateLeft" then
+   landscapeRotate=function (img) img:rotateLeft() end
+else
+   landscapeRotate=function (img) img:rotateRight() end
+end
+
 
 ---------------------------------------------------------------------
 -- split books                                                     --
@@ -131,7 +146,7 @@ function postprocessImage(image)
 	--image:sharpen(1.5, 1)
 	--image:contrast(1.5)
     image:gamma(0.5)
-    image:dither(16)
+--    image:dither(16)
 end
 
 function processPageSubRoutine(imageM, pageNo, width, numRects)
