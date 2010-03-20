@@ -5,5 +5,9 @@ If you want to be a contributor, please let me know so that I can add you to the
 = Future work (may take forever) =
 
 Transition to CMake build system, and support other platforms.
+
 Improve UI for manual segmentation.
+
 luabind-0.9
+
+epub/html support 
