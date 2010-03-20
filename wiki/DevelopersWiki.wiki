@@ -1,0 +1,8 @@
+The author of papercrop encourages share of user-written codes or scripts.
+If you have a patch to the codebase, please send it to me by e-mail.
+
+= Future work (may take forever) =
+
+Transition to CMake build system, and support other platforms.
+Improve UI for manual segmentation.
+luabind-0.9
