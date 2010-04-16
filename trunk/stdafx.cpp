@@ -180,10 +180,10 @@ bool CreateDirectory(const char *PathToCreate)
 bool DeleteAllFiles(const char* path, const char* mask,bool bConfirm)
 {
 	WIN32_FIND_DATA findData;
-	char szFileName[100];
+	char szFileName[2000];
 	sprintf(szFileName,"%s\\%s", path, mask);
 
-	char EFN[200];
+	char EFN[2000];
 	HANDLE hFindHandle;
 	hFindHandle=FindFirstFile((LPCTSTR)szFileName,&findData);
 			

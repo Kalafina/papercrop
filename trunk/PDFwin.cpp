@@ -25,7 +25,8 @@
 #include <boost/smart_ptr.hpp>
 #include <vector>
 
-#include "utility/fllayout.h"
+#include "utility/FlLayout.h"
+#include "utility/FltkAddon.h"
 
 // poppler headers
 #include "PDFDoc.h"

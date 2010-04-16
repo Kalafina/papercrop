@@ -29,6 +29,7 @@
 //#include <luabind/policy.hpp>
 #include <luabind/operator.hpp>
 #include "PDFWriter.h"
+#include "utility/FltkAddon.h"
 
 void reflow(CImage& inout, int desired_width, int min_gap, int max_gap, int thr_white, double right_max_margin, int figure_min_height);
 void trimVertSpaces(CImage& inout, int min_gap, int max_gap, int thr_white) ;

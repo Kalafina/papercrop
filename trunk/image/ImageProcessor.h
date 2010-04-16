@@ -26,6 +26,7 @@
 namespace Imp
 {
 	// new API
+	void drawBox(CImage& inout, TRect const& t, int R, int G, int B);
 	void sharpen(CImage& inout, double factor, int iterations);
 	void contrast(CImage& inout, double factor);
 	void gammaCorrect(CImage& inout, double factor);
