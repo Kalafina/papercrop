@@ -150,19 +150,33 @@ function postprocessImage(image)
 end
 
 function processPageSubRoutine(imageM, pageNo, width, numRects)
-	
-	for rectNo=0, numRects-1 do
-		win:setStatus("processing"..pageNo.."_"..rectNo)
-		local image=CImage()
-		win:getRectImage_width(pageNo, rectNo, width, image)
-		if imageM:GetHeight()==0 then
-			imageM:CopyFrom(image)
-		else
-			imageM:concatVertical(imageM, image)
+   
 
-		end
-	end
-	trimVertSpaces(imageM, 2, max_vspace, 255)
+   for rectNo=0, numRects-1 do
+      win:setStatus("processing"..pageNo.."_"..rectNo)
+      local image=CImage()
+      win:getRectImage_width(pageNo, rectNo, width, image)
+
+
+      if image:GetWidth()~=width then
+	 -- rectify.
+	 local imageOld=image
+	 image=CImage()
+	 image:create(width, imageOld:GetHeight())
+	 image:drawBox(TRect(0,0, image:GetWidth(), image:GetHeight()), 255,255,255)
+	 image:blit(imageOld, TRect(0,0,math.min(imageOld:GetWidth(), width),imageOld:GetHeight()),0,0)	 
+      end
+
+      print(width, image:GetWidth())
+
+      if imageM:GetHeight()==0 then
+	 imageM:CopyFrom(image)
+      else
+	 imageM:concatVertical(imageM, image)
+
+      end
+   end
+   trimVertSpaces(imageM, 2, max_vspace, 255)
 end
 
 function splitImage_old(imageM, height, outdir, pageNo, rotateRight)
@@ -190,48 +204,50 @@ function splitImage_old(imageM, height, outdir, pageNo, rotateRight)
 end
 
 function splitImage(imageM, height, outdir, pageNo, rotateRight)
-	-- split into multiple subpages 
-	local imageS=CImage()
-    local subPage=0
-    
-	while true 
-    do
-        curY=subPage*(height-scroll_overlap_pixels)
-        if curY+height <= imageM:GetHeight() then
-            imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
-            if rotateRight then imageS:rotateRight() end
-            outputImage(imageS,outdir,pageNo,subPage)
-            win:setStatus("saving "..pageNo.."_"..subPage)
-        else
-            imageS:crop(imageM, 0, curY, imageM:GetWidth(), imageM:GetHeight())
-            if rotateRight then imageS:rotateRight() end
-            outputImage(imageS,outdir,pageNo,subPage)
-            win:setStatus("saving "..pageNo.."_"..subPage)
-            break
-        end
-        subPage=subPage+1
-	end
+   -- split into multiple subpages 
+   local imageS=CImage()
+   local subPage=0
+   
+   while true 
+   do
+      curY=math.floor(subPage*(height-scroll_overlap_pixels))
+--      print(curY, height)
+      if curY+height <= imageM:GetHeight() then
+	 imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
+	 if rotateRight then imageS:rotateRight() end
+	 outputImage(imageS,outdir,pageNo,subPage)
+	 win:setStatus("saving "..pageNo.."_"..subPage)
+      else
+	 imageS:crop(imageM, 0, curY, imageM:GetWidth(), imageM:GetHeight())
+	 if rotateRight then imageS:rotateRight() end
+	 outputImage(imageS,outdir,pageNo,subPage)
+	 win:setStatus("saving "..pageNo.."_"..subPage)
+	 break
+      end
+      subPage=subPage+1
+   end
 end
 
 function splitImagePart(imageM, height, outdir, pageNo, rotateRight)
-	-- split into multiple subpages 
-	local imageS=CImage()
-    local subPage=0
-    
-	while true 
-    do
-        curY=subPage*(height-scroll_overlap_pixels)
-        if curY+height <= imageM:GetHeight() then
-            imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
-            if rotateRight then imageS:rotateRight() end
-            postprocessImage(imageS)
-            outputImage(imageS,outdir,pageNo,subPage)
-            win:setStatus("saving "..pageNo.."_"..subPage)
-       else
-            imageM:crop(imageM, 0, curY, imageM:GetWidth(), imageM:GetHeight())
-            break
-        end
-        subPage=subPage+1
-	end
+   -- split into multiple subpages 
+   local imageS=CImage()
+   local subPage=0
+   
+   while true 
+   do
+      curY=math.floor(subPage*(height-scroll_overlap_pixels))
+--      print(curY, height)
+      if curY+height <= imageM:GetHeight() then
+	 imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
+	 if rotateRight then imageS:rotateRight() end
+	 postprocessImage(imageS)
+	 outputImage(imageS,outdir,pageNo,subPage)
+	 win:setStatus("saving "..pageNo.."_"..subPage)
+      else
+	 imageM:crop(imageM, 0, curY, imageM:GetWidth(), imageM:GetHeight())
+	 break
+      end
+      subPage=subPage+1
+   end
 end
 

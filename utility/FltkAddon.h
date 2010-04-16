@@ -1,5 +1,5 @@
-//
-// FltkAddon.h
+#ifndef _FLTKADDON_H_
+#define _FLTKADDON_H_
 //
 // Copyright 2004 by Taesoo Kwon.
 //
@@ -141,6 +141,8 @@ public:
 		menu.item(item, text, shortcut_, user_data_, flags, labeltype_, labelfont_, labelsize_, labelcolor_);
 	}
 
+	Fl_Menu_Item& item(int item);
+
 	void beginSubMenu(int item, const char* text)
 	{
 		menu.item(item, text, 0, 0, FL_SUBMENU);
@@ -172,3 +174,4 @@ public:
 class CImage;
 class TRect;
 void fl_draw_CImage(const CImage& imagee, const TRect& sourceRect, int x, int y);
+#endif

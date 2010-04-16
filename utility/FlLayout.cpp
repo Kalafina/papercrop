@@ -1,49 +1,39 @@
-//
-// FlLayout.cpp
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
-
 #include "stdafx.h"
+#include "FltkAddon.h"
 #include "FlLayout.h"
 #include "FL/Fl_Scroll.h"
 #include "FL/Fl_Adjuster.h"
 #include "FL/Fl_Multi_Browser.h"
 #include "FL/Fl_Select_Browser.h"
 #include "FL/Fl_Multiline_Input.h"
+#include "FL/Fl_Box.h"
 #include "math/operator.h"
+
+#ifdef NO_GUI
+#define FL_VOID(x)
+#else
+#define FL_VOID(x) x
+#endif
+
+
 FlLayout ::Widget::Widget()
 {
 	mWidget=NULL;
 	mType="None";
 	mState.mButtonType=FlLayout::BUTTON;	// default type
-	mState.mSliderType=FlLayout::VALUE_SLIDER; // default type	
+	mState.mSliderType=FlLayout::VALUE_SLIDER; // default type
 	mState.mGuideLines.linspace(0.0, 1.0, 4);
 	mState.mStartSlot=0;
-	mState.mEndSlot=3;
+	mState.mEndSlot=INT_MAX;
 	mState.mWidgetHeight=20;
 	mState.mLineSpace=5;
+	mState.mHorizSpace=5;
 }
 
 FlLayout ::FlLayout ()
 :Fl_Double_Window(640,480)
 {
-	Msg::error("do not use default constructor");
+	Msg::error("do not use FlLayout's default constructor");
 }
 
 FlLayout ::FlLayout (int ww, int hh, const char* title)
@@ -51,8 +41,17 @@ FlLayout ::FlLayout (int ww, int hh, const char* title)
 {
 	_callbackRouter=this;
 	mWidgets.resize(1);
-	mScroll=new Fl_Scroll(5,5, w()-5, h()-5);
-	mScroll->type(Fl_Scroll::VERTICAL);
+	mWindow=new Fl_Double_Window(0,0,ww-5, hh);
+	mWindow->end();
+	begin();
+#ifndef NO_GUI
+	mScrollbar=new Fl_Scrollbar(ww-5,0, 5, hh);
+	mScrollbar->parent()->user_data((void*)this);
+	mScrollbar->callback(cbFunc, NULL);
+	mScrollbar->hide();
+	end();
+	resizable(mWindow);
+#endif
 }
 
 FlLayout ::FlLayout (int x, int y, int ww, int hh, const char* title)
@@ -60,12 +59,23 @@ FlLayout ::FlLayout (int x, int y, int ww, int hh, const char* title)
 {
 	_callbackRouter=this;
 	mWidgets.resize(1);
-	mScroll=new Fl_Scroll(5,5, w()-5, h()-5);
-	mScroll->type(Fl_Scroll::VERTICAL);
+	mWindow=new Fl_Double_Window(0,0,ww-5, hh);
+	mWindow->end();
+	begin();
+#ifndef NO_GUI
+	mScrollbar=new Fl_Scrollbar(ww-5,0, 5, hh);
+	mScrollbar->parent()->user_data((void*)this);
+	mScrollbar->callback(cbFunc, NULL);
+	mScrollbar->hide();
+	end();
+
+	resizable(mWindow);
+#endif
 }
 
 Fl_Widget* FlLayout::create(const char* type, const char* id, const char* title, int startSlot, int endSlot, int height)
 {
+
 	setWidgetPos(startSlot, endSlot);
 	return createWidget(type, id, title);
 }
@@ -77,8 +87,10 @@ FlLayout ::~FlLayout (void)
 
 void FlLayout ::resize(int x,int y,int w,int h)
 {
-	Fl_Double_Window::resize(x,y,w,h);
+  #ifndef NO_GUI
 
+	Fl_Double_Window::resize(x,y,w,h);
+#endif
 	updateLayout();
 
 }
@@ -110,60 +122,38 @@ void FlLayout::setWidgetPosUniform(int totalSlot, int slot)
 
 Fl_Button* FlLayout::createButton(const char* id, const char* title)
 {
-	Fl_Button* o;
 	switch(widgetRaw(1).mState.mButtonType)
 	{
 	case CHECK_BUTTON:
-		o=new Fl_Check_Button(0,0,80, 20);
-		break;
+		return (Fl_Button*) create("Check_Button", id, title);
 	case LIGHT_BUTTON:
-		o=new Fl_Light_Button(0,0,80, 20);
-		break;
+		return (Fl_Button*) create("Light_Button", id, title);
 	case BUTTON:
-		o=new Fl_Button(0,0,80, 20);
-		break;
-	default: 
-		Msg::error("create button");
+		return (Fl_Button*) create("Button", id, title);
 	}
-	o->copy_label(title);// otherwise, it just store the address which often will not be valid.
-	_createWidget(id, o);
-	widgetRaw(0).mType="Button";
-	return o;
+	return NULL;
 }
 Fl_Slider* FlLayout::createSlider(const char* id, const char* title)
 {
-	Fl_Slider* o;
 	switch(widgetRaw(1).mState.mSliderType)
 	{
 	case SLIDER:
-		o=new Fl_Slider(0,0,80, 20);
-		o->type(FL_HOR_SLIDER);
-		o->align(FL_ALIGN_LEFT);
-		break;
+		return (Fl_Slider*) create("Slider", id, title);
 	case VALUE_SLIDER:
-		o=new Fl_Value_Slider(0,0,80, 20);
-		o->type(FL_HOR_SLIDER);
-		o->align(FL_ALIGN_LEFT);
-		break;
+		return (Fl_Slider*) create("Value_Slider", id, title);
 	case VALUE_VERT_SLIDER:
-		o=new Fl_Value_Slider(0,0,80, 20);
-		o->type(FL_VERT_SLIDER);
-		break;
-	default:
-		Msg::error("create slider");
+		return (Fl_Slider*) create("Vert_Slider", id, title);
 	}
-	o->copy_label(title);
-	_createWidget(id, o);	
-	widgetRaw(0).mType="Slider";
-	return o;
+	return NULL;
 }
+#ifndef NO_GUI
 
 class Fl_new_adjuster: public Fl_Adjuster
 {
 public:
 	Fl_Box b;
 	char buf2[100];
-	Fl_new_adjuster(int X, int Y, int W, int H, const char* L=0) 
+	Fl_new_adjuster(int X, int Y, int W, int H, const char* L=0)
 		:Fl_Adjuster(X,Y,W/2,H, L)
 		,b(FL_DOWN_BOX, X+W/2,Y, W/2,H,buf2)
 	{
@@ -178,11 +168,11 @@ public:
 	virtual void resize(int x,int y,int w,int h)
 	{
 		b.resize(x+w/2,y,w/2,h);
-		__super::resize(x,y,w/2,h);
+		Fl_Adjuster::resize(x,y,w/2,h);
 	}
 	virtual void value_damage()
 	{
-		__super::value_damage();
+		Fl_Adjuster::value_damage();
 
 		if(value()<minimum())
 			value(minimum());
@@ -196,40 +186,161 @@ public:
 	{
 		format((char *)(b.label()));
 		b.redraw();
-		__super::redraw();
+		Fl_Adjuster::redraw();
 	}
 };
 
-class FlLayoutGroup : public Fl_Group
+#endif
+
+int FlLayoutGroup ::numLayouts()
 {
-	std::vector<FlLayout*> layouts;
-public:
-	FlLayout* layout() { return layouts[0];}
-	FlLayoutGroup (int x, int y, int w, int h, const char* l=0)
-		:Fl_Group(x,y,w,h,l)
-	{
-		box(FL_THIN_UP_FRAME);
-		layouts.resize(1);
-		layouts[0]=new FlLayout(x,y,w,h);
-		resizable(NULL);
-		end();
-	}
+	return layouts.size();
+}
 
-	virtual void resize(int x,int y,int w,int h)
-	{
-		__super::resize(x,y,w,h);
-		layout()->resize(x+5, y+5, w-10, h-10);
-	}
+FlLayout* FlLayoutGroup ::layout(int ilayout)
+{
+	return layouts[ilayout];
+}
 
-};
+void FlLayoutGroup ::showLayout(int ilayout)
+{
+
+	for(int i=0; i<numLayouts(); i++)
+	{
+		if(layout(i)->visible() && i!=ilayout)
+			layout(i)->hide();
+		if(!layout(i)->visible() && i==ilayout)
+			layout(i)->show();
+	}
+	mCurrLayout=ilayout;
+}
+
+FlLayoutGroup ::FlLayoutGroup (int x, int y, int w, int h, const char* l)
+	:Fl_Group(x,y,w,h,l)
+{
+#ifndef NO_GUI
+  box(FL_THIN_UP_FRAME);
+#endif
+	layouts.resize(1);
+	layouts[0]=new FlLayout(x,y,w,h);
+#ifndef NO_GUI
+	resizable(NULL);
+#endif
+	end();
+
+	mCurrLayout=0;
+	showLayout(0);
+}
+
+FlLayoutGroup ::FlLayoutGroup (int x, int y, int w, int h, FlLayout* layout, const char* l)
+	:Fl_Group(x,y,w,h,l)
+{
+#ifndef NO_GUI
+	box(FL_THIN_UP_FRAME);
+#endif
+	layouts.resize(1);
+	layouts[0]=layout;
+#ifndef NO_GUI
+	insert(*layout, 0);
+	resizable(NULL);
+#endif
+	end();
+
+	mCurrLayout=0;
+	showLayout(0);
+
+}
+
+FlLayoutGroup ::FlLayoutGroup (int x, int y, int w, int h, std::vector<FlLayout*> const& layout, const char* l)
+	:Fl_Group(x,y,w,h,l)
+{
+#ifndef NO_GUI
+	box(FL_THIN_UP_FRAME);
+#endif
+	layouts.resize(layout.size());
+	for(int i=0; i<layouts.size(); i++)
+	{
+		layouts[i]=layout[i];
+#ifndef NO_GUI
+		insert(*layout[i], 0);
+#endif
+	}
+#ifndef NO_GUI
+	resizable(NULL);
+#endif
+	end();
+
+	mCurrLayout=0;
+	showLayout(0);
+
+}
+void FlLayoutGroup::updateLayout()
+{
+	for(int i=0; i<numLayouts() ;i++)
+		layout(i)->updateLayout();
+}
+
+int FlLayoutGroup::minimumHeight()
+{
+	int minHeight=0;
+
+	for(int i=0; i<numLayouts(); i++)
+	{
+		int mm=layout(i)->minimumHeight();
+		minHeight=MAX(minHeight, mm);
+	}
+	return minHeight;
+}
+void FlLayoutGroup::resize(int x,int y,int w,int h)
+{
+#ifndef NO_GUI
+	Fl_Group::resize(x,y,w,h);
+	for(int i=0; i<numLayouts() ;i++)
+		layout(i)->resize(x+5, y+5, w-10, h-10);
+#endif
+}
+
+void FlLayout::embedLayout(FlLayout* childLayout, const char* id, const char* title)
+{
+	begin();
+	mWindow->begin();
+	Fl_Widget* o=NULL;
+
+	widgetRaw(1).mType="Layout";
+
+	FlLayoutGroup * g = new FlLayoutGroup (0,0,80,20, childLayout);
+	o=g;
+	o->copy_label(title);
+	_createWidget(id, o);
+	mWindow->end();
+}
+void FlLayout::__call(const char* wn, luabind::adl::object const& table)
+{
+}
+
+void FlLayout::embedLayouts(std::vector<FlLayout*> const& childLayouts,const char* id, const char* title)
+{
+	begin();
+	mWindow->begin();
+	Fl_Widget* o=NULL;
+
+	widgetRaw(1).mType="LayoutGroup";
+
+	FlLayoutGroup * g = new FlLayoutGroup (0,0,80,20, childLayouts);
+	o=g;
+	o->copy_label(title);
+	_createWidget(id, o);
+	mWindow->end();
+}
 
 Fl_Widget* FlLayout::create(const char* type, const char* id, const char* title)
 {
 	begin();
+	mWindow->begin();
 	TString tid=type;
 	Fl_Widget* o=NULL;
 
-	if(tid=="Menu") 
+	if(tid=="Menu")
 		tid="Choice";
 
 	widgetRaw(1).mType=tid;
@@ -240,23 +351,36 @@ Fl_Widget* FlLayout::create(const char* type, const char* id, const char* title)
 		g->layout()->_callbackRouter=_callbackRouter;
 		o=g;
 	}
+	else if(tid=="LayoutGroup")
+	{
+		FlLayoutGroup* g= new FlLayoutGroup(0,0,80,20);
+		o=g;
+	}
 	else if(tid=="Box")
 	{
-		Fl_Box* b;
+#ifndef NO_GUI
+	  Fl_Box* b;
 		b=new Fl_Box(0,0,80,20);
 		o=b;
+#endif
 	}
 	else if(tid=="Input")
 	{
-		Fl_Input* i;
+#ifndef NO_GUI
+	  Fl_Input* i;
 		i=new Fl_Input(0,0,80,20);
 		o=i;
+#endif
 	}
 	else if(tid=="Adjuster")
 	{
+#ifndef NO_GUI
 		Fl_new_adjuster* a;
 		a=new Fl_new_adjuster(0,0,80,20);
 		o=a;
+#else
+	    o=new Fl_Valuator ();
+#endif
 	}
 	else if(tid=="Check_Button")
 	{
@@ -271,41 +395,54 @@ Fl_Widget* FlLayout::create(const char* type, const char* id, const char* title)
 		o=new Fl_Button(0,0,80,20);
 	}
 	else if(tid=="Choice")
-	{		
+	{
 		o=new FlChoice(0,0,80,20);
 	}
 	else if(tid=="Multi_Browser")
 	{
-		o=new Fl_Multi_Browser(0,0,80,20);
+		FL_VOID(o=new Fl_Multi_Browser(0,0,80,20));
 	}
 	else if(tid=="Select_Browser")
 	{
-		o=new Fl_Select_Browser(0,0,80,20);
+		FL_VOID(o=new Fl_Select_Browser(0,0,80,20));
 	}
 	else if(tid=="Multiline_Input")
 	{
-		o=new Fl_Multiline_Input(0,0,80,20);
+		FL_VOID(o=new Fl_Multiline_Input(0,0,80,20));
 	}
 	else if(tid=="Slider")
 	{
 		o=new Fl_Slider(0,0,80,20);
+#ifndef NO_GUI
 		o->type(FL_HOR_SLIDER);
 		o->align(FL_ALIGN_LEFT);
+#endif
+	}
+	else if(tid=="Vert_Slider")
+	{
+		o=new Fl_Value_Slider(0,0,80, 20);
+#ifndef NO_GUI
+		o->type(FL_VERT_SLIDER);
+		o->align(FL_ALIGN_LEFT);
+#endif
 	}
 	else if(tid=="Value_Slider")
 	{
 		o=new Fl_Value_Slider(0,0,80,20);
+#ifndef NO_GUI
 		o->type(FL_HOR_SLIDER);
 		o->align(FL_ALIGN_LEFT);
+#endif
 	}
 	if(!o)	Msg::error("Unknown type (%s)",type );
 	o->copy_label(title);
-	_createWidget(id, o);	
-	return NULL;
+	_createWidget(id, o);
+	mWindow->end();
+	return o;
 }
 
 void FlLayout::newLine()
-{	
+{
 	setWidgetPos(0);
 	_createWidget("__empty", NULL);
 }
@@ -319,6 +456,7 @@ void FlLayout::updateLayout()
 {
 	int cury=5;
 
+	mWindow->begin();
 	intvectorn guidelines;
 	for(int i=0; i<mWidgets.size()-1; i++)
 	{
@@ -328,11 +466,14 @@ void FlLayout::updateLayout()
 			guidelines[j]=sop::interpolateInt(mWidgets[i].mState.mGuideLines[j], 3, w()-2);
 
 		// widget간 5픽셀 간격이 생기도록 한다.
-#define _left(i)	(guidelines[mWidgets[i].mState.mStartSlot]+2)
-#define _right(i) (guidelines[mWidgets[i].mState.mEndSlot]-3)
+
+		//int gap=5;
+		int gap=mWidgets[i].mState.mHorizSpace;
+#define _left(i)	(guidelines[mWidgets[i].mState.mStartSlot]+gap/2)
+#define _right(i) (guidelines[MIN(mWidgets[i].mState.mEndSlot, guidelines.size()-1)]-(gap-gap/2))
 #define _currWidth(i)	   (_right(i)-_left(i))
 #define _curHeight(i)		(mWidgets[i].mState.mWidgetHeight)
-		
+
 
 		/*
 		// title 만큼 자동으로 offset 하는 기능은 없앴음. 수작업으로 적당히 widget pos를 조정해서 할 것.
@@ -346,37 +487,43 @@ void FlLayout::updateLayout()
 				offset=0;
 
 			Fl_Widget* o=(Fl_Widget*)mWidgets[i].mWidget;
-			o->resize(_left(i)+offset, cury, _currWidth(i)-offset, _curHeight(i)); 
+			o->resize(_left(i)+offset, cury, _currWidth(i)-offset, _curHeight(i));
 		}
 		else */
-		if(mWidgets[i].mType=="Layout")
+		if(mWidgets[i].mType=="Layout" || mWidgets[i].mType=="LayoutGroup")
 		{
 			FlLayoutGroup* o=(FlLayoutGroup*)mWidgets[i].mWidget;
 
-			_curHeight(i)=o->layout()->minimumHeight()+25;
+			_curHeight(i)=o->minimumHeight()+25;
 			if(o)
-				o->resize(_left(i), cury+15, _currWidth(i), _curHeight(i)-15); 
+				o->resize(_left(i), cury+15, _currWidth(i), _curHeight(i)-15);
 
-			o->layout()->updateLayout();
+			o->updateLayout();
 		}
 		else
 		{
 			Fl_Widget* o=(Fl_Widget*)mWidgets[i].mWidget;
 			if(o)
-				o->resize(_left(i), cury, _currWidth(i), _curHeight(i)); 
+				o->resize(_left(i), cury, _currWidth(i), _curHeight(i));
 		}
 
-		if(mWidgets[i].mState.mEndSlot==mWidgets[i].mState.mGuideLines.size()-1)
+		if(mWidgets[i].mState.mEndSlot>=mWidgets[i].mState.mGuideLines.size()-1)
 		{
 			cury+=_curHeight(i)+mWidgets[i+1].mState.mLineSpace;
 		}
 	}
 
-	mScroll->end();
-	resizable(mScroll);
+	mWindow->end();
 	end();
 
 	m_minimumHeight=cury;
+#ifndef NO_GUI
+
+	if(m_minimumHeight>h())
+	{
+		mScrollbar->show();
+		mScrollbar->value(0, h(), 0, m_minimumHeight);
+	}
 	// connect
 	for(int i=0; i<mWidgets.size()-1; i++)
 	{
@@ -394,6 +541,8 @@ void FlLayout::updateLayout()
 				o->m_aMenuItem[item].callback(cbFunc);
 		}
 	}
+	mWindow->redraw();
+#endif
 }
 
 int FlLayout::minimumHeight()
@@ -401,8 +550,11 @@ int FlLayout::minimumHeight()
 	return m_minimumHeight;
 }
 
+
 Fl_Widget* FlLayout::_createWidget(const char* id, Fl_Widget* o)
 {
+  #ifndef NO_GUI
+
 	if(o)
 	{
 		// Auto-size
@@ -415,7 +567,7 @@ Fl_Widget* FlLayout::_createWidget(const char* id, Fl_Widget* o)
 		o->parent()->user_data((void*)this);
 		o->callback(cbFunc, o->user_data());
 	}
-
+#endif
 	mWidgets.resize(mWidgets.size()+1);
 	// state는 이전 state를 유지한다.
 	mWidgets[mWidgets.size()-1].mState=mWidgets[mWidgets.size()-2].mState;
@@ -445,6 +597,25 @@ int FlLayout::widgetIndex(const char* id)
 
 	Msg::error("no widget %s", id);
 	return 1;
+}
+
+void FlLayout::removeWidgets(int startWidgetIndex)
+{
+	int start=startWidgetIndex+mWidgets.size()-2;
+
+	for(int i=start; i<mWidgets.size()-1; i++)
+	{
+		mNamedmapWidgets.erase(mWidgets[i].mId);
+#ifndef NO_GUI
+		mWindow->remove(mWidgets[i].mWidget);
+#endif
+		mWidgets[i].mWidget=NULL;
+	}
+
+	mWidgets.resize(start+1);
+	mWidgets[mWidgets.size()-1]=Widget();
+
+	updateLayout();
 }
 
 FlLayout::Widget& FlLayout::findWidget(const char* id)
@@ -504,6 +675,12 @@ FlLayout* FlLayout::Widget::layout() const
 	return (g)?g->layout():NULL;
 }
 
+FlLayoutGroup* FlLayout::Widget::layoutGroup() const
+{
+	FlLayoutGroup* g=dynamic_cast<FlLayoutGroup*>(mWidget);
+	return g;
+}
+
 FlChoice* FlLayout::menu(int n)
 {
 	return widgetRaw(n).menu();
@@ -519,6 +696,11 @@ FlLayout* FlLayout::findLayout(const char* id)
 	return findWidget(id).layout();
 }
 
+FlLayoutGroup* FlLayout::findLayoutGroup(const char* id)
+{
+	return findWidget(id).layoutGroup();
+}
+
 FlChoice* FlLayout::findMenu(const char* id)
 {
 	return findWidget(id).menu();
@@ -528,7 +710,6 @@ Fl_Slider* FlLayout::slider(int n)
 {
 	return widgetRaw(n).slider();
 }
-
 
 Fl_Slider* FlLayout::findSlider(const char* id)
 {
@@ -565,16 +746,33 @@ Fl_Light_Button* FlLayout::findCheckButton(const char* id)
 	return findWidget(id).checkButton();
 }
 
+void FlLayout::callCallbackFunction(Widget& w)
+{
+	onCallback(w, w.widgetRaw(), (int)(reinterpret_cast<long long>(w.widgetRaw()->user_data())));
+}
+
 void FlLayout::cbFunc(Fl_Widget * pWidget, void *data)
 {
+  #ifndef NO_GUI
+
 	FlLayout* pLayout=((FlLayout*)pWidget->parent()->user_data());
+
+	if(pWidget==((Fl_Widget*)pLayout->mScrollbar))
+	{
+		printf("scroll\n");
+
+		pLayout->mWindow->resize(0,-1*pLayout->mScrollbar->value(), pLayout->w()-5, pLayout->mScrollbar->value()+pLayout->h());
+		return;
+	}
+
 	pLayout->onCallback(pLayout->_findWidget(pWidget), pWidget, (int)data);
+#endif
 }
 
 void FlLayout::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int userData)
 {
 	// default: do nothing
-	
+
 	if(_callbackRouter!=this)
 		_callbackRouter->onCallback(w, pWidget, userData);
 }
@@ -582,5 +780,6 @@ void FlLayout::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int us
 void FlLayout::setButtonClass(buttonType b)		{mWidgets[mWidgets.size()-1].mState.mButtonType=b;	}
 void FlLayout::setSliderClass(sliderType s)		{mWidgets[mWidgets.size()-1].mState.mSliderType=s;	}
 void FlLayout::setLineSpace(int l)				{mWidgets[mWidgets.size()-1].mState.mLineSpace=l;}
+void FlLayout::setHorizSpace(int h)				{mWidgets[mWidgets.size()-1].mState.mHorizSpace=h;}
 void FlLayout::setWidgetHeight(int h)			{mWidgets[mWidgets.size()-1].mState.mWidgetHeight=h;}
 

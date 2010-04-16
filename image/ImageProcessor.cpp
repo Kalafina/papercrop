@@ -66,6 +66,13 @@ void Imp::blit(CImage& out, CImage const& in, TRect const& rect_in, int x, int y
 #endif
 }
 
+void Imp::drawBox(CImage& inout, TRect const& t, int R, int G, int B)
+{
+	CImagePixel p(&inout);
+	p.DrawBox(t, CPixelRGB8(R,G,B));
+}
+
+	
 void Imp::concatVertical(CImage& out, CImage const& a, CImage const& b)
 {
 	//ASSERT(a.GetWidth()==b.GetWidth());

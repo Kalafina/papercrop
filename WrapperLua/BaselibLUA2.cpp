@@ -60,6 +60,7 @@ void addBaselibModule(lua_State* L)
 				.def("GetHeight", &CImage::GetHeight)
 				.def("Load", &CImage::Load)
 				.def("Save", &CImage::Save)
+				.def("create", &CImage::Create)
 				.def("CopyFrom", &CImage::CopyFrom)
 				.def("concatVertical", &Imp::concatVertical)
 				.def("rotateRight", &Imp::rotateRight)
@@ -71,6 +72,16 @@ void addBaselibModule(lua_State* L)
 				.def("gamma", &Imp::gammaCorrect)
 				.def("crop", &Imp::crop)
 				.def("resize", &Imp::resize)
+				.def("blit", &Imp::blit)
+				.def("drawBox", &Imp::drawBox),
+				class_<TRect>("TRect")
+				.def(constructor<>())
+				.def(constructor<int,int,int,int>())
+				.def_readwrite("left", &TRect::left)
+				.def_readwrite("right", &TRect::right)
+				.def_readwrite("top", &TRect::top)
+				.def_readwrite("bottom", &TRect::bottom)
+				
 		];
 	}
 
