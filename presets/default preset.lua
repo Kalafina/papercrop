@@ -1,1 +1,1 @@
-dofile("presets/two-column papers 2 (portrait).lua")
+dofile("presets/two-column papers (landscape).lua")
