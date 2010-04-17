@@ -9,6 +9,7 @@ output_format=".jpg"
 output_to_pdf=true -- output to a pdf file, instead of multiple image files when possible.
 nr_of_pages_per_pdf_book = 100;
 max_vspace=16 -- pixels
+--move_to_folder="h:\\ebooks"
 landscapeRotate="rotateLeft"
 
 ---------------------------------------------------------------------
@@ -52,54 +53,15 @@ end
 function book_pages:writeToFile(outdir)
   if self.nr_of_pages > 0 then
     local outpdf = PDFWriter();
-    self.outpdf:save(outdir .. "_" .. self.book_part_nr .. ".pdf");
-    collectgarbage();
-  end;
-end
---[[
+    local fn=outdir .. "_" .. self.book_part_nr .. ".pdf"
+    self.outpdf:save(fn);
 
-function book_pages:init(part_nr)
-  self.book_part_nr = part_nr;
-  self.nr_of_pages = 0;
-end
-
-function book_pages:init_for_next_part()
-  self:init(self.book_part_nr + 1);
-end
-
-function book_pages:add_page (image, outdir)
-  self.nr_of_pages = self.nr_of_pages + 1;
-  image:Save(string.format("%s/%05d_%05d%s",outdir,self.book_part_nr,self.nr_of_pages,output_format));
-  collectgarbage();
-end
-
-function book_pages:writeToFile(outdir)
-  if self.nr_of_pages > 0 then
-    local outpdf = PDFWriter();
-    outpdf:init();
-    images = {};
-    for j = 1, self.nr_of_pages do
-      local image = CImage();
-      image:Load(string.format("%s/%05d_%05d%s",outdir,self.book_part_nr,j,output_format));
-      --- strange, but the loaded image seems to be mirrored (a bug in CImage:Load ?) ---
-      --- as a quick fix, we save and load it again to undo the mirroring             ---
-      image:Save(string.format("%s/%05d_%05d_ttt%s",outdir,self.book_part_nr,j,output_format));
-      image = CImage();
-      collectgarbage();
-      image:Load(string.format("%s/%05d_%05d_ttt%s",outdir,self.book_part_nr,j,output_format));
-      images[j] = image; -- prevent image from being garbage collected
-                         -- (I guess that 'outpdf' does not keep a reference to it, but still needs it?)
-      ---
-      outpdf:addPage(image);
+    if move_to_folder then
+       os.execute("move /Y "..fn.." "..move_to_folder)
     end
-    outpdf:save(outdir .. "_" .. self.book_part_nr .. ".pdf");
-    win:deleteAllFilesWithoutConfirm()
-    images = {};
     collectgarbage();
   end;
 end
-
-]]--
 ---------------------------------------------------------------------
 
 
