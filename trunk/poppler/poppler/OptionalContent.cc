@@ -162,12 +162,17 @@ OptionalContentGroup* OCGs::findOcgByRef( const Ref &ref)
 {
   //TODO: make this more efficient
   OptionalContentGroup *ocg = NULL;
+
+  // taesoo
+if(optionalContentGroups)
+{
   for (int i=0; i < optionalContentGroups->getLength(); ++i) {
     ocg = (OptionalContentGroup*)optionalContentGroups->get(i);
     if ( (ocg->ref().num == ref.num) && (ocg->ref().gen == ref.gen) ) {
       return ocg;
     }
   }
+}
   // not found
   return NULL;
 }
