@@ -57,7 +57,10 @@ function book_pages:writeToFile(outdir)
     self.outpdf:save(fn);
 
     if move_to_folder then
-       os.execute("move /Y "..fn.." "..move_to_folder)
+       local fn2=string.gsub(fn,"/", "\\")
+       local cmd='move /Y "'..fn2..'" '..move_to_folder
+	print(cmd)
+       os.execute(cmd)
     end
     collectgarbage();
   end;
