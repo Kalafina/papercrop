@@ -43,6 +43,7 @@ public:
 	bool init();
 	bool isValid() { return pdf!=NULL;}
 	void addPage(CImage const& pageImage);
+	void addPageColor(CImage const& pageImage);
 	void save(const char* fname);
 };
 

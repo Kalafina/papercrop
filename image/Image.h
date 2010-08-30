@@ -156,6 +156,7 @@ public:
 
 	bool Load(const char* filename);
 	bool Save(const char* filename);
+	bool save(const char* filename, int BPP);
 
 	CPixelsView GetHorizLine(int i)		
 	{

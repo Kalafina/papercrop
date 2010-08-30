@@ -60,6 +60,7 @@ void addBaselibModule(lua_State* L)
 				.def("GetHeight", &CImage::GetHeight)
 				.def("Load", &CImage::Load)
 				.def("Save", &CImage::Save)
+				.def("save", &CImage::save)
 				.def("create", &CImage::Create)
 				.def("CopyFrom", &CImage::CopyFrom)
 				.def("concatVertical", &Imp::concatVertical)
@@ -308,7 +309,7 @@ void addBaselibModule(lua_State* L)
 
 
 }
-void testLuaBind()
+/*void testLuaBind()
 {
 	try
 	{
@@ -370,3 +371,4 @@ void testLuaBind()
 }
 
 
+*/

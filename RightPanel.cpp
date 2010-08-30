@@ -300,6 +300,7 @@ void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int 
 				.def(constructor<>())
 				.def("init", &PDFWriter::init)
 				.def("addPage", &PDFWriter::addPage)
+				.def("addPageColor", &PDFWriter::addPageColor)
 				.def("save", &PDFWriter::save)
 				.def("isValid",&PDFWriter::isValid)
 		];
