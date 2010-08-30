@@ -174,7 +174,7 @@ namespace Imp
 
 
 #include "FreeImage.h"
-#pragma comment(lib, "FreeImage/Dist/FreeImage.lib")
+//#pragma comment(lib, "FreeImage/Dist/FreeImage.lib")
 
 /** Generic image writer
 @param dib Pointer to the dib to be saved
@@ -203,7 +203,7 @@ bool GenericWriter(FIBITMAP* dib, const char* lpszPathName, int flag=0) {
 }
 
 
-void CImage_SaveFreeImage(CImage & image, const char* filename)
+static void CImage_SaveFreeImage(CImage & image, const char* filename, int BPP=-1)
 {
 //	applyFloydSteinberg(image, 4);
 
@@ -217,23 +217,42 @@ void CImage_SaveFreeImage(CImage & image, const char* filename)
 	FIBITMAP *dst = FreeImage_ConvertFromRawBits(bits, width, height, scan_width,
 		24, FI_RGBA_BLUE_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_RED_MASK, FALSE);
 
-	FIBITMAP *dst_grey=FreeImage_ConvertToGreyscale(dst);
-
+	
 	TString ext=TString(filename).right(3).toUpper();
+
+	FIBITMAP *dst_grey=NULL;
+	FIBITMAP *dst2=NULL;
+	
 	if(ext=="BMP")
 	{
-		FIBITMAP *dst2 = FreeImage_ConvertTo4Bits(dst_grey);
-		GenericWriter(dst2, filename);
-		FreeImage_Unload(dst2);
+		if (BPP==-1) BPP=4;
 	}
 	else if(ext=="GIF")
 	{
-		GenericWriter(dst_grey, filename);
+		if (BPP==-1) BPP=8;
 	}
+	else if(BPP==-1) 
+		BPP=24;
+
+	if (BPP==4)
+	{
+		dst_grey=FreeImage_ConvertToGreyscale(dst);
+		dst2 = FreeImage_ConvertTo4Bits(dst_grey);
+		GenericWriter(dst2, filename);
+		FreeImage_Unload(dst_grey);
+		FreeImage_Unload(dst2);
+	}
+	else if(BPP==8)
+	{
+		dst_grey=FreeImage_ConvertToGreyscale(dst);		
+		GenericWriter(dst_grey, filename);
+		FreeImage_Unload(dst_grey);
+	}
+	else
+		GenericWriter(dst, filename);
 
 	//FIBITMAP *dst2 = FreeImage_Dither(dst, FID_FS);
 	FreeImage_Unload(dst);
-	FreeImage_Unload(dst_grey);
 }
 
 bool CImage::Save(const char* filename)
@@ -258,6 +277,18 @@ bool CImage::Save(const char* filename)
 	return 1;
 }
 
+bool CImage::save(const char* filename, int BPP)
+{
+	if(Imp::IsFileExist(filename))
+	{
+		if(!Msg::confirm("Do you want to overwrite file %s?", filename))
+			return false;
+		DeleteFile(filename);
+	}
+
+	CImage_SaveFreeImage(*this, filename, BPP);
+	return true;
+}
 
 /**
 * @author Ralph Hauwert

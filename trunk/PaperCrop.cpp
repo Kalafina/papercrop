@@ -48,14 +48,14 @@ void MainWin::onIdle()
 #include <il/il.h>
 #include <il/ilu.h>
 
-#ifdef _DEBUG	// console·Î ºôµåÇÏµµ·Ï ÇØ³ùÀ½.
+//#ifdef _DEBUG	// console·Î ºôµåÇÏµµ·Ï ÇØ³ùÀ½.
 int _tmain(int argc, _TCHAR* argv[])
-#else
+/*#else
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
-#endif
+#endif*/
 {
 
 	if (!Fl::visual(FL_DOUBLE|FL_INDEX))

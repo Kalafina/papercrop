@@ -23,7 +23,7 @@
 #include "PDFWriter.h"
 #include "image/image.h"
 
-#pragma comment(lib, "libharu-2.0.8/libhpdf.lib")
+//#pragma comment(lib, "libharu-2.0.8/libhpdf.lib")
 
 jmp_buf env;
 
@@ -106,6 +106,45 @@ void PDFWriter::addPage(CImage const& pageImage)
     /* load GrayScale raw-image (1bit) file from memory. */
     HPDF_Image image = HPDF_LoadRawImageFromMem (pdf, &im[0], w, h,
                 HPDF_CS_DEVICE_GRAY, 8);
+
+    
+    /* Draw image to the canvas. (normal-mode with actual size.)*/
+    HPDF_Page_DrawImage (page, image, 0, 0, w, h);
+
+}
+
+void PDFWriter::addPageColor(CImage const& pageImage)
+{
+	/* add a new page object. */
+    HPDF_Page page = HPDF_AddPage (pdf);
+
+	int w=pageImage.GetWidth();
+	int h=pageImage.GetHeight();
+
+    HPDF_Page_SetWidth (page, w);
+    HPDF_Page_SetHeight (page, h);
+
+	im.resize(w*h*3);
+
+	int k=0;
+	for(int i=0; i<h; i++)
+	{
+		//CPixelRGB8* line=pageImage.GetPixel(0,h-i-1);
+		CPixelRGB8* line=pageImage.GetPixel(0,i);
+		for(int j=0; j<w; j++)
+		{
+			CPixelRGB8& a=line[j];
+			im[k++]=a.R;
+			im[k++]=a.G;
+			im[k++]=a.B;
+		}
+	}
+
+	ASSERT(k==w*h);
+
+    /* load GrayScale raw-image (1bit) file from memory. */
+    HPDF_Image image = HPDF_LoadRawImageFromMem (pdf, &im[0], w, h,
+                HPDF_CS_DEVICE_RGB, 8);
 
     
     /* Draw image to the canvas. (normal-mode with actual size.)*/

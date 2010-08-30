@@ -26,38 +26,63 @@ LUAwrapper::LUAwrapper()
 {
 	L = lua_open();
 	luabind::open(L);
-	luaopen_base(L );
-	luaopen_io(L );
-	luaopen_string(L );
-	luaopen_math(L );
-	luaopen_debug(L );
-	luaopen_table(L );
+	luaL_openlibs(L);
 	addBaselibModule(L);
 }
 
 LUAwrapper::~LUAwrapper()
 {
-	lua_setgcthreshold(L, 0);  // collected garbage
 	lua_close(L);
 }
 
 void LUAwrapper::dofile(const char* pFilename )
 {
+printf("pFileName=%s\n", pFilename);
+
 	/*	- simple way without error_checking
 	lua_dofile(L, pFilename );*/
 
-	if (0 != luaL_loadfile(L, pFilename))
+	try {
+		if (0 != luaL_loadfile(L, pFilename))
+		{
+			printf("here\n");
+			TString errorMsg;
+			errorMsg.format("Lua Error - Script Load\nScript Name:%s\nError Message:%s\n", pFilename, luaL_checkstring(L, -1));
+			printf("%s\n", errorMsg.ptr());
+			ASSERT(0);
+			throw std::runtime_error(errorMsg.ptr());
+		}
+
+		if (0 != lua_pcall(L, 0, LUA_MULTRET, 0))
+		{
+			printf("here2\n");
+			TString errorMsg;
+			errorMsg.format("Lua Error - Script run\nScript Name:%s\nError Message:%s\n", pFilename, luaL_checkstring(L, -1));
+			printf("%s\n", errorMsg.ptr());
+			ASSERT(0);
+			throw std::runtime_error(errorMsg.ptr());
+		}
+	}	
+	catch(luabind::error& e)
 	{
-		TString errorMsg;
-		errorMsg.format("Lua Error - Script Load\nScript Name:%s\nError Message:%s\n", pFilename, luaL_checkstring(L, -1));
-		throw std::runtime_error(errorMsg.ptr());
+		printf("lua error %s\n", e.what());
+		int n=lua_gettop(e.state());
+		Msg::msgBox("lua error %s", lua_tostring(e.state(), n));
+		ASSERT(0);
 	}
-		
-	if (0 != lua_pcall(L, 0, LUA_MULTRET, 0))
+	catch(std::exception& e)
 	{
-		TString errorMsg;
-		errorMsg.format("Lua Error - Script run\nScript Name:%s\nError Message:%s\n", pFilename, luaL_checkstring(L, -1));
-		throw std::runtime_error(errorMsg.ptr());
+		Msg::msgBox("c++ error : %s", e.what());
+		ASSERT(0);
+	}
+	catch (char* error)
+	{
+		Msg::msgBox("%s", error);
+	}
+	catch(...)
+	{
+		Msg::msgBox("some error");
+		ASSERT(0);
 	}
 }
 

@@ -78,7 +78,7 @@
 // - mainlibPython을 쓰는 경우나 링크에러가 나는경우를 제외하고는 FL_DLL 비추.
 #define FL_DLL 
 
-
+/*
 #ifdef FL_DLL
 #ifdef _DEBUG
 #pragma comment(lib, "../fltk/test/fltkdlld.lib")
@@ -112,7 +112,7 @@
 
 #pragma comment(lib, "devil/lib/DevIl.lib")
 #pragma comment(lib, "devil/lib/Ilu.lib")
-
+*/
 #include <FL/FL.h>
 #include <FL/FL_window.h>
 #include <FL/Fl_Tabs.h>
