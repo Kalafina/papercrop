@@ -2,17 +2,18 @@
 -- user settings
 ---------------------------------------------------------------------
 
-device_width=600
-device_height=800
+device_width=540
+device_height=763
 scroll_overlap_pixels=40
 output_format=".jpg"
-output_to_pdf=true -- output to a pdf file, instead of multiple image files when possible.
-color_depth=8 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. Use only for devices without built-in dithering.
+output_to_pdf=false -- output to a pdf file, instead of multiple image files when possible.
+color_depth=2 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color)
 force_resolution=true
 nr_of_pages_per_pdf_book = 100;
 max_vspace=16 -- pixels
---move_to_folder="h:\\ebooks" -- uncomment if needed
+--move_to_folder="h:\\ebooks"
 landscapeRotate="rotateLeft"
+desktop_folder="c:\\Documents and Settings\\username\\desktop" -- use \\ instead of \
 
 ---------------------------------------------------------------------
 -- utility functions
@@ -47,7 +48,7 @@ function book_pages:init_for_next_part()
 end
 
 function book_pages:add_page (image, outdir)
-self.nr_of_pages = self.nr_of_pages + 1;
+	self.nr_of_pages = self.nr_of_pages + 1;
 	if color_depth>8 then
 		self.outpdf:addPageColor(image)
 	else
@@ -87,7 +88,7 @@ function initializeOutput(outdir)
 end
 
 function outputImage(image, outdir, pageNo, rectNo)
-	if force_resolution then
+if force_resolution then
 		if image:GetWidth()<device_width or image:GetHeight()<device_height then
 			local img=CImage()
 			img:CopyFrom(image)
@@ -95,31 +96,29 @@ function outputImage(image, outdir, pageNo, rectNo)
 			local new_height=math.max(image:GetHeight(), device_height)
 			image:create(new_width, new_height)
 			image:drawBox(TRect(0,0,image:GetWidth(), image:GetHeight()), 255,255,255)
-			local y=math.max(device_height-img:GetHeight(),0)
-			local x=math.max(device_width-img:GetWidth(),0)
-			image:blit(img, TRect(0,0,img:GetWidth(), img:GetHeight()), x,y)
+			image:blit(img, TRect(0,0,img:GetWidth(), img:GetHeight()), 0,0)
 		end
 	end
 
   if output_to_pdf then ----if output_to_pdf and outpdf:isValid() then
-		--vv--outpdf:addPage(image)
     if (book_pages.nr_of_pages < nr_of_pages_per_pdf_book) then
       book_pages:add_page(image, outdir);
     else
       book_pages:writeToFile(outdir);
       book_pages:init_for_next_part();
     end
-
+    --^^--
 	else
 --		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
 		if color_depth<=8 then
 			image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),8)
 		else
-			image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
+			image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),24)
 		end
 	end
 end
 
+require('mylib')
 function finalizeOutput(outdir)
 --vv--if output_to_pdf and outpdf:isValid() then
 --vv--  outpdf:save(outdir.."_output.pdf")
@@ -128,6 +127,29 @@ function finalizeOutput(outdir)
     book_pages:init(0);
 	end
 --^^--
+
+	
+     
+
+	local path, title=os.rightTokenize(string.gsub(outdir, "\\","/"), "/")
+
+	execute('c:', 'cd "'..desktop_folder..'"', 'md _stk_temporary')
+	local cmd='move /Y "'..outdir..'\\*.jpg'..'" "'..desktop_folder..'\\_stk_temporary"'
+	print(cmd)
+    os.execute(cmd)
+
+	local author="paperCrop"
+	title=string.gsub(title, "[\_.+-,/\\]", "")
+	os.execute("cmd /c stkmaker.au3 "..title.." "..author)
+	print("script finished", title, author)
+
+	execute('c:', 'cd "'..desktop_folder..'\\_stk_temporary"', 'del *.jpg', 'cd ..', 'rd _stk_temporary')
+	if move_to_folder then
+		local cmd='move /Y "'..desktop_folder.."\\"..title..".stk"..'" '..move_to_folder
+		print(cmd)
+		os.execute(cmd)
+	end
+
 end
 
 function postprocessImage(image)
@@ -135,7 +157,7 @@ function postprocessImage(image)
 	--image:sharpen(1.5, 1)
 	--image:contrast(1.5)
 --    image:gamma(0.5) -- uncomment if you want thicker fonts.
-if color_depth==2 then
+	if color_depth==2 then
 		image:dither(4)
 	elseif color_depth==4 then
 		image:dither(16)
