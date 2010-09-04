@@ -2,7 +2,7 @@
 -- user settings
 ---------------------------------------------------------------------
 
-device_width=540
+device_width=535
 device_height=763
 scroll_overlap_pixels=40
 output_format=".jpg"
@@ -157,6 +157,11 @@ function postprocessImage(image)
 	--image:sharpen(1.5, 1)
 	--image:contrast(1.5)
 --    image:gamma(0.5) -- uncomment if you want thicker fonts.
+
+	if color_depth<8 then
+	    image:gamma(0.5) -- e-ink devices tends to have low contrast.
+	end
+
 	if color_depth==2 then
 		image:dither(4)
 	elseif color_depth==4 then

@@ -312,7 +312,7 @@ void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 {
 	double levels=(double)_levels;
 	int lNorm= 256/_levels;
-
+	int hlNorm=lNorm/2;
 	//The FS kernel...note the 16th. Optimisation can still be done.
 	double d1= 7/16.0;
 	double d2= 3/16.0;
@@ -323,7 +323,29 @@ void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 	int x=0;
 	int y=0;
 
+	int lNorm2=256/(_levels+1);
+	int hlNorm2=lNorm2/2;
 	CImagePixel bitmapData(&_bitmapData);
+
+#define USE_DEC_DYNRANGE
+#ifdef USE_DEC_DYNRANGE
+#define DEC_DYN(x)	(x)*lNorm2/lNorm+hlNorm2;
+	for(y=0; y<bitmapData.Height();y++)
+	{
+		CPixelRGB8* line=bitmapData[y];
+
+		for(x=0; x<bitmapData.Width();x++)
+		{
+			line[x].R=DEC_DYN(int(line[x].R))
+			line[x].G=DEC_DYN(int(line[x].G))
+			line[x].B=DEC_DYN(int(line[x].B))
+		}		
+	}
+	
+#endif
+
+#define QUANTIZE2(x) (x)/lNorm*lNorm+hlNorm;
+
 	for(y=0; y<bitmapData.Height()-1;y++)
 	{
 		CPixelRGB8* line=bitmapData[y];
@@ -338,15 +360,9 @@ void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 			b = c.B;
 
 			//Normalize and scale to the number of levels.
-			//basically a cheap but suboptimal form of color quantization.
-//			nr = ROUND((r/256.0) * levels) * lNorm;
-//			ng = ROUND((g/256.0) * levels) * lNorm;
-//			nb = ROUND((b/256.0) * levels) * lNorm;
-
-			nr = r/lNorm* lNorm+ lNorm/2;
-			ng = g/lNorm* lNorm+ lNorm/2;
-			nb = b/lNorm* lNorm+ lNorm/2;
-
+			nr = QUANTIZE2(r);
+			ng = QUANTIZE2(g);
+			nb = QUANTIZE2(b);
 
 			//Set the current pixel.
 			c.R=nr;
@@ -354,9 +370,9 @@ void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 			c.B=nb;
 
 			//Quantization error.
-			er = r-nr;
-			eg = g-ng;
-			eb = b-nb;
+			er = (r)-nr;
+			eg = (g)-ng;
+			eb = (b)-nb;
 
 			//Apply the kernel.
 			//+1,0
@@ -440,15 +456,11 @@ void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 			g = c.G;
 			b = c.B;
 
-			//Normalize and scale to the number of levels.
-			//basically a cheap but suboptimal form of color quantization.
-			//nr = ROUND((r/256.0) * levels) * lNorm;
-			//ng = ROUND((g/256.0) * levels) * lNorm;
-			//nb = ROUND((b/256.0) * levels) * lNorm;
-
-			nr = r/lNorm* lNorm+ lNorm/2;
-			ng = g/lNorm* lNorm+ lNorm/2;
-			nb = b/lNorm* lNorm+ lNorm/2;
+			//Normalize and scale to the number of levels
+			// : quantization
+			nr = QUANTIZE2(r);
+			ng = QUANTIZE2(g);
+			nb = QUANTIZE2(b);
 
 			c.R=nr;
 			c.G=ng;

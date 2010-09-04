@@ -30,9 +30,9 @@ function devenvbuild(build_folder, slnFile, target, build_opt)
    build_opt=build_opt or "/build"
 
    local msg="\nStart Building "..slnFile.."|"..target.." in "..build_folder.."\n"
---   print(msg)
+   print(msg)
    local cmd='"'..devenvExe..'" '..build_opt..' "'..target..'"'..build_folder.."/"..slnFile
---   print(cmd)
+   print(cmd)
    execute(cmd)
 end
 
@@ -42,6 +42,7 @@ function cmake(build_folder, opt, target, build_opt, build_path)
    local targetName="Visual Studio 8 2005"
    if usedVC9 then
       targetName="Visual Studio 9 2008"
+	  opt=opt.." -D UseVC9:boolean=true"
    end
 
    build_opt=build_opt or "/build"
@@ -52,7 +53,7 @@ function cmake(build_folder, opt, target, build_opt, build_path)
 
    local cmd='cmake -G "'..targetName..'"'..opt.." "..build_path
 
---   print("cd "..build_folder.."\n"..cmd)
+   print("cd "..build_folder.."\n"..cmd)
    execute("@echo off", "cd "..build_folder, "cd", cmd)
 
 end
