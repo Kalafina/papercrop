@@ -1,89 +1,72 @@
-//
-// matrix.H 
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
-
 #pragma once
 
 class vector3;
 class quater;
-/// never make virtual functions. 
-/** ÀÌÀ¯: ÀÌ°ÍÀÇ ÁÖ¼Ò´Â directÇÏ°Ô D3DXMATRIXÀÇ ÁÖ¼Ò·Î ¹Ù²ğ¼ö ÀÖ´Ù. virtual functionÀ» ¸¸µé¸é VTable¶§¹®¿¡ ÀÌ°ÍÀÌ ¾ÈµÈ´Ù.
-´Ù¸¸, ÄÁº¥¼ÇÀº openglÀ» µû¸¥´Ù. ÁÖÀÇ»çÇ× Âü°í.
-
-ÁÖÀÇ »çÇ×: 
-quaternionÀº q1*q2*vÇüÅÂ·Î Á¤ÀÇ»ó ¿À¸¥ÂÊ²² ¸ÕÀú Á¡¿¡ °öÇØÁø´Ù°í »ı°¢ÇØ¾ß ÇÑ´Ù.
-openGL matrix´Â quaternion°ú ¸¶Âú°¡Áö·Î R1*r2*vÇüÅÂ·Î ¿À¸¥ÂÊ¿¡ Á¡ÀÌ °öÇØÁø´Ù.
-ÇÏÁö¸¸ D3DXMATRIX´Â v*R1*R2ÇüÅÂ·Î Á¡ÀÌ ¿ŞÂÊ¿¡ °öÇØÁö°í, ¸¶Âù°¡Áö·Î D3DXQUATERNIONÀº q1*q2°¡ ¿ø·¡ Á¤ÀÇÀÇ q2*q1°ú ÀÏÄ¡ÇÏµµ·Ï 
-°öÇÏ±â¼ø¼­°¡ ¹Ù²î¾î ÀÖ´Ù. Áï D3DXMATRIX¿Í D3DXQUATERNION¸ğµÎ ¿ŞÂÊ¿¡ ÀÖ´Â °ÍÀÌ ·ÎÄÃ, °¡Àå ¿À¸¥ÂÊ¿¡ ÀÖ´Â °ÍÀÌ ±Û·Î¹úÀÌ´Ù.
-¹İ¸é quaterÅ¬·¡½º¿Í matrix4Å¬·¡½º´Â openGLÀÇ conventionÀ» µû¸¥´Ù. Áï Á¡ÀÌ ¿À¸¥ÂÊ¿¡¼­ °öÇØÁø´Ù.
-¾çÂÊÀÇ conventionÀ» ¸ÂÃß±â À§ÇØ¼­ toDXmat°ú fromDXmatÇÔ¼ö¸¦ º¸¸é °¢°¢ transpose¸¦ ÇØÁÖ´Â °ÍÀ» º¼ ¼ö ÀÖ´Ù.
-\ingroup group_math
+class matrix3;
+class transf;
+/// row-major matrix4 class following opengl convention 
+// (positions are multiplied at right-side of the matrix).
+/** 
+important: 
+never make virtual functions. 
+quaternionì€ q1*q2*ví˜•íƒœë¡œ ì •ì˜ìƒ ì˜¤ë¥¸ìª½ê»˜ ë¨¼ì € ì ì— ê³±í•´ì§„ë‹¤ê³  ìƒê°í•´ì•¼ í•œë‹¤.
+openGL matrixëŠ” quaternionê³¼ ë§ˆì°®ê°€ì§€ë¡œ R1*r2*ví˜•íƒœë¡œ ì˜¤ë¥¸ìª½ì— ì ì´ ê³±í•´ì§„ë‹¤.
+í•˜ì§€ë§Œ D3DXMATRIXëŠ” v*R1*R2í˜•íƒœë¡œ ì ì´ ì™¼ìª½ì— ê³±í•´ì§€ê³ , ë§ˆì°¬ê°€ì§€ë¡œ D3DXQUATERNIONì€ q1*q2ê°€ ì›ë˜ ì •ì˜ì˜ q2*q1ê³¼ ì¼ì¹˜í•˜ë„ë¡ 
+ê³±í•˜ê¸°ìˆœì„œê°€ ë°”ë€Œì–´ ìˆë‹¤. ì¦‰ D3DXMATRIXì™€ D3DXQUATERNIONëª¨ë‘ ì™¼ìª½ì— ìˆëŠ” ê²ƒì´ ë¡œì»¬, ê°€ì¥ ì˜¤ë¥¸ìª½ì— ìˆëŠ” ê²ƒì´ ê¸€ë¡œë²Œì´ë‹¤.
+ì–‘ìª½ì˜ conventionì„ ë§ì¶”ê¸° ìœ„í•´ì„œëŠ” transposeê°€ í•„ìš”í•˜ë‹¤.
 */
 
+#ifdef minor
+#undef minor
+#endif
 class matrix4
 {
 public:
 
 	union {
         struct {
-            double        _11, _12, _13, _14;
-            double        _21, _22, _23, _24;
-            double        _31, _32, _33, _34;
-            double        _41, _42, _43, _44;
+            m_real        _11, _12, _13, _14;
+            m_real        _21, _22, _23, _24;
+            m_real        _31, _32, _33, _34;
+            m_real        _41, _42, _43, _44;
 
         };
-        double m[4][4];
+        m_real m[4][4];
     };
 
-#ifdef DIRECT3D_VERSION
-	matrix4(const D3DXMATRIX& mat)				{ fromDXmat(mat);};
-#endif
 	matrix4(const matrix4& mat)					{ memcpy(this, &mat, sizeof(matrix4));}
+	matrix4(const quater& rot, const vector3& trans)	{ setRotation(rot); setTranslation(trans);}
+	matrix4(const transf& transf);
 	matrix4();
 	~matrix4();
 
-	void identity()	{ setIdentityRot(); setTranslation(vector3(0.0, 0.0, 0.0));}
+	inline void identity()	{ setIdentityRot(); }
 
 	// n-ary operators
 	void lookAtLH(const vector3& eye, const vector3& at, const vector3& up);
 	void lookAtRH(const vector3& eye, const vector3& at, const vector3& up);
-	void setScaling(double sx, double sy, double sz);
-	void setTranslation(const vector3& tx);		//!< ´Ù¸¥ set°è¿­ ÇÔ¼ö¿Í ´Ş¸® rotationÆÄÆ®´Â °Çµå¸®Áö ¾Ê´Â´Ù. 	
-	void setTranslationMat(const vector3& tx)	{ setIdentityRot(); setTranslation(tx);}
+	void setScaling(m_real sx, m_real sy, m_real sz);
+	
 	void setTransform(const quater& rot, const vector3& trans);
-	void setRotation(const quater& q);
-	void setRotation(const vector3& axis, double angle);
-	void setRotationX(double angle);
-	void setRotationY(double angle);
-	void setRotationZ(double angle);
-	void setRotation(const char* aChannel, double *aValue, bool bRightToLeft=false);	//!< from euler angle. aChannel="YXZ" or something like that.
-	void setAxisRotation(const vector3& vecAxis, const vector3& front, const vector3& vecTarget); 	//!< frontº¤ÅÍ¸¦ vecAxis¸¦ Áß½ÉÀ¸·Î È¸ÀüÇØ¼­ vecTarget°ú vecAxis°¡ ÀÌ·ç´Â Æò¸é¿¡ ³õÀÌµµ·Ï ¸¸µå´Â Matrix¸¦ ±¸ÇÑ´Ù.
-	void setIdentityRot();
+	void setTransform(const vector3& position, const vector3& scale, const quater& orientation);
+
+	// all setRotation fuctions remove translation terms unless manually specified otherwise (bPreserveCurrentTranslation=true).
+	void setRotation(const quater& q, bool bPreserveCurrentTranslation=false);
+	void setRotation(const matrix3& m, bool bPreserveCurrentTranslation=false);
+	void setRotation(const vector3& axis, m_real angle, bool bPreserveCurrentTranslation=false);
+	void setRotationX(m_real angle);
+	void setRotationY(m_real angle);
+	void setRotationZ(m_real angle);
+	void setRotation(const char* aChannel, m_real *aValue, bool bRightToLeft=false);	//!< from euler angle. aChannel="YXZ" or something like that.
+	void setAxisRotation(const vector3& vecAxis, const vector3& front, const vector3& vecTarget); 	//!< frontë²¡í„°ë¥¼ vecAxisë¥¼ ì¤‘ì‹¬ìœ¼ë¡œ íšŒì „í•´ì„œ vecTargetê³¼ vecAxisê°€ ì´ë£¨ëŠ” í‰ë©´ì— ë†“ì´ë„ë¡ ë§Œë“œëŠ” Matrixë¥¼ êµ¬í•œë‹¤.
+	void setIdentityRot();	
+
+	// setTranslation preserves rotation parts unless manually specified otherwise (bPreserveCurrentRotation=false)
+	void setTranslation(const vector3& tx, bool bPreserveCurrentRotation=true);		//!< ë‹¤ë¥¸ setê³„ì—´ í•¨ìˆ˜ì™€ ë‹¬ë¦¬ rotationíŒŒíŠ¸ëŠ” ê±´ë“œë¦¬ì§€ ì•ŠëŠ”ë‹¤. 	
 
 	void transpose();
-	// right multiplication. eg) a=a*matScale
-	void leftMult(double scalar);
-	void leftMultScaling(double sx, double sy, double sz);
-	void leftMultRotation(const quater& b);
-	void leftMultRotation(const vector3& axis, double angle);
-	void leftMultTranslation(const vector3& vec);
+	
+	
 	void mult(const matrix4& a, const matrix4& b);
 	void mult(const matrix4& a, const quater& b);
 	void mult(const quater& a, const matrix4& b);
@@ -95,44 +78,35 @@ public:
 	void transpose(const matrix4& a);
 	void leftMult(const matrix4& a);	//!< this=a*this;
 	void operator*=(const matrix4& a);	//!< this=this*a;
+	void rightMult(const matrix4& a) { (*this)*=a;}
+	void leftMult(m_real scalar);		//!< a=matScale*a
+	void leftMultScaling(m_real sx, m_real sy, m_real sz);
+	void leftMultRotation(const quater& b);
+	void leftMultRotation(const vector3& axis, m_real angle);
+	void leftMultTranslation(const vector3& vec);
+
+	matrix4 operator*(matrix4 const& a) const { matrix4 t; t.mult(*this,a); return t;}
+	vector3 operator*(vector3 const& a) const;
 	
 	// inquiry functions
 	void decomposeLH(vector3& eye, vector3& at, vector3& up);
 	void decomposeRH(vector3& eye, vector3& at, vector3& up);
 
-	void setValue( double x00, double x01, double x02,
-				   double x10, double x11, double x12,		// ³ª¸ÓÁö´Â 0,1À¸·Î ÃÊ±âÈ­ 
-				   double x20, double x21, double x22 )	
-	{ m[0][0]=x00, m[0][1]=x01, m[0][2]=x02,  m[1][0]=x10, m[1][1]=x11, m[1][2]=x12,  
-m[2][0]=x20, m[2][1]=x21, m[2][2]=x22,  m[0][3]=0,m[1][3]=0,m[2][3]=0,m[3][0]=0,m[3][1]=0,m[3][2]=0,m[3][3]=1;}
+	void setValue( m_real x00, m_real x01, m_real x02,
+				   m_real x10, m_real x11, m_real x12,		// remaining values are set as 0 or 1.
+				   m_real x20, m_real x21, m_real x22 )	;
 
-	void setValue( double x00, double x01, double x02, double x03,
-				   double x10, double x11, double x12, double x13,
-				   double x20, double x21, double x22, double x23,
-				   double x30, double x31, double x32, double x33)	
-	{ m[0][0]=x00, m[0][1]=x01, m[0][2]=x02,  m[0][3]=x03,
-	  m[1][0]=x10, m[1][1]=x11, m[1][2]=x12,  m[1][3]=x13,
-	  m[2][0]=x20, m[2][1]=x21, m[2][2]=x22,  m[2][3]=x23,
-	  m[3][0]=x30, m[3][1]=x31, m[3][2]=x32,  m[3][3]=x33;}
+	void setValue( m_real x00, m_real x01, m_real x02, m_real x03,
+				   m_real x10, m_real x11, m_real x12, m_real x13,
+				   m_real x20, m_real x21, m_real x22, m_real x23,
+				   m_real x30, m_real x31, m_real x32, m_real x33)	;
 
-	double determinant() const;
-	double minor(const size_t r0, const size_t r1, const size_t r2, 
+	m_real determinant() const;
+	m_real minor(const size_t r0, const size_t r1, const size_t r2, 
 				const size_t c0, const size_t c1, const size_t c2) const;
 
-
-#ifdef DIRECT3D_VERSION
-
-#ifdef MATH_DOUBLE_PRECISION
-   void fromDXmat( const D3DXMATRIX &mat);
-   void toDXmat(D3DXMATRIX& mat) const;
-#else
-	void fromDXmat( const D3DXMATRIX &mat)  { D3DXMatrixTranspose(*this, &mat);};
-	void toDXmat(D3DXMATRIX& mat) const		{ D3DXMatrixTranspose(&mat,*this);};
 private:
-	//¾Æ·¡ ÇÔ¼ö´Â D3DX°¡ Á¦°øÇÏ´Â optimizeµÈ °öÇÏ±â ÇÔ¼öµîÀ» »ç¿ëÇÏ±â À§ÇÑ °ÍÀÌ´Ù. Áï ³»ºÎ ¿ëµµ·Î¸¸ »ç¿ëµÇ¾î¾ß ÇÑ´Ù.
-	// ¿ÜºÎ¿¡¼­ »ç¿ëÇÏ´Â ÇÔ¼ö´Â À§¿¡ fromDXmat, toDXmatÃ³·³ transpose¸¦ ¼ö¹İÇÑ´Ù.
-	inline operator D3DXMATRIX*()	const	{ return (D3DXMATRIX*)this;};	
-#endif
-#endif
+	void _discardTranslation();
+
 };
 

@@ -1,31 +1,14 @@
-//
-// vectorn_n.cpp
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
 
 #include "stdafx.h"
 #include "mathclass.h"
 #include "float.h"
-#include "filter.h"
-#include "operatorTemplate.hpp"
-//double* allocate(int n);
-//void deallocate(double *b);
+#include "Filter.h"
+#ifdef USE_NUMERICAL_RECIPE
+#include "nr/nr.h"
+#endif
+
+//m_real* allocate(int n);
+//void deallocate(m_real *b);
 
 intvectornView::intvectornView(const intvectorn& other)
 {
@@ -46,6 +29,17 @@ intvectorn& intvectorn ::operator=(const intvectornView& other){ assign(other);r
 vectorn& vectorn::operator=(const vectorn& other)		{ assign(other);return *this;}	
 vectorn& vectorn::operator=(const vectornView& other)	{ assign(other);return *this;}
 
+intvectorn&
+intvectorn::assignBits( bitvectorn const& a )
+{
+	intvectorn &c = (*this);
+	c.setSize( a.size() );
+
+	for( int i=0; i<c.size(); i++ )
+		c[i] = (int)a[i];
+	return c;
+}
+
 
 intvectorn::intvectorn(const intvectornView& other)
 :_tvectorn<int>()
@@ -59,8 +53,34 @@ intvectornView ::intvectornView (int* ptrr, int size, int str)
 {
 }
 
+void intvectorn::decode(const TString& input)
+{
+	int i=0;
+	TString token;
+	setSize(0);
+	while(i!=input.length())
+	{
+		input.token(i, TString(" ,\n"), token);
+		pushBack(atoi(token));
+	}
+}
 
 
+TString intvectorn::output(const char* left, const char* typeString, const char* seperator, const char* right)
+{
+	TString id;
+	id+=left;
+	for(int i=0; i<size(); i++)
+	{
+		id.add(typeString, (*this)[i]);
+
+		if(i!=size()-1)
+			id.add("%s", seperator);
+	}
+	id+=right;
+
+	return id;
+}
 
 
 intvectorn::intvectorn( int n, int x, ...)	// n dimensional vector	(ex) : vectorn(3, 1.0, 2.0, 3.0);
@@ -103,11 +123,58 @@ vectorn intvectorn::toVectorn()
 	c.setSize(size());
 
 	for(int i=0; i<size(); i++)
-		c[i]=(double)value(i);
+		c[i]=(m_real)value(i);
 	return c;
 }
 
 
+void intvectorn::runLengthEncodeCut(const bitvectorn& cutState, int start, int end)
+{
+	if(start<0) start=0;
+	if(end>cutState.size()) end=cutState.size();
+
+	setSize(0);
+
+	pushBack(start);  // start
+	int i;
+	for(i=start+1; i<end; i++)
+	{
+		if(cutState[i])
+		{
+			pushBack(i);	// end
+			pushBack(i);   // start
+		}
+	}
+
+	pushBack(i);	// end
+}
+
+void intvectorn::runLengthEncode(const intvectorn& source)
+{
+	/**
+	* RunLength encodingÏùÑ Íµ¨ÌïúÎã§.
+	* [1 1 1 3 3 3 3 4 4] -> [0 1 3 3 7 4 9]
+	* 0 Î∂ÄÌÑ∞ 1Ïù¥ 3ÍπåÏßÄ ÎÇòÏò§Í≥†, 3Ïù¥ 7ÍπåÏßÄ ÎÇòÏò§Í≥† 4Í∞Ä 9ÍπåÏßÄ ÎÇòÏò®Îã§Îäî Îúª.
+	* \param source 
+	*/
+
+	setSize(0);
+	pushBack(0);
+	int curValue=source[0];
+
+	int  i;
+	for(i=1; i<source.size(); i++)
+	{
+		if(curValue!=source[i])
+		{
+			pushBack(curValue);
+			pushBack(i);
+			curValue=source[i];
+		}
+	}
+	pushBack(curValue);
+	pushBack(i);
+}
 
 int intvectorn::minimum() const
 {
@@ -160,7 +227,7 @@ intvectorn&  intvectorn::makeSamplingIndex(int nLen, int numSample)
 
 intvectorn&  intvectorn::makeSamplingIndex2(int nLen, int numSample)
 {
-	// √π«¡∑π¿”∞˙ ∏∂¡ˆ∏∑ «¡∑π¿”¿∫ π›µÂΩ√ ∆˜«‘«œ∞Ì ≥™∏”¡ˆ¥¬ ±◊ ªÁ¿Ãø°º≠ uniform sampling
+	// Ï≤´ÌîÑÎ†àÏûÑÍ≥º ÎßàÏßÄÎßâ ÌîÑÎ†àÏûÑÏùÄ Î∞òÎìúÏãú Ìè¨Ìï®ÌïòÍ≥† ÎÇòÎ®∏ÏßÄÎäî Í∑∏ ÏÇ¨Ïù¥ÏóêÏÑú uniform sampling
 	if(numSample<2 || nLen<3)
 		return makeSamplingIndex(nLen, numSample);
 
@@ -180,6 +247,18 @@ intvectorn&  intvectorn::makeSamplingIndex2(int nLen, int numSample)
 		}
 	}
 	return *this;
+}
+
+int intvectorn::aggregate(CAggregate::aggregateOP eOP) const
+{
+	const intvectorn& c=*this;
+	CAggregate cOP(eOP);
+	m_real cur=cOP.Init();
+
+	for( int i=0; i<c.size(); i++ )
+		cOP.Update(cur, c[i]);
+
+	return (int)cOP.Final(cur, c.size());
 }
 
 intvectorn&  intvectorn::colon(int start, int end, int stepSize)
@@ -220,8 +299,8 @@ public:
 	{
 		info& a=*((info*)*ppA);
 		info& b=*((info*)*ppB);
-		double valA=a.m_pInput->getValue(a.m_index);
-		double valB=b.m_pInput->getValue(b.m_index);
+		m_real valA=a.m_pInput->getValue(a.m_index);
+		m_real valB=b.m_pInput->getValue(b.m_index);
 		if(valA<valB)
 			return -1;
 		if(valA==valB)
@@ -233,6 +312,29 @@ public:
 
 
 
+intvectorn&  intvectorn::sortedOrder(vectorn const & input)
+{
+	//!< input[0]<input[2]<input[1]<input[3]Ïù∏Í≤ΩÏö∞ Í≤∞Í≥ºÎäî [0213]
+assert(false);
+return *this;
+/*	TArray<info> aSort;
+	aSort.init(input.size());
+	for(int i=0; i<input.size(); i++)
+	{
+		aSort[i].m_pInput=&input;
+		aSort[i].m_index=i;
+	}
+
+	aSort.sort(0, input.size(), info::compareInfo);
+
+	setSize(input.size());
+	for(int i=0; i<input.size(); i++)
+	{
+		(*this)[i]=aSort[i].m_index;
+	}
+	return *this;
+	*/
+}
 
 int intvectorn::count(int (*s2_func)(int,int), int value, int start, int end)
 {
@@ -246,9 +348,55 @@ int intvectorn::count(int (*s2_func)(int,int), int value, int start, int end)
 	return count;
 }
 
+void intvectorn::runLengthEncode(const bitvectorn& source, int start, int end)
+{
+	if(start<0) start=0;
+	if(end>source.size()) end=source.size();
+
+	setSize(0);
+
+	bool bFindTrue=false;
+	int i;
+	for(i=start; i<end; i++)
+	{
+		if(bFindTrue)
+		{
+			if(!source[i])
+			{
+				pushBack(i);	// end
+				bFindTrue=false;
+			}
+		}
+		else
+		{
+			if(source[i])
+			{
+				pushBack(i);	// start
+				bFindTrue=true;
+			}
+		}
+	}
+
+	if(bFindTrue)
+		pushBack(i);	// end
+}
+
+void intvectorn::runLengthDecode(bitvectorn& out, int size)
+{
+	out.setSize(size);
+	out.clearAll();
+
+	for(int i=0; i< this->size()/2; i++)
+	{
+		int start=(*this)[i*2];
+		int end=(*this)[i*2+1];
+
+		out.setValue(start, end, true);
+	}	
+}
 
 
-vectornView ::vectornView (double* ptrr, int size, int str)
+vectornView ::vectornView (m_real* ptrr, int size, int str)
 :vectorn(ptrr,size,str)
 {
 }
@@ -256,24 +404,24 @@ vectornView ::vectornView (double* ptrr, int size, int str)
 /////////////////////////////////////////////////////////////////////////////////
 
 
-vectorn::vectorn( int n, double x)
-:_tvectorn<double>()
+vectorn::vectorn( int n, m_real x)
+:_tvectorn<m_real>()
 {
 	ASSERT(n==1);
 	setSize(n);
 	value(0)=x;
 }
 
-vectorn::vectorn( int n, double x, double y)
-:_tvectorn<double>()
+vectorn::vectorn( int n, m_real x, m_real y)
+:_tvectorn<m_real>()
 {
 	ASSERT(n==2);
 	setSize(n);
 	value(0)=x;
 	value(1)=y;
 }
-vectorn::vectorn( int n, double x, double y, double z)
-:_tvectorn<double>()
+vectorn::vectorn( int n, m_real x, m_real y, m_real z)
+:_tvectorn<m_real>()
 {
 	ASSERT(n==3);
 	setSize(n);
@@ -283,8 +431,8 @@ vectorn::vectorn( int n, double x, double y, double z)
 }
 
 
-vectorn::vectorn( int n, double x, double y, double z, double w,...)	// n dimensional vector	(ex) : vectorn(3, 1.0, 2.0, 3.0);
-:_tvectorn<double>()
+vectorn::vectorn( int n, m_real x, m_real y, m_real z, m_real w,...)	// n dimensional vector	(ex) : vectorn(3, 1.0, 2.0, 3.0);
+:_tvectorn<m_real>()
 {
 	va_list marker;
 	va_start( marker, w);     /* Initialize variable arguments. */
@@ -296,7 +444,7 @@ vectorn::vectorn( int n, double x, double y, double z, double w,...)	// n dimens
 	setValue(3, w);
 	for(int i=4; i<n; i++)
 	{
-		setValue(i, va_arg( marker, double));
+		setValue(i, va_arg( marker, m_real));
 	}
 	va_end( marker );              /* Reset variable arguments.      */	
 }
@@ -307,6 +455,15 @@ vectornView vectorn::range(int start, int end, int step)
 }
 
 const vectornView vectorn::range(int start, int end, int step) const	{ return ((vectorn*)this)->range(start, end, step);}
+
+
+
+vectorn& vectorn::sort(vectorn const& source, intvectorn& sortedIndex)
+{
+	sortedIndex.sortedOrder(source);
+	extract(source, sortedIndex);
+	return *this;
+}
 
 
 vectorn& vectorn::concaten(vectorn const& a)					
@@ -321,57 +478,38 @@ vectorn& vectorn::concaten(vectorn const& a)
 
 /////////////////////////////////////////////////////////////////////////////////
 vectorn::vectorn()
-:_tvectorn<double>()
+:_tvectorn<m_real>()
 {
 }
 
 
 vectorn::vectorn(const vector3& other)
-:_tvectorn<double>()
+:_tvectorn<m_real>()
 {
 	assign(other);
 }
 
 vectorn::vectorn(const quater& other)
-:_tvectorn<double>()
+:_tvectorn<m_real>()
 {
 	assign(other);
 }
 
-void vectorn::minimum(matrixn const& a)
+// Í∞íÏùÑ Ïπ¥ÌîºÌï¥ÏÑú Î∞õÏïÑÏò®Îã§.	
+vectorn::vectorn(const _tvectorn<m_real>& other)
+:_tvectorn<m_real>()
 {
-	v::for_each_column(*this, a, sv::minimum<vectorn, double>);
-}
-void vectorn::maximum(matrixn const& a)
-{
-	v::for_each_column(*this, a, sv::maximum<vectorn, double>);
-}
-
-double vectorn::minimum() const
-{
-	return sv::minimum<vectorn, double>(*this);
-}
-double vectorn::maximum() const
-{
-	return sv::maximum<vectorn, double>(*this);
-}
-
-
-// ∞™¿ª ƒ´«««ÿº≠ πﬁæ∆ø¬¥Ÿ.	
-vectorn::vectorn(const _tvectorn<double>& other)
-:_tvectorn<double>()
-{
-	_tvectorn<double>::assign(other);
+	_tvectorn<m_real>::assign(other);
 }	
 
 vectorn::vectorn(const vectorn& other)
-:_tvectorn<double>()
+:_tvectorn<m_real>()
 {
 	assign(other);
 }	
 
 vectorn::vectorn(const vectornView& other)
-:_tvectorn<double>()
+:_tvectorn<m_real>()
 {
 	assign(other);
 }	
@@ -384,6 +522,13 @@ matrixnView vectorn::column() const
 matrixnView vectorn::row() const		// return 1 by n matrix, which can be used as L-value (reference matrix)
 {
 	return _row<matrixnView >();
+}
+
+matrixnView vectorn::matView(int nrow, int ncol)
+{
+	resize(nrow* ncol);
+	ASSERT(_getStride()==1);
+	return matrixnView(dataPtr(), nrow, ncol, ncol);
 }
 
 vectorn& vectorn::assign(const vector3& other)
@@ -403,7 +548,7 @@ vectorn& vectorn::assign(const quater& other)
 }
 
 
-vectorn& vectorn::each1(void (*cOP)(double&,double), vectorn const& a)
+vectorn& vectorn::each1(void (*cOP)(m_real&,m_real), vectorn const& a)
 {
 	vectorn& c=*this;
 	c.setSize(a.size());
@@ -412,7 +557,7 @@ vectorn& vectorn::each1(void (*cOP)(double&,double), vectorn const& a)
 	return c;
 }
 
-vectorn& vectorn::each1(void (*cOP)(double&,double), double a)
+vectorn& vectorn::each1(void (*cOP)(m_real&,m_real), m_real a)
 {
 	vectorn& c=*this;
 	for(int i=0; i<c.size(); i++)
@@ -447,12 +592,12 @@ vectorn::negate()
     return c;
 }
 
-double
+m_real
 operator%( vectorn const& a, vectorn const& b )
 {
     assert( a.size()==b.size() );
 
-    double c=0;
+    m_real c=0;
     for( int i=0; i<a.size(); i++ )
         c += a[i] * b[i];
     return c;
@@ -479,22 +624,34 @@ bool operator>(vectorn const& a, vectorn const& b)
 }
 
 
-double
+m_real
 vectorn::length() const
 {
-    double c=0;
+    m_real c=0;
     for( int i=0; i<size(); i++ )
         c += this->value(i)*this->value(i);
     return sqrt(c);
 }
 
+m_real vectorn::distance(vectorn const& other) const
+{
+	ASSERT(size()==other.size());
+	m_real c=0;	
+	m_real dist;
+	for(int i=0; i<size(); i++)
+	{
+		dist=value(i)-other[i];
+		c+=dist*dist;
+	}
+	return sqrt(c);
+}
 
 vectorn&
 vectorn::normalize()
 {
     vectorn &c = (*this);
 
-    double invl = 1/this->length();
+    m_real invl = 1/this->length();
     (*this)*=invl;
     return c;
 }
@@ -503,7 +660,7 @@ vectorn& vectorn::normalize(vectorn const& a)
 {
 	vectorn &c = (*this);
 
-    double invl = 1/a.length();
+    m_real invl = 1/a.length();
     c.mult(a, invl);
     return c;
 }
@@ -515,7 +672,7 @@ vectorn& vectorn::normalize(vectorn const& min, vectorn const& max)
 
 	for(int j=0; j<size(); j++)
 	{
-		double value=getValue(j);
+		m_real value=getValue(j);
 		value=(value-min[j])/(max[j]-min[j]);
 		setValue(j,value);
 	}
@@ -550,7 +707,7 @@ istream& operator>>( istream& is, vectorn& a )
 }
 */
 
-double	vectorn::cosTheta(vectorn const& b) const
+m_real	vectorn::cosTheta(vectorn const& b) const
 {
 	vectorn const& a=*this;
 	// a dot b= |a||b|cosTheta
@@ -558,10 +715,10 @@ double	vectorn::cosTheta(vectorn const& b) const
 }
 
 // calc angle between 0 to pi
-double	vectorn::angle(vectorn const& b) const 
+m_real	vectorn::angle(vectorn const& b) const 
 {
 	vectorn const& a=*this;
-	return (double)(ACOS(a.cosTheta(b)));
+	return (m_real)(ACOS(a.cosTheta(b)));
 }
 
 vectorn& vectorn::fromMatrix(matrixn const& mat)
@@ -570,6 +727,20 @@ vectorn& vectorn::fromMatrix(matrixn const& mat)
 	return *this;
 }
 
+TString vectorn::output(const char* formatString, int start, int end) const
+{
+	TString id;
+	if(end>size()) end=size();
+	id+="[";
+	for(int i=start; i<end; i++)
+	{
+		id.add(formatString, (*this)[i]);
+		id+=",";
+	}
+	id+="]";
+
+	return id;
+}
 
 void vectorn::load(const char* filename, bool bLoadFromBinaryFile)
 {
@@ -581,7 +752,7 @@ void vectorn::load(const char* filename, bool bLoadFromBinaryFile)
 		file.OpenReadFile(filename);
 		int nsize=file.UnpackInt();
 		setSize(nsize);
-		file.UnpackArray(v, size(), sizeof(double));
+		file.UnpackArray(v, size(), sizeof(m_real));
 		file.CloseFile();
 	}
 	else
@@ -600,7 +771,7 @@ void vectorn::save(const char* filename, bool bSaveIntoBinaryFile)
 		TFile file;
 		file.OpenWriteFile(filename);
 		file.PackInt(size());
-		file.PackArray(v, size(), sizeof(double));
+		file.PackArray(v, size(), sizeof(m_real));
 		file.CloseFile();
 	}
 	else
@@ -619,7 +790,7 @@ void vectorn::save(const char* filename, bool bSaveIntoBinaryFile)
 
 
 
-vectorn&  vectorn::each2(double (*s2_func)(double,double), vectorn const& a, vectorn const& b)
+vectorn&  vectorn::each2(m_real (*s2_func)(m_real,m_real), vectorn const& a, vectorn const& b)
 {
 	vectorn& c=*this;
 	ASSERT(a.size()==b.size());
@@ -645,14 +816,69 @@ vectorn& vectorn::derivative(vectorn const& a)
 }
 
 
+m_real vectorn::aggregate(CAggregate::aggregateOP eOP) const
+{
+	const vectorn& c=*this;
+	CAggregate cOP(eOP);
+	m_real cur=cOP.Init();
+
+	for( int i=0; i<c.size(); i++ )
+		cOP.Update(cur, c[i]);
+
+	return cOP.Final(cur, c.size());
+}
+
+vectorn& vectorn::aggregate(CAggregate::aggregateOP eOP, matrixn const& mat)
+{
+	setSize(mat.rows());
+	for(int i=0; i<mat.rows(); i++)
+	{
+		value(i)=mat.row(i).aggregate(eOP);
+	}
+	return *this;
+}
+
 vectorn operator+( vectorn const& a, vectorn const& b)	{ vectorn c; c.add(a,b); return c;};
 vectorn operator-( vectorn const& a, vectorn const& b)	{ vectorn c; c.sub(a,b); return c;};
-vectorn operator*( vectorn const& a, double b )			{ vectorn c; c.mult(a,b); return c;};
-vectorn operator*( matrixn const& a, vectorn const& b )		{ vectorn c; c.multmat(a,b); return c;};
 vectorn operator*( vectorn const& a, vectorn const& b )	{ vectorn c; c.mult(a,b); return c;};
-vectorn  operator/( vectorn const& a, double b)			{ vectorn c; c.div(a,b); return c;};
+vectorn operator+( vectorn const& a, m_real b)			{ vectorn c; c.add(a,b); return c;};
+vectorn operator-( vectorn const& a, m_real b)			{ vectorn c; c.sub(a,b); return c;};
+vectorn  operator/( vectorn const& a, m_real b)			{ vectorn c; c.div(a,b); return c;};
+vectorn operator*( vectorn const& a, m_real b )			{ vectorn c; c.mult(a,b); return c;};
 
+vectorn operator*( matrixn const& a, vectorn const& b )		{ vectorn c; c.multmat(a,b); return c;};
 
+vectorn& vectorn::aggregateColumn(CAggregate::aggregateOP eOP, matrixn const& mat)
+{
+	setSize(mat.cols());
+	for(int i=0; i<mat.cols(); i++)
+	{
+		value(i)=mat.column(i).aggregate(eOP);
+	}
+	return *this;
+}
+
+m_real vectorn::minimum() const			
+{
+	return aggregate(CAggregate::MINIMUM);
+}
+m_real vectorn::maximum()	const		
+{
+	return aggregate(CAggregate::MAXIMUM);
+}
+
+m_real vectorn::sum()	const			
+{
+	return aggregate(CAggregate::SUM);
+}
+m_real vectorn::squareSum() const		
+{
+	return aggregate(CAggregate::SQUARESUM);
+}
+m_real vectorn::avg() const	
+{
+	return aggregate(CAggregate::AVG);
+}
 
 vectorn& vectorn::op0(const v0::_op& c)
 {
@@ -661,20 +887,20 @@ vectorn& vectorn::op0(const v0::_op& c)
 }
 
 // calc angle between 0 to 2pi
-double	vectorn::angle2D(vectorn const& b) const
+m_real	vectorn::angle2D(vectorn const& b) const
 {
 	vectorn const& a=*this;
 
-	double rad=a.angle(b);
-	// length ∞° 0¿Œ∞ÊøÏ πﬂª˝.
+	m_real rad=a.angle(b);
+	// length Í∞Ä 0Ïù∏Í≤ΩÏö∞ Î∞úÏÉù.
 	ASSERT(!_isnan(rad));	
 	if(a.sinTheta(b)<0)
-		return (double)(2.0*M_PI-rad);
+		return (m_real)(2.0*M_PI-rad);
 
 	return rad;
 }
 
-double	vectorn::sinTheta(vectorn const& b) const
+m_real	vectorn::sinTheta(vectorn const& b) const
 {
 	vectorn const& a=*this;
 
@@ -692,7 +918,7 @@ double	vectorn::sinTheta(vectorn const& b) const
 	b3.x()=b.getValue(0);
 	b3.y()=b.getValue(1);
 	b3.z()=0;
-	double sinTheta;
+	m_real sinTheta;
 	if(a%b>0)
 	{
 		vector3 crs;
@@ -715,15 +941,15 @@ double	vectorn::sinTheta(vectorn const& b) const
 
 /*
 
-int vectorn::argNearest(double value) const
+int vectorn::argNearest(m_real value) const
 {
 	int argNearest=-1;
-	double min=FLT_MAX;
+	m_real min=FLT_MAX;
 
-	double dist;
+	m_real dist;
 	for(int i=0; i<size(); i++)
 	{
-		if((dist=(double)(ABS((*this)[i]-value))) < min)
+		if((dist=(m_real)(ABS((*this)[i]-value))) < min)
 		{
 			min=dist;
 			argNearest=i;
@@ -735,7 +961,7 @@ int vectorn::argNearest(double value) const
 int vectorn::argMax(int_vectorn const& columns) const
 {
 	int argMax=-1;
-	double max=-FLT_MAX;
+	m_real max=-FLT_MAX;
 	for(int i=0; i<columns.size(); i++)
 	{
 		if((*this)[columns[i]]>max)
@@ -761,10 +987,10 @@ vectorn&  vectorn::resample(vectorn const& vec, int numSample)
 	}
 	return *this;
 }
-vectorn&  vectorn::normalizeSignal(double min, double max)
+vectorn&  vectorn::normalizeSignal(m_real min, m_real max)
 {
-double sigMin=minimum();
-double sigMax=maximum();
+m_real sigMin=minimum();
+m_real sigMax=maximum();
 
 for(int i=0; i<size(); i++)
 value(i)=(value(i)-sigMin)/(sigMax-sigMin)*(max-min)+min;
@@ -773,7 +999,7 @@ return *this;
 }
 
 vectorn&
-vectorn::solve( matrixn const& a, vectorn const& b, int num, double tolerance, double damp )
+vectorn::solve( matrixn const& a, vectorn const& b, int num, m_real tolerance, m_real damp )
 {
 vectorn &c = (*this);
 assert( a.rows()==a.cols() );
@@ -786,7 +1012,7 @@ for( int i=0; i<num && flag; i++ )
 flag = FALSE;
 for( int j=0; j<a.rows(); j++ )
 {
-double r = b[j] - a[j]%c;
+m_real r = b[j] - a[j]%c;
 c[j] += damp*r/a[j][j];
 if ( r>tolerance ) flag = TRUE;
 }
@@ -827,7 +1053,7 @@ return c;
 
 
 vectorn&
-vectorn::solve( matrixn const& a, vectorn const& b, double tolerance )
+vectorn::solve( matrixn const& a, vectorn const& b, m_real tolerance )
 {
 int m = a.rows();
 int n = a.cols();
@@ -846,10 +1072,10 @@ u.assign( a );
 NR_OLD::SVdecompose( u, w, v );
 
 int i, j;
-double s;
+m_real s;
 static vectorn tmp; tmp.setSize( n );
 
-double wmax = 0.0f;
+m_real wmax = 0.0f;
 for( j=0; j<n; j++ )
 if ( w[j] > wmax ) wmax = w[j];
 
@@ -880,12 +1106,12 @@ return c;
 }
 
 
-vectorn&  vectorn::colon(double start, double stepSize, int nSize)
+vectorn&  vectorn::colon(m_real start, m_real stepSize, int nSize)
 {
 if(nSize!=-1)
 setSize(nSize);
 
-double cur=start;
+m_real cur=start;
 for(int i=0; i<size(); i++)
 {
 v[i]=cur;
@@ -894,36 +1120,36 @@ cur+=stepSize;
 return *this;
 }
 
-vectorn& vectorn::linspace(double x1, double x2, int nSize)
+vectorn& vectorn::linspace(m_real x1, m_real x2, int nSize)
 {
 if(nSize!=-1)
 setSize(nSize);
 
 // simple sampling
-double len=x2-x1;
+m_real len=x2-x1;
 
-double factor=1.f/((double)size()-1);
+m_real factor=1.f/((m_real)size()-1);
 for(int i=0; i<size(); i++)
 {
 // position : increases from 0 to 1
-double position=((double)i)*factor;
+m_real position=((m_real)i)*factor;
 (*this)[i]=position*len+x1;
 }
 return *this;
 }
 
-vectorn&  vectorn::uniform(double x1, double x2, int nSize)
+vectorn&  vectorn::uniform(m_real x1, m_real x2, int nSize)
 {
 if(nSize!=-1)
 setSize(nSize);
 
 // simple sampling
-double len=x2-x1;
-double factor=1.f/((double)size());
+m_real len=x2-x1;
+m_real factor=1.f/((m_real)size());
 
 for(int i=0; i<size(); i++)
 {
-double position=((double)(i+(i+1)))*factor/2.f;
+m_real position=((m_real)(i+(i+1)))*factor/2.f;
 (*this)[i]=position*len+x1;
 }
 return *this;
@@ -935,18 +1161,18 @@ vectorn&  vectorn::makeSamplingIndex(int nLen, int numSample)
 setSize(numSample);
 
 // simple sampling
-double len=(double)nLen;
+m_real len=(m_real)nLen;
 
-double factor=1.f/(double)numSample;
+m_real factor=1.f/(m_real)numSample;
 for(int i=0; i<numSample; i++)
 {
-double position=((double)i+0.5f)*factor;
-(*this)[i]=(double)(position*len);
+m_real position=((m_real)i+0.5f)*factor;
+(*this)[i]=(m_real)(position*len);
 }
 return *this;
 }
 
-vectorn& vectorn::interpolate(vectorn const& a, vectorn const& b, double t)
+vectorn& vectorn::interpolate(vectorn const& a, vectorn const& b, m_real t)
 {
 ASSERT(a.size()==b.size());
 setSize(a.size());
@@ -966,16 +1192,6 @@ return extract(source, sortedIndex);
 }
 
 */
-
-
-intvectorn&  intvectorn::sortedOrder(vectorn const & input)
-{
-	//!< input[0]<input[2]<input[1]<input[3]¿Œ∞ÊøÏ ∞·∞˙¥¬ [0213]
-
-	ASSERT(0);
-	return *this;
-}
-
 intvectorn& intvectorn::findIndex(intvectorn const& source, int value)
 {
 	int count=0;
@@ -1007,14 +1223,52 @@ int intvectorn::findFirstIndex(int value) const
 
 
 
+intvectorn& intvectorn::findIndex(bitvectorn const& source, bool value, int start, int end)
+{
+	if(start<0) start=0;
+	if(end>source.size()) end=source.size();
 
-vectorn&  vectorn::colon(double start, double stepSize, int nSize)
+	int count=0;
+	for(int i=start; i<end; i++)
+	{
+		if(source[i]==value)
+			count++;
+	}
+	setSize(count);
+	count=0;
+	for(int i=start; i<end; i++)
+	{
+		if(source[i]==value)
+		{
+			(*this)[count]=i;
+			count++;
+		}
+	}
+	return *this;
+}
+
+void vectorn::colon2(m_real start, m_real end, m_real stepSize)
+{
+	int nsize=0;
+	for(m_real v=start; v<end; v+=stepSize)
+		nsize++;
+
+	setSize(nsize);
+
+	int c=0;
+	for(m_real v=start; v<end; v+=stepSize)
+	{
+		value(c++)=v;
+	}
+}
+
+vectorn&  vectorn::colon(m_real start, m_real stepSize, int nSize)
 {
 	vectorn& v=*this;
 	if(nSize!=-1)
 		setSize(nSize);
 
-	double cur=start;
+	m_real cur=start;
 	for(int i=0; i<size(); i++)
 	{
 		v[i]=cur;
@@ -1023,42 +1277,42 @@ vectorn&  vectorn::colon(double start, double stepSize, int nSize)
 	return *this;
 }
 
-vectorn& vectorn::linspace(double x1, double x2, int nSize)
+vectorn& vectorn::linspace(m_real x1, m_real x2, int nSize)
 {
 	if(nSize!=-1)
 		setSize(nSize);
 
 	// simple sampling
-	double len=x2-x1;
+	m_real len=x2-x1;
 
-	double factor=1.f/((double)size()-1);
+	m_real factor=1.f/((m_real)size()-1);
 	for(int i=0; i<size(); i++)
 	{
 		// position : increases from 0 to 1
-		double position=((double)i)*factor;
+		m_real position=((m_real)i)*factor;
 		(*this)[i]=position*len+x1;
 	}
 	return *this;
 }
 
-vectorn&  vectorn::uniform(double x1, double x2, int nSize)
+vectorn&  vectorn::uniform(m_real x1, m_real x2, int nSize)
 {
 	if(nSize!=-1)
 		setSize(nSize);
 
 	// simple sampling
-	double len=x2-x1;
-	double factor=1.f/((double)size());
+	m_real len=x2-x1;
+	m_real factor=1.f/((m_real)size());
 
 	for(int i=0; i<size(); i++)
 	{
-		double position=((double)(i+(i+1)))*factor/2.f;
+		m_real position=((m_real)(i+(i+1)))*factor/2.f;
 		(*this)[i]=position*len+x1;
 	}
 	return *this;
 }
 
-void vectorn::findMin(double& min_v, int& min_index,int start,int end) const
+void vectorn::findMin(m_real& min_v, int& min_index,int start,int end) const
 {
 	const vectorn& v=*this;
 	min_v=FLT_MAX;
@@ -1076,8 +1330,30 @@ void vectorn::findMin(double& min_v, int& min_index,int start,int end) const
 	}
 }
 
+vectorn& vectorn::curvature(const matrixn& pos) 
+{
+	vectorn& c=*this;
+	//http://mathworld.wolfram.com/Curvature.html
 
-void  vectorn::findMax(double& max_v, int& max_index,int start,int end) const
+	//k = 	(| r.^ x r^..|)/(| r^. |^3)
+
+	matrixn vel;
+	matrixn acc;
+
+	vel.derivative(pos);
+	acc.derivative(vel);
+
+	c.setSize(pos.rows());
+
+	for(int i=0; i<c.size(); i++)
+	{
+		c[i]= vel.row(i).toVector3().cross(acc.row(i).toVector3()).length();
+		c[i]/=CUBIC(vel.row(i).length());
+	}
+	return *this;
+}
+
+void  vectorn::findMax(m_real& max_v, int& max_index,int start,int end) const
 {
 	const vectorn& v=*this;
 	max_v=-FLT_MAX;
@@ -1093,25 +1369,74 @@ void  vectorn::findMax(double& max_v, int& max_index,int start,int end) const
 	}
 }
 
-void v::linspace(vectorn& out, double x1, double x2, int nSize)
+#ifdef USE_NUMERICAL_RECIPE
+void v::eig(vectorn& eigenValues, const matrixn& mat)
+{
+//#define SYMMETRIC_TRIDIAGONAL
+#ifdef SYMMETRIC_TRIDIAGONAL
+	ASSERT(mat.isValid());	
+    matrixn symData(mat);
+
+	ASSERT(symData.isValid());	
+	vectorn e;
+	eigenValues.setSize(mat.rows());	
+	e.setSize(mat.rows());
+	NR::tred2(symData, eigenValues, e);
+	ASSERT(symData.isValid());	
+	NR::tqli(eigenValues, e,symData);
+
+	int dim=eigenValues.size();
+#else
+
+	matrixn hessenberg (mat);
+
+	// balance matrix
+	//NR::balanc(hessenberg);
+	// reduce to hessenberg form *****" 
+	NR::elmhes(hessenberg);
+	Vec_CPLX_DP wri(hessenberg.rows());
+	NR::hqr(hessenberg,wri);
+	
+	eigenValues.setSize(wri.size());
+	for (int i=0;i<wri.size();i++)
+		eigenValues[i]=wri[i].real();
+        
+#endif
+	/*
+	matrixn& EVectors=*this;
+
+	EVectors.setSize(dim,dim);
+
+	// Now each row contains EigenVector
+	for (int i = 0; i < dim; i++) {
+		for (int j = 0; j < dim; j++) {
+			EVectors[i][j] = symData[j][i];
+		}
+	}*/
+
+}
+
+#endif
+
+void v::linspace(vectorn& out, m_real x1, m_real x2, int nSize)
 {
 	if(nSize!=-1)
 	out.setSize(nSize);
 
 	// simple sampling
-	double len=x2-x1;
+	m_real len=x2-x1;
 
-	double factor=1.f/((double)out.size()-1);
+	m_real factor=1.f/((m_real)out.size()-1);
 	for(int i=0; i<out.size(); i++)
 	{
 		// position : increases from 0 to 1
-		double position=((double)i)*factor;
+		m_real position=((m_real)i)*factor;
 		out[i]=position*len+x1;
 	}
 }
 
 
-void v::findMin(const vectorn& v, double& min_v, int& min_index) 
+void v::findMin(const vectorn& v, m_real& min_v, int& min_index) 
 {
 	min_v=FLT_MAX;
 
@@ -1127,7 +1452,7 @@ void v::findMin(const vectorn& v, double& min_v, int& min_index)
 	}
 }
 
-void v::findMax(const vectorn& v, double& max_v, int& max_index) 
+void v::findMax(const vectorn& v, m_real& max_v, int& max_index) 
 {
 	max_v=-FLT_MAX;
 
@@ -1148,5 +1473,5 @@ intvectorn v::colon(int start, int end)
 
 
 vectorn operator-( vectorn const& a)							{ vectorn neg(a);neg.negate();return neg;}
-vectorn vectorn::Each(void (*cOP)(double&,double)) const					{ vectorn c; c.assign(*this); return c.each1(cOP,*this);}
-vectorn vectorn::Each(double (*cOP)(double,double), vectorn const& b)	const { vectorn c; return c.each2(cOP, *this,b);}
+vectorn vectorn::Each(void (*cOP)(m_real&,m_real)) const					{ vectorn c; c.assign(*this); return c.each1(cOP,*this);}
+vectorn vectorn::Each(m_real (*cOP)(m_real,m_real), vectorn const& b)	const { vectorn c; return c.each2(cOP, *this,b);}

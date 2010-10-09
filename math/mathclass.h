@@ -1,27 +1,18 @@
-//
-// mathclass.H 
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
+#ifndef _MATHCLASS_H_
+#define _MATHCLASS_H_
 
+#if _MSC_VER > 1000
 #pragma once
+//#pragma message("Compiling math_macro.h - this should happen just once per project.\n")
+#endif
+
+// ÎßåÏïΩ renderer?êÏÑú ?¨Ïö©??Í≤ÉÏù¥Î©?
+#include "../stdafx.h"
+
+#define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <tchar.h>
 
 #include <math.h>
@@ -33,73 +24,78 @@
 #define	M_PI	3.14159265358979323846
 #endif
 
-
 #define EPS (1.0e-10)
 
-#include <LIMITS.H>
-#include <FLOAT.H>
+#include <limits.h>
+#include <float.h>
 #include "math_macro.h"
-
-
 
 
 // scalar binary operators
 namespace s2
 {
-	double ADD(double a, double b) ;
-	double SUB(double a, double b) ;
-	double MULT(double a, double b);
-	double DIV(double a, double b);
-	double POW(double a, double b);
-	double MINIMUM(double a, double b);
-	double MAXIMUM(double a, double b);
-	double GREATER(double a, double b);
-	double GREATER_EQUAL(double a, double b);
-	double SMALLER(double a, double b);
-	double SMALLER_EQUAL(double a, double b);
-	double EQUAL(double a, double b);
-	double AVG(double a, double b);
-	double BOUND(double a, double b);
+	m_real ADD(m_real a, m_real b) ;
+	m_real SUB(m_real a, m_real b) ;
+	m_real MULT(m_real a, m_real b);
+	m_real DIV(m_real a, m_real b);
+	m_real POW(m_real a, m_real b);
+	m_real MINIMUM(m_real a, m_real b);
+	m_real MAXIMUM(m_real a, m_real b);
+	m_real GREATER(m_real a, m_real b);
+	m_real GREATER_EQUAL(m_real a, m_real b);
+	m_real SMALLER(m_real a, m_real b);
+	m_real SMALLER_EQUAL(m_real a, m_real b);
+	m_real EQUAL(m_real a, m_real b);
+	m_real AVG(m_real a, m_real b);
+	m_real BOUND(m_real a, m_real b);
 	int INT_NOT_EQUAL(int a, int b);
 	int INT_EQUAL(int a, int b);
 }
 
 namespace s1
 {
-	// (scalar->scalarø¨ªÍ)	
-	void COS(double&b,double a);
-	void SIN(double&b,double a);
-	void EXP(double&b,double a);
-	void NEG(double&b,double a); 
-	void SQRT(double&b,double a);
-	void SQUARE(double&b,double a);
-	void ASSIGN(double&b,double a);
-	void LOG(double&b,double a);
-	void abs(double&b,double a);
-	void SMOOTH_TRANSITION(double&b,double a);
-	void RADD(double&b,double a);
-	void RDIV(double&b,double a);
-	void RSUB(double&b,double a);
-	void RMULT(double&b,double a);
-	void BOUND(double&b, double a);
-	void INVERSE(double&b, double a);
+	// (scalar->scalar?∞ÏÇ∞)
+	void COS(m_real&b,m_real a);
+	void SIN(m_real&b,m_real a);
+	void EXP(m_real&b,m_real a);
+	void NEG(m_real&b,m_real a);
+	void SQRT(m_real&b,m_real a);
+	void SQUARE(m_real&b,m_real a);
+	void ASSIGN(m_real&b,m_real a);
+	void LOG(m_real&b,m_real a);
+	void abs(m_real&b,m_real a);
+	void SMOOTH_TRANSITION(m_real&b,m_real a);
+	void RADD(m_real&b,m_real a);
+	void RDIV(m_real&b,m_real a);
+	void RSUB(m_real&b,m_real a);
+	void RMULT(m_real&b,m_real a);
+	void BOUND(m_real&b, m_real a);
+	void INVERSE(m_real&b, m_real a);
 }
 
-//#include "complex.h"
-//#include "cmplxvectorn.h"
 
-#include "interval.h"
-//#include "intervalN.h"
-
-#include "vector_n.h"
-//#include "bitvectorn.h"
-#include "matrix_n.h"
 #include "quater.h"
 #include "vector.h"
+#include "interval.h"
 #include "matrix.h"
-//#include "smatrixn.h"// include only when needed.
+#include "transf.h"
+
+#include "traits.h"
+#include "vector_n.h"
+#include "bitVectorN.h"
+#include "matrix_n.h"
+
+// include only when needed.
+//#include "complex.h"
+//#include "Metric.h"
+//#include "hyperMatrixN.h"
+//#include "intervalN.h"
+//#include "DynamicTimeWarping.h"// include only when needed.
+//#include "smatrixN.h"// include only when needed.
 //#include "optimize.h"// include only when needed.
-//#include "operator.h"	// include only when needed.
+//#include "Operator.h"	// include only when needed.
 //#include "quaterN.h" // include only when needed.
 //#include "vector3N.h"// include only when needed.
-//#include "BSpline.h" // include only when needed.
+//#include "BSpline.h" 
+//#include "cmplxVectorN.h"
+#endif

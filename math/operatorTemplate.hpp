@@ -1,17 +1,76 @@
+#ifndef _OPERATOR_TEMPLATE_HPP_
+#define _OPERATOR_TEMPLATE_HPP_
 #pragma once
 
-#include <limits>
+#include "Operator.h"
 
-namespace sv
+
+namespace s0
 {
-	// usage : m_real sum=sv::minimum(a);
-	template <class VEC_TYPE, class T>
-	T minimum(VEC_TYPE const& a);
+	// usage: m_real sum=v::for_each(a, sum<m_real>()).result();
+	template <class T>
+	struct sum
+	{
+		T _sum;
+		sum(T initialValue=0) {_sum=initialValue;}
+		void operator()(T value)
+		{
+			_sum+=value;
+		}
+		T result()	{ return _sum;}
+	};
 
-	template <class VEC_TYPE, class T>
-	T maximum(VEC_TYPE const& a);	
+	// usage: m_real avg=v::for_each(a, avg<m_real>()).result();
+	template <class T>
+	struct avg
+	{
+		T sum;
+		int count;
+		avg(T initialValue=0) {sum=initialValue; count=0;}
+		void operator()(T value)
+		{
+			sum+=value; count++;
+		}
+		T result()	{ return sum/count;}
+	};
+
+
+
+	// deprecated. use argMin.
+	// T: vector3 or quater.
+	// usage: int argNearest=v:for_each(a, s0::argNearest<vector3>(vector3(0,0,1))).result()
+	template <class T>
+	struct argNearest
+	{
+		T ref;
+		int arg;
+		int index;
+		m_real dist;
+		argNearest(T v):ref(v){index=0;arg=-1;dist=DBL_MAX;}
+		void operator()(T value)
+		{
+			m_real d=ref.distance(value);
+			if(d<dist)
+			{
+				arg=index;
+				dist=d;
+			}
+			index++;
+		}
+		int result()	{return arg;}
+	};
 }
-
+namespace s1
+{
+	struct value
+	{
+		template <class T>
+		T operator()(T a)
+		{
+			return a;
+		}
+	};
+}
 namespace s2
 {
 	struct mid
@@ -21,7 +80,7 @@ namespace s2
 		{
 			return a*0.5+b*0.5;
 		}
-	};	
+	};
 
 	struct sub
 	{
@@ -35,13 +94,13 @@ namespace s2
 
 namespace v
 {
-	// std::for_each의 사용법과 유사(std의 func를 사용할 수 있음.) 
+	// std::for_each의 사용법과 유사(std의 func를 사용할 수 있음.)
 	// ex: v::for_each(a.range(0,3), s0::SQR)
 
 	// 없으면 -1 리턴. if(b(a(i))) return i;
 	template <class VEC_TYPE, class S1>
 	int findFirstIndex(VEC_TYPE const& a, S1 & b);
-	
+
 	template <class VEC_TYPE, class S1>
 	int findLastIndex(VEC_TYPE const& a, S1& b);
 
@@ -56,9 +115,6 @@ namespace v
 	// c[i]=_Func(a[i], b[i])
 	template <class VEC_TYPE, class V2>
 	V2 for_each(VEC_TYPE & c, VEC_TYPE const& a, VEC_TYPE const& b, V2 _Func);
-
-	template <class VEC_TYPE, class MAT_TYPE, class SV>
-	void for_each_column(VEC_TYPE & c, MAT_TYPE const & m, SV func);
 
 	// _Func(c[i], a[i])
 	template <class VEC_TYPE, class S1_inout>
@@ -77,8 +133,8 @@ namespace m
 {
 	// template functions shared for various matrix classes (such as blitz matrix, matrixn, matrixnTransposedView..)
 	// usage: matrixn c, matrixn A; m::mult(c, A, A.transpose()); -> C=A*A^T; without mem-copies.
-	// However, due to memory random access. This function is typically slower than a simple copy and mult scheme. 
-	template <class MAT1, class MAT2> 
+	// However, due to memory random access. This function is typically slower than a simple copy and mult scheme.
+	template <class MAT1, class MAT2>
 	void mult( matrixn& c, MAT1 const& a, MAT2 const& b )
 	{
 		assert( a.cols()==b.rows() );
@@ -101,59 +157,8 @@ namespace m
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
-
-#ifdef max
-#undef max
-#endif
-
-#ifdef min
-#undef min
-#endif
-
-namespace sv
-{
-	template <class VEC_TYPE, class T>
-	T minimum(VEC_TYPE const& a)
-	{
-		T minv=std::numeric_limits<T>::max();
-
-		for(int i=0; i<a.size(); i++)
-		{
-			if(a[i]<minv)
-				minv=a[i];
-		}
-
-		return minv;
-	}
-
-	template <class VEC_TYPE, class T>
-	T maximum(VEC_TYPE const& a)
-	{
-		T max=-1*std::numeric_limits<T>::max();
-
-		for(int i=0; i<a.size(); i++)
-		{
-			if(a[i]>max)
-				max=a[i];
-		}
-
-		return max;
-	}
-}
-
 namespace v
 {
-	template <class VEC_TYPE, class MAT_TYPE, class SV>
-	void for_each_column(VEC_TYPE & c, MAT_TYPE const & m, SV func)
-	{
-		c.setSize(m.cols());
-
-
-		for(int i=0; i<m.cols(); i++)
-		{
-			c[i]=func(m.column(i));
-		}
-	}
 
 	template <class VEC_TYPE, class Bool>
 	int findFirstIndex(VEC_TYPE const& a, Bool b)
@@ -171,7 +176,7 @@ namespace v
 		return -1;
 	}
 
-	// std::for_each의 사용법과 유사(std의 func를 사용할 수 있음.) 
+	// std::for_each의 사용법과 유사(std의 func를 사용할 수 있음.)
 	// ex: v::for_each(a.range(0,3), s0::SQR)
 	template <class VEC_TYPE, class FUNC_TYPE>
 	FUNC_TYPE for_each(VEC_TYPE & a, FUNC_TYPE _Func)
@@ -185,7 +190,7 @@ namespace v
 	int argMin(VEC_TYPE& a, S1 _Func, int start, int end)
 	{
 		if(end>a.size()) end=a.size();
-		
+
 		m_real minV=DBL_MAX;
 		int argMinV=start;
 
@@ -231,3 +236,4 @@ namespace v
 		return _Func;
 	}
 }
+#endif

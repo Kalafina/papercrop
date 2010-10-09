@@ -26,23 +26,20 @@ struct AssignOpSub
 // function exec. Loop<N::exec calls Loop<N-1::exec
 // Explicit specialisation is used to stop the recursion: Loop<0::exec() does nothing.
 //============================================================================]
-template <typename T_lhs, typename T_rhs, typename T_operator>
+template <typename T_lhs, typename T_rhs, typename T_operator, int N>
 struct AssignOpLoopUnroller
 {
-  template <int N>
-  struct Loop
-  {
     inline static void exec(T_lhs * aLArray, T_rhs * aRArray)
     {
       T_operator::doOperation(aLArray[N - 1], aRArray[N - 1]);
-      Loop<N - 1>::exec(aLArray, aRArray);
+      AssignOpLoopUnroller<T_lhs, T_rhs, T_operator, N - 1>::exec(aLArray, aRArray);
     }
-  };  
-  template <>
-  struct Loop<0>
-  {
-    static inline void exec(T_lhs * aLArray, T_rhs * aRArray) { }
-  };
+};
+
+template <typename T_lhs, typename T_rhs, typename T_operator>
+struct AssignOpLoopUnroller<T_lhs, T_rhs, T_operator, 0>
+{
+    inline static void exec(T_lhs * aLArray, T_rhs * aRArray) { }
 };
 
 struct ConstAssignOpSub
@@ -63,23 +60,20 @@ struct ConstAssignOpMult
   inline static void doOperation(T_lhs & lhs, T_rhs rhs) { lhs *= rhs; }
 };
 
-template <typename T_lhs, typename T_rhs, typename T_operator>
+template <typename T_lhs, typename T_rhs, typename T_operator, int N>
 struct ConstAssignOpLoopUnroller
 {
-  template <int N>
-  struct Loop
-  {
     inline static void exec(T_lhs * aLArray, T_rhs c)
     {
       T_operator::doOperation(aLArray[N - 1], c);
-      Loop<N - 1>::exec(aLArray, c);
+      ConstAssignOpLoopUnroller<T_lhs, T_rhs, T_operator, N - 1>::exec(aLArray, c);
     }
-  };  
-  template <>
-  struct Loop<0>
-  {
+};
+
+template <typename T_lhs, typename T_rhs, typename T_operator>
+struct ConstAssignOpLoopUnroller<T_lhs, T_rhs, T_operator, 0>
+{
     static inline void exec(T_lhs * aLArray, T_rhs c) { }
-  };
 };
 
 struct BinOpSub
@@ -95,24 +89,22 @@ struct BinOpAdd
 };
 
 
-template <typename T, typename T_operator>
+template <typename T, typename T_operator, int N>
 struct BinaryOpLoopUnroller
 {
-  template <int N>
-  struct Loop
-  {
     inline static void exec(T* aVArray, T const* aLArray, T const* aRArray)
     {
       T_operator::doOperation(aVArray[N-1], aLArray[N - 1], aRArray[N - 1]);
-      Loop<N - 1>::exec(aVArray, aLArray, aRArray);
+      BinaryOpLoopUnroller<T, T_operator, N - 1>::exec(aVArray, aLArray, aRArray);
     }
-  };  
-  template <>
-  struct Loop<0>
-  {
-    static inline void exec(T* aVArray, T const* aLArray, T const* aRArray) { }
-  };
 };
+
+template <typename T, typename T_operator>
+struct BinaryOpLoopUnroller<T, T_operator, 0>
+{
+    inline static void exec(T* aVArray, T const* aLArray, T const* aRArray){}
+};
+
 /**
  *  A toy vector class illustrating the use of this "unrolling metaprogram"
  *  Of course, other kinds of unrollers would have to be developed for other kind
@@ -123,12 +115,18 @@ class _tvector
 {
 protected:
 	T   m_aValues[N];
-public:	
-	T       & operator [] (int i)			{ return m_aValues[i]; }  
-	const T & operator [] (int i) const		{ return m_aValues[i]; }  
-	T       & operator () (int i)			{ return m_aValues[i]; }  
-	const T & operator () (int i) const		{ return m_aValues[i]; }	
-	
+
+public:
+	_tvector(){}
+	_tvector(T v1, T v2){m_aValues[0]=v1; m_aValues[1]=v2;}
+	_tvector(T v1, T v2, T v3){m_aValues[0]=v1; m_aValues[1]=v2;m_aValues[2]=v3;}
+	_tvector(T v1, T v2, T v3, T v4){m_aValues[0]=v1; m_aValues[1]=v2;m_aValues[2]=v3;m_aValues[3]=v4;}
+
+	T       & operator [] (int i)			{ return m_aValues[i]; }
+	const T & operator [] (int i) const		{ return m_aValues[i]; }
+	T       & operator () (int i)			{ return m_aValues[i]; }
+	const T & operator () (int i) const		{ return m_aValues[i]; }
+
 	T& x()									{ return m_aValues[0];}
 	const T& x() const						{ return m_aValues[0];}
 	T& y()									{ return m_aValues[1];}
@@ -137,50 +135,57 @@ public:
 	const T& z() const						{ return m_aValues[2];}
 	T& w()									{ return m_aValues[3];}
 	const T& w() const						{ return m_aValues[3];}
-	
-	T       & value (int i)					{ return m_aValues[i]; }  
-	const T	& value (int i) const			{ return m_aValues[i]; }  
+
+	T       & value (int i)					{ return m_aValues[i]; }
+	const T	& value (int i) const			{ return m_aValues[i]; }
 
 
 	_tvector  & operator += (const _tvector & rhs)
 	{
-		AssignOpLoopUnroller<T, const T, AssignOpAdd >::Loop<N>::exec(m_aValues, rhs.m_aValues);
+		AssignOpLoopUnroller<T, const T, AssignOpAdd ,N>::exec(m_aValues, rhs.m_aValues);
 		return *this;
-	}  
+	}
 	_tvector  & operator -= (const _tvector & rhs)
 	{
-		AssignOpLoopUnroller<T, const T, AssignOpSub >::Loop<N>::exec(m_aValues, rhs.m_aValues);
+		AssignOpLoopUnroller<T, const T, AssignOpSub ,N>::exec(m_aValues, rhs.m_aValues);
 		return *this;
-	}  
+	}
+	bool operator==(const _tvector& rhs)
+	{
+		// loop unrollerë¡œ ë‹¤ì‹œ êµ¬í˜„í•  ê²ƒ.
+		for(int i=0; i<N; i++)
+			if(value(i)!=rhs(i)) return false;
+		return true;
+	}
 
 	_tvector  & operator = (const _tvector & rhs)
 	{
-		AssignOpLoopUnroller<T, const T, AssignOpAssign >::Loop<N>::exec(m_aValues, rhs.m_aValues);
+		AssignOpLoopUnroller<T, const T, AssignOpAssign,N>::exec(m_aValues, rhs.m_aValues);
 		return *this;
 	}
 
 	void assign(const _tvector& rhs)
 	{
-		AssignOpLoopUnroller<T, const T, AssignOpAssign >::Loop<N>::exec(m_aValues, rhs.m_aValues);
+		AssignOpLoopUnroller<T, const T, AssignOpAssign ,N>::exec(m_aValues, rhs.m_aValues);
 	}
 
 	_tvector  & operator *= (const T rhs)
 	{
-		ConstAssignOpLoopUnroller<T, const T, ConstAssignOpMult >::Loop<N>::exec(m_aValues, rhs);
+		ConstAssignOpLoopUnroller<T, const T, ConstAssignOpMult ,N>::exec(m_aValues, rhs);
 		return *this;
-	}  
+	}
 
 	// binary operations
-	void add (const _tvector & lhs, const _tvector & rhs) 
+	void add (const _tvector & lhs, const _tvector & rhs)
 	{
-		BinaryOpLoopUnroller<T, BinOpAdd>::Loop<N>::exec(m_aValues, lhs.m_aValues, rhs.m_aValues);	
+		BinaryOpLoopUnroller<T, BinOpAdd,N>::exec(m_aValues, lhs.m_aValues, rhs.m_aValues);
 	}
-	void sub (const _tvector & lhs, const _tvector & rhs) 
+	void sub (const _tvector & lhs, const _tvector & rhs)
 	{
-		BinaryOpLoopUnroller<T, BinOpSub>::Loop<N>::exec(m_aValues, lhs.m_aValues, rhs.m_aValues);	
+		BinaryOpLoopUnroller<T, BinOpSub,N>::exec(m_aValues, lhs.m_aValues, rhs.m_aValues);
 	}
 
-	const _tvector operator + (const _tvector & rhs) const 
+	const _tvector operator + (const _tvector & rhs) const
 	{
 		_tvector c;
 		c.add(*this, rhs);
@@ -224,7 +229,7 @@ public:
 		return sum;
 	}
 
-	T length() const	
+	T length() const
 	{
 		return sqrt((*this)%(*this));
 	}
@@ -259,24 +264,15 @@ public:
 		for(int i=0; i<N; i++)
 			value(i)=v[i];
 	}
-
 };
 
-class index2 : public _tvector<int, 2>
-{
-public:
-	index2(){}
-	index2(int x, int y)	{m_aValues[0]=x; m_aValues[1]=y;}
-	template <class T>
-	index2(const T& other) { _tvector<int, 2>::assign(other);}
-};
 
-class vector2 : public _tvector<double, 2> 
+class vector2 : public _tvector<m_real, 2>
 {
 public:
 	vector2(){}
-	vector2(double x, double y) {m_aValues[0]=x; m_aValues[1]=y;}
-	vector2(const _tvector<double, 2>& other) {value(0)=other[0]; value(1)=other[1];}
+	vector2(m_real x, m_real y) {m_aValues[0]=x; m_aValues[1]=y;}
+	vector2(const _tvector<m_real, 2>& other) {value(0)=other[0]; value(1)=other[1];}
 	void difference(vector3 const& a, vector3 const& b)
 	{
 		// ignores y coordinate.
@@ -300,30 +296,38 @@ public:
 	}
 };
 
+typedef _tvector<int,2> index2;
+typedef _tvector<int,3> index3;
+typedef _tvector<int,4> index4;
+
+typedef _tvector<m_real,4> vector4;
+
 class vector2NView;
-class vector2N : public _tvectorn<vector2, double, 2>
-{	
+class vector2N : public _tvectorn<vector2, m_real>
+{
 protected:
-	vector2N (double* ptrr, int size, int stride):_tvectorn<vector2, double, 2>(ptrr,size,stride){}
+	vector2N (m_real* ptrr, int size, int stride):_tvectorn<vector2, m_real>(ptrr,size,stride){}
 public:
-	vector2N ():_tvectorn<vector2, double, 2>(){}
+	vector2N ():_tvectorn<vector2, m_real>(){}
 
-	// °ªÀ» Ä«ÇÇÇØ¼­ ¹Ş¾Æ¿Â´Ù.	
+	// ê°’ì„ ì¹´í”¼í•´ì„œ ë°›ì•„ì˜¨ë‹¤.
 	template <class VecType>
-	vector2N (const VecType& other)	{ assign(other);}
+	vector2N (const VecType& other)		{ assign(other);}
+	vector2N (const vector2N & other)	{ assign(other);}	// explicit copy constructor is always needed.
 
-	explicit vector2N ( int x):_tvectorn<vector2, double, 2>() { setSize(x);}
+	explicit vector2N ( int x):_tvectorn<vector2, m_real>() { setSize(x);}
 	~vector2N(){}
 
-	// L-value·Î »ç¿ëµÉ¼ö ÀÖ´Â, reference array¸¦ ¸¸µé¾î return ÇÑ´Ù. 
+	// L-valueë¡œ ì‚¬ìš©ë ìˆ˜ ìˆëŠ”, reference arrayë¥¼ ë§Œë“¤ì–´ return í•œë‹¤.
 	// ex) v.range(0,2).setValues(2, 1.0, 2.0);
 	vector2NView range(int start, int end, int step=1);
 	const vector2NView range(int start, int end, int step=1) const	;
 
 	template <class VecType>
-	void operator=(const VecType& other)	{ _tvectorn<vector2, double, 2>::assign(other);}
+	void operator=(const VecType& other)	{ _tvectorn<vector2, m_real>::assign(other);}
+	void operator=(const vector2N& other)	{ _tvectorn<vector2, m_real>::assign(other);}
 
-	// L-value·Î »ç¿ëµÉ¼ö ÀÖ´Â reference vector ¸¦ returnÇÑ´Ù.
+	// L-valueë¡œ ì‚¬ìš©ë ìˆ˜ ìˆëŠ” reference vector ë¥¼ returní•œë‹¤.
 	vectornView		x() const						{ return _column<vectornView>(0);}
 	vectornView		y() const						{ return _column<vectornView>(1);}
 	vectornView		column(int i) const				{ return _column<vectornView>(i);}
@@ -334,16 +338,18 @@ public:
 class vector2NView :public vector2N
 {
 public:
-	// L-value·Î »ç¿ëµÉ¼ö ÀÖ´Â, reference array·Î ¸¸µç´Ù. 
-	vector2NView (double* ptrr, int size, int stride):vector2N(ptrr, size, stride){}
-	// °ªÀ» reference·Î ¹Ş¾Æ¿Â´Ù.
+	// L-valueë¡œ ì‚¬ìš©ë ìˆ˜ ìˆëŠ”, reference arrayë¡œ ë§Œë“ ë‹¤.
+	vector2NView (m_real* ptrr, int size, int stride):vector2N(ptrr, size, stride){}
+	// ê°’ì„ referenceë¡œ ë°›ì•„ì˜¨ë‹¤.
 	template <class VecType>
-	vector2NView (const VecType& other)	{ assignRef(other);}
+	vector2NView (const VecType& other)			{ assignRef(other);}
+	vector2NView (const vector2NView & other)	{ assignRef(other);}
 
 	~vector2NView (){}
 
-	// L-value·Î »ç¿ëµÇ´Â °æ¿ì, °ªÀ» copyÇÑ´Ù.
+	// L-valueë¡œ ì‚¬ìš©ë˜ëŠ” ê²½ìš°, ê°’ì„ copyí•œë‹¤.
 	template <class VecType>
-	void operator=(const VecType& other)	{ _tvectorn<vector2, double, 2>::assign(other);}
+	void operator=(const VecType& other)		{ _tvectorn<vector2, m_real>::assign(other);}
+	void operator=(const vector2NView& other)	{ _tvectorn<vector2, m_real>::assign(other);}
 };
 

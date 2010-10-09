@@ -1,39 +1,26 @@
-//
-// vector_n.h
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
+#ifndef _VECTOR_N_H_
+#define _VECTOR_N_H_
 #pragma once
 class matrixn;
 class bitvectorn;
 #include "vector.h"
 #include "quater.h"
-#include <typeinfo.h>
-class Metric;
+#include "../utility/TypeString.h"
+//#include "../utility/util.h"
+
+#include <typeinfo>
 class matrixnView;
 class matrixn;
-class cmplxvectorn ;
+//class cmplxvectorn ;
 class intvectorn;
 class intvectornView;
 class vectorn;
 class vectornView;
 #include "template_math.h"
 
+#if _MSC_VER > 1000
+//#pragma message("Compiling vector_n.h - this should happen just once per project.\n")
+#endif
 
 class intvectorn : public _tvectorn<int>
 {
@@ -44,17 +31,17 @@ public:
 
 	explicit intvectorn(int n):_tvectorn<int>()				{setSize(n);}
 	explicit intvectorn( int, int x, ...);	// n dimensional vector	(ex) : vectorn(3, 1, 2, 3);
-	// copy constructor : Ç×»ó Ä«ÇÇÇÑ´Ù.
+	// copy constructor : í•­ìƒ ì¹´í”¼í•œë‹¤.
 	intvectorn(const _tvectorn<int>& other):_tvectorn<int>()		{ assign(other);}
 	intvectorn(const intvectorn& other):_tvectorn<int>()			{ assign(other);}
 	intvectorn(const intvectornView& other);
 
-	// °ªÀ» copyÇÑ´Ù.
+	// ê°’ì„ copyí•œë‹¤.
 	intvectorn& operator=(const _tvectorn<int>& other)		{ _tvectorn<int>::assign(other);return *this;}
-	intvectorn& operator=(const intvectorn& other)			{ assign(other);return *this;}	
+	intvectorn& operator=(const intvectorn& other)			{ assign(other);return *this;}
 	intvectorn& operator=(const intvectornView& other);
 
-	friend bool operator==(intvectorn const& a, intvectorn const& b) 
+	friend bool operator==(intvectorn const& a, intvectorn const& b)
 	{
 		if(a.size()!=b.size()) return false;
 		for(int i=0; i<a.size(); i++)
@@ -62,10 +49,12 @@ public:
 		return true;
 	}
 
-	// L-value·Î »ç¿ëµÉ¼ö ÀÖ´Â, reference array¸¦ ¸¸µé¾î return ÇÑ´Ù. 
+	// L-valueë¡œ ì‚¬ìš©ë ìˆ˜ ìˆëŠ”, reference arrayë¥¼ ë§Œë“¤ì–´ return í•œë‹¤.
 	// ex) v.range(0,2).setValues(2, 1.0, 2.0);
 	intvectornView	range(int start, int end, int step=1);
 	const intvectornView	range(int start, int end, int step=1) const;
+
+	intvectorn& assignBits(const bitvectorn& bits);
 
 	~intvectorn(){}
 
@@ -73,46 +62,62 @@ public:
 	intvectorn&  colon(int start, int end, int stepSize=1);
 	intvectorn&  sortedOrder(vectorn const & input);
 	intvectorn&  makeSamplingIndex(int nLen, int numSample);
-	// Ã¹ÇÁ·¹ÀÓ°ú ¸¶Áö¸· ÇÁ·¹ÀÓÀº ¹İµå½Ã Æ÷ÇÔÇÏ°í ³ª¸ÓÁö´Â ±× »çÀÌ¿¡¼­ uniform sampling
+	// ì²«í”„ë ˆì„ê³¼ ë§ˆì§€ë§‰ í”„ë ˆì„ì€ ë°˜ë“œì‹œ í¬í•¨í•˜ê³  ë‚˜ë¨¸ì§€ëŠ” ê·¸ ì‚¬ì´ì—ì„œ uniform sampling
 	intvectorn&  makeSamplingIndex2(int nLen, int numSample);
 
 	intvectorn& findIndex(intvectorn const& source, int value);
+	intvectorn& findIndex(bitvectorn const& source, bool value, int start=0, int end=INT_MAX);
 	// return -1 if not found.
 	int findFirstIndex(int value) const;
 
 	intvectorn&  setAt( intvectorn const& columnIndex, _tvectorn<int> const& value);
 	intvectorn&  setAt( intvectorn const& columnIndex, int value);
 
+	void decode(const TString& input);
+
+	int aggregate(CAggregate::aggregateOP eOP) const;
+	int maximum() const;
+	int minimum() const;
+	int sum() const;
+
 	vectorn toVectorn();
 
-	int minimum() const;
-	int maximum() const;
-	int sum() const;
+	TString output(const char* left="[", const char* typeString="%d", const char* seperator=",", const char* right="]");
+
+	// all following functions are deprecated.
+	inline void push_back(int x)						{ pushBack(x);}
+
+	// use the corresponding functions in class intIntervals instead.
+	void runLengthEncode(const intvectorn& source);
+	void runLengthEncode(const bitvectorn& source, int start=0, int end=INT_MAX);
+	void runLengthDecode(bitvectorn& out, int size);
+	void runLengthEncodeCut(const bitvectorn& cutState, int start=0, int end=INT_MAX);
+
 };
 
-// reference·Î ¹Ş¾Æ¿Â´Ù.
+// referenceë¡œ ë°›ì•„ì˜¨ë‹¤.
 class intvectornView :public intvectorn
 {
 public:
-	// L-value·Î »ç¿ëµÉ¼ö ÀÖ´Â, reference array·Î ¸¸µç´Ù. 
-	intvectornView (int* ptrr, int size, int stride);	
+	// L-valueë¡œ ì‚¬ìš©ë ìˆ˜ ìˆëŠ”, reference arrayë¡œ ë§Œë“ ë‹¤.
+	intvectornView (int* ptrr, int size, int stride);
 	// copy constructor : get reference.
 	intvectornView(const _tvectorn<int>& other)				{ assignRef(other);}
 	intvectornView(const intvectorn& other);//				{ assignRef(other);}
 	intvectornView(const intvectornView& other)				{ assignRef(other);}
 	~intvectornView (){}
 
-	// L-value·Î »ç¿ëµÇ´Â °æ¿ì, °ªÀ» copyÇÑ´Ù.
+	// L-valueë¡œ ì‚¬ìš©ë˜ëŠ” ê²½ìš°, ê°’ì„ copyí•œë‹¤.
 	intvectorn& operator=(const _tvectorn<int>& other)		{ _tvectorn<int>::assign(other);return *this;}
-	intvectorn& operator=(const intvectorn& other);//		{ assign(other);return *this;}	
+	intvectorn& operator=(const intvectorn& other);//		{ assign(other);return *this;}
 	intvectorn& operator=(const intvectornView& other)		{ assign(other);return *this;}
 
 };
 
 namespace v0
 {
-	// v0 namespace¿¡´Â doSomething(c); ÇüÅÂÀÇ class³ª functionÀÌ Á¤ÀÇµÈ´Ù. (operatorTemplate)
-	struct abstractClass 	// »ó¼ÓÇÒ ÇÊ¿ä ¾øÀ½. 
+	// v0 namespaceì—ëŠ” doSomething(c); í˜•íƒœì˜ classë‚˜ functionì´ ì •ì˜ëœë‹¤. (operatorTemplate)
+	struct abstractClass 	// ìƒì†í•  í•„ìš” ì—†ìŒ.
 	{
 		void operator()(vectorn& c){}
 	};
@@ -126,8 +131,8 @@ namespace v0
 
 namespace v1
 {
-	// v1 namespace¿¡´Â doSomething(c,a); ÇüÅÂÀÇ class³ª functionÀÌ Á¤ÀÇµÈ´Ù. (operatorTemplate)
-	struct abstractClass 	// »ó¼ÓÇÒ ÇÊ¿ä ¾øÀ½. 
+	// v1 namespaceì—ëŠ” doSomething(c,a); í˜•íƒœì˜ classë‚˜ functionì´ ì •ì˜ëœë‹¤. (operatorTemplate)
+	struct abstractClass 	// ìƒì†í•  í•„ìš” ì—†ìŒ.
 	{
 		void operator()(vectorn& c, const vectorn& a){}
 	};
@@ -141,8 +146,8 @@ namespace v1
 
 namespace v2
 {
-	// v2 namespace¿¡´Â doSomething(c,a,b); ÇüÅÂÀÇ class³ª functionÀÌ Á¤ÀÇµÈ´Ù. (operatorTemplate)
-	struct abstractClass	// »ó¼ÓÇÒ ÇÊ¿ä ¾øÀ½.
+	// v2 namespaceì—ëŠ” doSomething(c,a,b); í˜•íƒœì˜ classë‚˜ functionì´ ì •ì˜ëœë‹¤. (operatorTemplate)
+	struct abstractClass	// ìƒì†í•  í•„ìš” ì—†ìŒ.
 	{
 		void operator()(vectorn& c, const vectorn& a, const vectorn& b){}
 	};
@@ -158,97 +163,104 @@ namespace sv2
 {
 	struct _op
 	{
-		virtual double calc(const vectorn& a, const vectorn& b) const {ASSERT(0);return 0.0;}
+		virtual m_real calc(const vectorn& a, const vectorn& b) const {ASSERT(0);return 0.0;}
 	};
 }
 
 
-class vectorn : public _tvectorn<double>
-{	
+class vectorn : public _tvectorn<m_real>
+{
 protected:
-	vectorn(double* ptrr, int size, int stride):_tvectorn<double>(ptrr,size,stride){}
+	vectorn(m_real* ptrr, int size, int stride):_tvectorn<m_real>(ptrr,size,stride){}
 public:
-	vectorn();		
+	vectorn();
 	vectorn(const vector3& other);
 	vectorn(const quater& other);
 
-	// °ªÀ» Ä«ÇÇÇØ¼­ ¹Ş¾Æ¿Â´Ù.	
-	vectorn(const _tvectorn<double>& other);	
+	// ê°’ì„ ì¹´í”¼í•´ì„œ ë°›ì•„ì˜¨ë‹¤.
+	vectorn(const _tvectorn<m_real>& other);
 	vectorn(const vectorn& other);
 	vectorn(const vectornView& other);
 
-	explicit vectorn( int x):_tvectorn<double>() { setSize(x);}
+	explicit vectorn( int x):_tvectorn<m_real>() { setSize(x);}
 
 	// n dimensional vector	(ex) : vectorn(3, 1.0, 2.0, 3.0);
-	explicit vectorn( int n, double x);		
-	explicit vectorn( int n, double x, double y);		
-	explicit vectorn( int n, double x, double y, double z);		
-	explicit vectorn( int n, double x, double y, double z, double w, ...);	// n dimensional vector	(ex) : vectorn(3, 1.0, 2.0, 3.0);
+	explicit vectorn( int n, m_real x);
+	explicit vectorn( int n, m_real x, m_real y);
+	explicit vectorn( int n, m_real x, m_real y, m_real z);
+	explicit vectorn( int n, m_real x, m_real y, m_real z, m_real w, ...);	// n dimensional vector	(ex) : vectorn(3, 1.0, 2.0, 3.0);
 
 	~vectorn(){}
 
 	matrixnView column() const;	// return n by 1 matrix, which can be used as L-value (reference matrix)
 	matrixnView row() const;	// return 1 by n matrix, which can be used as L-value (reference matrix)
-	
+	matrixnView matView(int nrow, int ncol);
 
-	// L-value·Î »ç¿ëµÉ¼ö ÀÖ´Â, reference array¸¦ ¸¸µé¾î return ÇÑ´Ù. 
+	// L-valueë¡œ ì‚¬ìš©ë ìˆ˜ ìˆëŠ”, reference arrayë¥¼ ë§Œë“¤ì–´ return í•œë‹¤.
 	// ex) v.range(0,2).setValues(2, 1.0, 2.0);
 	vectornView range(int start, int end, int step=1);
 	const vectornView range(int start, int end, int step=1) const	;
 
 	//////////////////////////////////////////////////////////////////////
-	// binary operations. 
+	// binary operations.
 	//////////////////////////////////////////////////////////////////////
 	vectorn&  normalize(vectorn const& min, vectorn const& max);				//!< scale data so that min->0, max->1
-	
+
 	// slow binary operations, I recommend you to use _tvectorn<T>::add function, instead.
 	friend vectorn operator+( vectorn const& a, vectorn const& b);
 	friend vectorn operator-( vectorn const& a, vectorn const& b);
-	friend vectorn operator*( vectorn const& a, double b );
-	friend vectorn operator*( matrixn const& a, vectorn const& b );
 	friend vectorn operator*( vectorn const& a, vectorn const& b );
-	friend vectorn  operator/( vectorn const& a, double b);
+	friend vectorn operator+( vectorn const& a, m_real b);
+	friend vectorn operator-( vectorn const& a, m_real b);
+	friend vectorn operator*( vectorn const& a, m_real b);
+	friend vectorn operator/( vectorn const& a, m_real b);
+	friend vectorn operator*( matrixn const& a, vectorn const& b );
+
 
 	//////////////////////////////////////////////////////////////////////
 	// binary scalar operations
 	//////////////////////////////////////////////////////////////////////
-	double angle(vectorn const& other) const;			// calc angle between 0 to pi
-	double angle2D(vectorn const& b) const;			// calc angle between 0 to 2pi
-	double cosTheta(vectorn const& other) const;			// cosTheta for every dimension
-	double	sinTheta(vectorn const& b) const;				// sinTheta for 2 dimension
-	
-	friend double operator%( vectorn const&, vectorn const& );		// dot product
+	m_real angle(vectorn const& other) const;			// calc angle between 0 to pi
+	m_real angle2D(vectorn const& b) const;			// calc angle between 0 to 2pi
+	m_real distance(vectorn const& other) const;
+	m_real cosTheta(vectorn const& other) const;			// cosTheta for every dimension
+	m_real sinTheta(vectorn const& b) const;				// sinTheta for 2 dimension
+	bool   isSimilar(vectorn const& other,m_real thr=0.00001) const	{ if(distance(other)<=thr) return true; return false;}
+
+	friend m_real operator%( vectorn const&, vectorn const& );		// dot product
 	friend bool operator<(vectorn const& a, vectorn const& b);
 	friend bool operator>(vectorn const& a, vectorn const& b);
 	friend bool operator<=(vectorn const& a, vectorn const& b) { return !(a>b);};
 	friend bool operator>=(vectorn const& a, vectorn const& b) { return !(a<b);};
+	friend bool operator==(vectorn const& a, vectorn const& b) { return a.isSimilar(b);};
 
 	//////////////////////////////////////////////////////////////////////
 	// unary operations
 	//
-	// - binary operationÀÌ unary·Î »ç¿ë°¡´ÉÇÏ±â¿¡, ¸¹ÀÌ »ı·«µÇ¾úÀ½. 
+	// - binary operationì´ unaryë¡œ ì‚¬ìš©ê°€ëŠ¥í•˜ê¸°ì—, ë§ì´ ìƒëµë˜ì—ˆìŒ.
 	//     ex) a.add(a,b)
 	//////////////////////////////////////////////////////////////////////
 	vectorn& assign(const vector3& other);
 	vectorn& assign(const quater& other);
 	vectorn& normalize(vectorn const& a);
-	vectorn& assign(const vectorn& other) { __super::assign(other);	return *this;}
+	vectorn& assign(const vectorn& other) { _tvectorn<m_real>::assign(other);	return *this;}
 	vectorn& resample(vectorn const& vec, int numSample);
 	vectorn& concaten(vectorn const& a);
 
-	// Ä«ÇÇÇØ¼­ ¹Ş¾Æ¿Â´Ù.
+	// ì¹´í”¼í•´ì„œ ë°›ì•„ì˜¨ë‹¤.
 
-	// Ä«ÇÇÇØ¼­ ¹Ş¾Æ¿Â´Ù.
+	// ì¹´í”¼í•´ì„œ ë°›ì•„ì˜¨ë‹¤.
 
-	vectorn& operator=(const _tvectorn<double>& other)	{ _tvectorn<double>::assign(other);return *this;}
-	vectorn& operator=(const vectorn& other);//		{ assign(other);return *this;}	
+	vectorn& operator=(const _tvectorn<m_real>& other)	{ _tvectorn<m_real>::assign(other);return *this;}
+	vectorn& operator=(const vectorn& other);//		{ assign(other);return *this;}
 	vectorn& operator=(const vectornView& other);//	{ assign(other);return *this;}
 
     vectorn& operator=( vector3 const& other)		{ return assign(other);};
 	vectorn& operator=( quater const& other)		{ return assign(other);};
 	vectorn& derivative(vectorn const& a);
 	vectorn Extract(const intvectorn& columns)	const { vectorn c; c.extract(*this, columns); return c;}
-	
+	vectorn& sort(vectorn const& source, intvectorn& sortedIndex);
+
 	// slow unary operations (negation)
 	friend vectorn operator-( vectorn const& a);
 
@@ -259,28 +271,50 @@ public:
 	vectorn& normalize();
 	vectorn& negate();
 
+	//////////////////////////////////////////////////////////////////////
+	// aggregate functions
+	//////////////////////////////////////////////////////////////////////
 
-	void findMax(double& max_v, int& max_index,int start=0,int end=INT_MAX) const;
-	void findMin(double& min_v, int& min_index,int start=0,int end=INT_MAX) const;
-	vectorn& colon(double start, double stepSize, int nSize=-1);
-	vectorn& linspace(double x1, double x2, int nSize=-1);
+	m_real aggregate(CAggregate::aggregateOP eOP) const;
+	m_real length() const ;
+	m_real minimum() const;
+	m_real maximum()	const;
+	m_real sum()	const;
+	m_real squareSum() const;
+	m_real avg() const;
+
+	// matrixì˜ ê° column vectorë“¤ì— scalar unaryë¥¼ ì ìš©í•œë‹¤. (ê²°ê³¼ vector dimì€ cols())
+	// ex) v.aggregateColumn(vectorn::minimum, mat);
+	vectorn& aggregateColumn(CAggregate::aggregateOP eOP, matrixn const& mat);
+	// matrixì˜ ê° row vectorë“¤ì— scalar unaryë¥¼ ì ìš©í•œë‹¤. (ê²°ê³¼ vector dimì€ rows())
+	vectorn& aggregate(CAggregate::aggregateOP eOP, matrixn const& mat);
+
+	vectorn& minimum(const matrixn& other) { return aggregateColumn(CAggregate::MINIMUM, other);}
+	vectorn& maximum(const matrixn& other) { return aggregateColumn(CAggregate::MAXIMUM, other);}
+	vectorn& lengths(const matrixn& other) { return aggregate(CAggregate::LENGTH, other);}
+	vectorn& curvature(const matrixn& pos) ;
+//	vectorn& lengths(cmplxvectorn const& a);
+
+
+	void findMax(m_real& max_v, int& max_index,int start=0,int end=INT_MAX) const;
+	void findMin(m_real& min_v, int& min_index,int start=0,int end=INT_MAX) const;
+	vectorn& colon(m_real start, m_real stepSize, int nSize=-1);
+	void colon2(m_real start, m_real end, m_real stepSize=1);
+	vectorn& linspace(m_real x1, m_real x2, int nSize=-1);
 	//!< uniform sampling : sample centers of intervals in linspace of size n+1; eg> uniform (0,3, size=3) -> (  0.5, 1.5, 2.5 ).
-	vectorn& uniform(double x1, double x2, int nSize=-1);
+	vectorn& uniform(m_real x1, m_real x2, int nSize=-1);
 
 
-	double minimum() const;
-	double maximum() const;
-	void minimum(matrixn const& a);
-	void maximum(matrixn const& a);
 	///////////////////////////////////////////////////////////////////////
 	// Utility functions
 	//////////////////////////////////////////////////////////////////////
 
+	TString output(const char* formatString="%f", int start=0, int end=INT_MAX) const;
 	void	  load(const char* filename, bool bLoadFromBinaryFile=true);
 	void      save(const char* filename, bool bSaveIntoBinaryFile=true);
-	
+
 	vectorn& fromMatrix(matrixn const& mat);
-	
+
 	void setVec3( int start, const vector3& src)	{ for(int i=start; i<start+3; i++) (*this)[i]=src.getValue(i-start);}
 	void setQuater( int start, const quater& src)	{ for(int i=start; i<start+4; i++) (*this)[i]=src.getValue(i-start);}
 
@@ -296,27 +330,23 @@ public:
 	int getSize() const	{ return size();}
 
 
-	// deprecated - v::for_each, v::for_each1, v::for_each2 ·Î ¹Ù²Ù´Â Áß.(operatorTemplate.hpp)
+	// deprecated - v::for_each, v::for_each1, v::for_each2 ë¡œ ë°”ê¾¸ëŠ” ì¤‘.(operatorTemplate.hpp)
 
-	// vectorÀÇ °¢ valueµé¿¡ scalar binary¸¦ Àû¿ëÇÑ´Ù.
+	// vectorì˜ ê° valueë“¤ì— scalar binaryë¥¼ ì ìš©í•œë‹¤.
 	// ex) v.each(s2::MINIMUM, a, b);
 
-	vectorn& each2(double (*s2_func)(double,double), vectorn const& a, vectorn const& b);
+	vectorn& each2(m_real (*s2_func)(m_real,m_real), vectorn const& a, vectorn const& b);
 	vectorn& each2(const sv2::_op& op, const matrixn& a, const matrixn& b);
 	vectorn& each2(const sv2::_op& op, const matrixn& a, const vectorn& b);
-	vectorn& each1(void (*s1_func)(double&,double), vectorn const& a);
-	vectorn& each1(void (*s1_func)(double&,double), double a);
-	vectorn& each0(void (*s1_func)(double&,double))							{ return each1(s1_func, *this);}
+	vectorn& each1(void (*s1_func)(m_real&,m_real), vectorn const& a);
+	vectorn& each1(void (*s1_func)(m_real&,m_real), m_real a);
+	vectorn& each0(void (*s1_func)(m_real&,m_real))							{ return each1(s1_func, *this);}
 
-	void op2(const v2::_op& op, const vectorn& a, const vectorn& b)			{ op.calc(*this, a,b);	}	
+	void op2(const v2::_op& op, const vectorn& a, const vectorn& b)			{ op.calc(*this, a,b);	}
 	void op1(const v1::_op& op, const vectorn& a)							{ op.calc(*this, a);	}
 
-	vectorn Each(void (*s1_func)(double&,double)) const;
-	vectorn Each(double (*s2_func)(double,double), vectorn const& b) 
-		const;
-
-	
-	double length() const;
+	vectorn Each(void (*s1_func)(m_real&,m_real)) const;
+	vectorn Each(m_real (*s2_func)(m_real,m_real), vectorn const& b) const;
 
 };
 
@@ -325,22 +355,23 @@ public:
 class vectornView :public vectorn
 {
 public:
-	// L-value·Î »ç¿ëµÉ¼ö ÀÖ´Â, reference array·Î ¸¸µç´Ù. 
-	vectornView (double* ptrr, int size, int stride);	
-	// °ªÀ» reference·Î ¹Ş¾Æ¿Â´Ù.
-	vectornView(const _tvectorn<double>& other)		{ assignRef(other);}	
-	vectornView(const vectorn& other)				{ assignRef(other);}	
+	// L-valueë¡œ ì‚¬ìš©ë ìˆ˜ ìˆëŠ”, reference arrayë¡œ ë§Œë“ ë‹¤.
+	vectornView (m_real* ptrr, int size, int stride);
+	// ê°’ì„ referenceë¡œ ë°›ì•„ì˜¨ë‹¤.
+	vectornView(const _tvectorn<m_real>& other)		{ assignRef(other);}
+	vectornView(const vectorn& other)				{ assignRef(other);}
 	vectornView(const vectornView& other)			{ assignRef(other);}
 
 	~vectornView (){}
 
-	// L-value·Î »ç¿ëµÇ´Â °æ¿ì, °ªÀ» copyÇÑ´Ù.
+	// L-valueë¡œ ì‚¬ìš©ë˜ëŠ” ê²½ìš°, ê°’ì„ copyí•œë‹¤.
 	vectorn& operator=(const vectorn & other)			{ assign(other);return *this;}
-	vectorn& operator=(const _tvectorn<double>& other)	{ _tvectorn<double>::assign(other);return *this;}
+	vectorn& operator=(const _tvectorn<m_real>& other)	{ _tvectorn<m_real>::assign(other);return *this;}
 	vectorn& operator=(const vectornView& other)		{ assign(other);return *this;}
 	vectorn& operator=( vector3 const& other)		{ return assign(other);};
 	vectorn& operator=( quater const& other)		{ return assign(other);};
 
+    inline operator vectorn& () const { return (vectorn&)(*this);}
 };
 
 
@@ -349,15 +380,15 @@ public:
 namespace math
 {
 	void makeSamplingIndex(vectorn& out, int nLen, int numSample);		 //!< a simplified uniform sampling
-	void colon(vectorn& out, double stepSize, int nSize=-1);//!< startºÎÅÍ stepSize°£°İÀ¸·Î size()¸¸Å­ Ã¤¿ò. (start, start+stepSize, start+stepSize*2,...)
-	void linspace(vectorn& out, double x1, double x2, int nSize=-1);		 //!< generates a vector of linearly equally spaced points between X1 and X2; eg> linspace(0,3, size=4) -> (0,   1,   2,   3)
-	void uniform(vectorn& out, double x1, double x2, int nSize=-1);		 //!< uniform sampling : sample centers of intervals in linspace of size n+1; eg> uniform (0,3, size=3) -> (  0.5, 1.5, 2.5 ).
-	void findMin(vectorn const& in, double& min, int& min_index) const;
-	void findMax(double& max, int& max_index) const;
-	int argMin(vectorn const& in)			{ double min; int min_index; findMin(min, min_index); return min_index;}
-	int argMax(vectorn const& in)			{ double max; int max_index; findMax(max, max_index); return max_index;}
-	int argNearest(vectorn const& in, double value) ;
-	vectorn& interpolate(vectorn const& a, vectorn const& b, double t);
+	void colon(vectorn& out, m_real stepSize, int nSize=-1);//!< startë¶€í„° stepSizeê°„ê²©ìœ¼ë¡œ size()ë§Œí¼ ì±„ì›€. (start, start+stepSize, start+stepSize*2,...)
+	void linspace(vectorn& out, m_real x1, m_real x2, int nSize=-1);		 //!< generates a vector of linearly equally spaced points between X1 and X2; eg> linspace(0,3, size=4) -> (0,   1,   2,   3)
+	void uniform(vectorn& out, m_real x1, m_real x2, int nSize=-1);		 //!< uniform sampling : sample centers of intervals in linspace of size n+1; eg> uniform (0,3, size=3) -> (  0.5, 1.5, 2.5 ).
+	void findMin(vectorn const& in, m_real& min, int& min_index) const;
+	void findMax(m_real& max, int& max_index) const;
+	int argMin(vectorn const& in)			{ m_real min; int min_index; findMin(min, min_index); return min_index;}
+	int argMax(vectorn const& in)			{ m_real max; int max_index; findMax(max, max_index); return max_index;}
+	int argNearest(vectorn const& in, m_real value) ;
+	vectorn& interpolate(vectorn const& a, vectorn const& b, m_real t);
 
 }*/
 
@@ -365,8 +396,10 @@ namespace math
 namespace v
 {
 	void eig(vectorn& eigenvalues, const matrixn& mat);
-	void linspace(vectorn& out, double x1, double x2, int nSize=-1);		 //!< generates a vector of linearly equally spaced points 
-	void findMin(const vectorn& v, double& min_v, int& min_index) ;
-	void findMax(const vectorn& v, double& max_v, int& max_index) ;
+	void linspace(vectorn& out, m_real x1, m_real x2, int nSize=-1);		 //!< generates a vector of linearly equally spaced points
+	void findMin(const vectorn& v, m_real& min_v, int& min_index) ;
+	void findMax(const vectorn& v, m_real& max_v, int& max_index) ;
 	intvectorn colon(int start, int end);
 }
+
+#endif

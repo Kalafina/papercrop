@@ -1,32 +1,11 @@
-//
-// quater.H 
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
-
 #include "stdafx.h"
 #include "mathclass.h"
 #include "quater.h"
 #include "vector.h"
-static double eps = 0.0001f;
+static m_real eps = 0.0001f;
 
 #ifdef DIRECT3D_VERSION
-#ifndef MATH_DOUBLE_PRECISION
+#ifdef MATH_SINGLE_PRECISION
 #define USE_D3DFUNC
 #endif
 #endif
@@ -55,7 +34,7 @@ void quater::subtract(quater const& a, quater const& b)
 	w=a.w-b.w;
 }
 
-void quater::mult(quater const& b, double a)
+void quater::mult(quater const& b, m_real a)
 {
 	x=a*b.x;
 	y=a*b.y;
@@ -64,7 +43,7 @@ void quater::mult(quater const& b, double a)
 }
 
 
-double quater::operator% (quater const& b)const
+m_real quater::operator% (quater const& b)const
 {
 	quater const& a=*this;
 	return a.x*b.x+a.y*b.y+a.z*b.z+a.w*b.w;
@@ -90,7 +69,7 @@ void quater::mult(quater const& a, quater const& b)
 matrix Quater2Matrix( quater const& q )
 {
     matrix m;
-    double s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
+    m_real s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
 
     s  = 2.0/len(q);
     xs = q.x() * s;  ys = q.y() * s;  zs = q.z() * s;
@@ -115,7 +94,7 @@ quater Matrix2Quater( matrix const& m )
 {
     quater q;
 
-    double tr, s;
+    m_real tr, s;
     int    i, j, k;
     static int next[3] = { 1, 2, 0 };
 
@@ -154,9 +133,9 @@ quater Matrix2Quater( matrix const& m )
 
 quater EulerAngle2Quater( vector3 const& v )
 {
-	double x = v.x()/2.0;
-	double y = v.y()/2.0;
-	double z = v.z()/2.0;
+	m_real x = v.x()/2.0;
+	m_real y = v.y()/2.0;
+	m_real z = v.z()/2.0;
 
 	return quater( cos(x)*cos(y)*cos(z) + sin(x)*sin(y)*sin(z),
 				   sin(x)*cos(y)*cos(z) - sin(x)*sin(y)*sin(z),
@@ -166,10 +145,10 @@ quater EulerAngle2Quater( vector3 const& v )
 
 */
 
-double
+m_real
 quater::length() const
 {
-    return (double)sqrt( w*w + x*x + y*y + z*z );
+    return (m_real)sqrt( w*w + x*x + y*y + z*z );
 }
 
 void quater::normalize(const quater& a)
@@ -217,41 +196,41 @@ void quater::exp(vector3 const& ww)
 
 	*/
 	// jehee lee implementation
-    double theta = (double)sqrt(ww % ww);
-    double sc;
+    m_real theta = (m_real)sqrt(ww % ww);
+    m_real sc;
 
     if(theta < EPS) sc = 1;
-    else sc = (double)sin(theta) / theta;
+    else sc = (m_real)sin(theta) / theta;
 
-    vector3 v = (double)sc * ww;
-    setValue((double)cos(theta), v.x, v.y, v.z);
+    vector3 v = (m_real)sc * ww;
+    setValue((m_real)cos(theta), v.x, v.y, v.z);
 	
 #endif
 }
 
-void quater::pow(vector3 const& w, double a)
+void quater::pow(vector3 const& w, m_real a)
 {
-    exp((double)a * w);
+    exp((m_real)a * w);
 }
 
 
-void quater::slerp( quater const& a, quater const& b, double t )
+void quater::slerp( quater const& a, quater const& b, m_real t )
 {
 #ifdef USE_D3DFUNC
 	D3DXQuaternionSlerp(*this, a, b, t);
 #else
 
 	/* ogre implementation doesn't work
-	double fCos = a%b;
-    double fAngle ( acos(fCos) );
+	m_real fCos = a%b;
+    m_real fAngle ( acos(fCos) );
 
     if ( ABS(fAngle) < EPS )
         *this=a;
 
-    double  fSin = sin(fAngle);
-    double  fInvSin = 1.0/fSin;
-    double  fCoeff0 = sin((1.0-t)*fAngle)*fInvSin;
-    double  fCoeff1 = sin(t*fAngle)*fInvSin;
+    m_real  fSin = sin(fAngle);
+    m_real  fInvSin = 1.0/fSin;
+    m_real  fCoeff0 = sin((1.0-t)*fAngle)*fInvSin;
+    m_real  fCoeff1 = sin(t*fAngle)*fInvSin;
     
 	if (fCos < 0.0f )// && shortestPath)
     {
@@ -267,36 +246,36 @@ void quater::slerp( quater const& a, quater const& b, double t )
  
 	// jehee lee implementation
 	// buggy
-	double c = a % b;
+	m_real c = a % b;
 
 	if ( 1.0+c > EPS )
 	{
 		if ( 1.0-c > EPS )
 		{
-			double theta = (double)acos( c );
-			double sinom = (double)sin( theta );
-			this->mult(( a*(double)sin((1-t)*theta) + b*(double)sin(t*theta) ), 1.f/ sinom);
+			m_real theta = (m_real)acos( c );
+			m_real sinom = (m_real)sin( theta );
+			this->mult(( a*(m_real)sin((1-t)*theta) + b*(m_real)sin(t*theta) ), 1.f/ sinom);
 		}
 		else
 			this->normalize((a*(1-t) + b*t));
 	}
-	else	this->add(a*(double)sin((0.5-t)*M_PI) , b*(double)sin(t*M_PI));
+	else	this->add(a*(m_real)sin((0.5-t)*M_PI) , b*(m_real)sin(t*M_PI));
 #endif
 }
 
-void quater::safeSlerp( quater const& a, quater const& b, double t)
+void quater::safeSlerp( quater const& a, quater const& b, m_real t)
 {
 	quater ta(a);
 	if(( ta%b)<0.0f) ta.negate(ta);
 	slerp(ta,b, t);
 }
 
-void quater::interpolate( double t, quater const& a, quater const& b )
+void quater::interpolate( m_real t, quater const& a, quater const& b )
 {
 	slerp( a, b, t );
 }
 
-double quater::distance( quater const& b ) const
+m_real quater::distance( quater const& b ) const
 {
 	quater const& a=*this;
 	vector3 c,d;
@@ -330,16 +309,14 @@ void quater::axisToAxis( const vector3& vFrom, const vector3& vTo)
 	vector3 vA, vB, vHalf;
 	vA.normalize(vFrom);
 	vB.normalize(vTo);
-	//µŒ∞≥∞° 180∞¢¿Ã µ«∏È singular∞° µ«º≠ 90µµ∞° µ«¥¬ √‡¿ª ¿”¿«∑Œ ∞ËªÍ«ÿ ¡‡æﬂµ 
+	//ÎëêÍ∞úÍ∞Ä 180Í∞ÅÏù¥ ÎêòÎ©¥ singularÍ∞Ä ÎêòÏÑú 90ÎèÑÍ∞Ä ÎêòÎäî Ï∂ïÏùÑ ÏûÑÏùòÎ°ú Í≥ÑÏÇ∞Ìï¥ Ï§òÏïºÎê®
 	if(vA%vB<-0.999){
-		for (int i = 0; i < 10000; ++i) {  //π´«—∑Á«¡ø° ∫¸¡˙ ∂ß∞° ¿÷æÓº≠ while ø°º≠ for∑Œ πŸ≤Â¥Ÿ. ∏∏∏Ì.
-		//while(1){
-			vB.setValue(rand(),rand(),rand());
-			//			vB.normalize();
-			vHalf.cross(vA,vB);
-			vHalf.normalize();
-			if(vA%vB>-0.999)break;
-		}
+		vB*=-1;
+		quater q;
+		q.axisToAxis(vA, vB);
+		//ÏûÑÏùòÎ°ú zÏ∂ïÏúºÎ°ú 180ÎèÑ ÎèåÎ¶º.
+		mult(quater(TO_RADIAN(180), vector3(0,0,1)), q);
+		return;
 	}else{
 		vHalf.add(vA,vB);
 		vHalf.normalize();
@@ -347,13 +324,13 @@ void quater::axisToAxis( const vector3& vFrom, const vector3& vTo)
 	unitAxisToUnitAxis2(vA, vHalf);
 }
 
-void quater::setRotation(const vector3& axis, double angle)
+void quater::setRotation(const vector3& axis, m_real angle)
 {
 #ifdef USE_D3DFUNC
 	D3DXQuaternionRotationAxis( *this, axis, angle);
 #else
-	double fHalfAngle=( 0.5*angle );
-	double fSin = sin(fHalfAngle);
+	m_real fHalfAngle=( 0.5*angle );
+	m_real fSin = sin(fHalfAngle);
     w = cos(fHalfAngle);
     x = fSin*axis.x;
     y = fSin*axis.y;
@@ -372,7 +349,7 @@ void quater::setRotation(const matrix4& m)
 	// jehee lee implementation
 	quater &q=*this;
 
-    double tr, s;
+    m_real tr, s;
     int    i, j, k;
     static int next[3] = { 1, 2, 0 };
 
@@ -408,16 +385,17 @@ void quater::setRotation(const matrix4& m)
 #endif
 }
 
-void quater::setRotation(const char* aChannel, double *aValue, bool bRightToLeft)
+void quater::setRotation(const char* aChannel, m_real *aValue, bool bRightToLeft)
 {
 	//!< from euler angle. aChannel="YXZ" or something like that.
 
 	vector3 axis;
 	quater temp;
-	quater& matRot=*this;
-	matRot.setValue(1, 0,0,0);
+	quater& qRot=*this;
+	qRot.setValue(1, 0,0,0);
 
-	for(int i=0; i<3; i++)
+	int numChannels=strlen(aChannel);
+	for(int i=0; i<numChannels; i++)
 	{
 		switch(aChannel[i])
 		{
@@ -442,24 +420,25 @@ void quater::setRotation(const char* aChannel, double *aValue, bool bRightToLeft
 
 //		printf("set %d: %s %f\n", i, temp.output().ptr(), aValue[i]);
 		if(bRightToLeft)
-			matRot.leftMult(temp);
+			qRot.leftMult(temp);
 		else
 		{
-			quater copy(matRot); matRot.mult(copy, temp);			
+			quater copy(qRot); qRot.mult(copy, temp);			
 		}
 
 	}
 }
 
-vector3 Quater2EulerAngle( quater const& q )
+// R=RZ*RY*RX
+vector3 Quater2EulerAngleZYX( quater const& q )
 {
-	double s;
-	double xs, ys, zs;
-	double wx, wy, wz;
-	double xx, xy, xz;
-	double yy, yz, zz;
-	double sinx, siny, sinz;
-	double cosx, cosy, cosz;
+	m_real s;
+	m_real xs, ys, zs;
+	m_real wx, wy, wz;
+	m_real xx, xy, xz;
+	m_real yy, yz, zz;
+	m_real sinx, siny, sinz;
+	m_real cosx, cosy, cosz;
 
 	s  = 2.0f / q.length();
 	xs = q.x * s;  ys = q.y * s;  zs = q.z * s;
@@ -487,43 +466,98 @@ vector3 Quater2EulerAngle( quater const& q )
 		cosz = 1.0;
 	}
 
-	double x = atan2( sinx, cosx );
-	double y = atan2( siny, cosy );
-	double z = atan2( sinz, cosz );
+	m_real x = atan2( sinx, cosx );
+	m_real y = atan2( siny, cosy );
+	m_real z = atan2( sinz, cosz );
 
 	return vector3(x,y,z);
 }
 
+// R=RY*RX
+vector3 Quater2EulerAngleYX( quater const& q )
+{	
+	matrix4 t;
+	t.setRotation(q);
+
+	double sinx=-1.0*t.m[1][2];
+	double cosx=t.m[1][1];
+	double cosy=t.m[0][0];
+	double siny=-1.0*t.m[2][0];
+
+	/*
+	ASSERT(isSimilar(t.m[1][0],0));
+	ASSERT(isSimilar(SQR(cosx)+SQR(sinx), 1.0));
+	ASSERT(isSimilar(SQR(cosy)+SQR(siny), 1.0));
+
+	ASSERT(isSimilar(siny*sinx, t.m[0][1]));
+	ASSERT(isSimilar(cosx*siny, t.m[0][2]));
+	ASSERT(isSimilar(cosy*sinx, t.m[2][1]));
+	ASSERT(isSimilar(cosx*cosy, t.m[2][2]));
+*/
+	m_real x=atan2(sinx, cosx);
+	m_real y=atan2(siny, cosy);
+
+	return vector3(x,y,0);
+}
+
+inline vector3 Quater2EulerAngleZYX( quater const& q , int numChannels)
+{
+	switch(numChannels)
+	{
+	case 1:
+	case 2:
+		return Quater2EulerAngleYX(q);
+	}
+	return Quater2EulerAngleZYX(q);
+}
 
 // refactoring needed
-double determinants(const matrix4& mat)
+m_real determinants(const matrix4& mat)
 {
 	return mat._11*mat._22*mat._33+mat._13*mat._21*mat._32+mat._12*mat._23*mat._31
 		-mat._13*mat._22*mat._31-mat._11*mat._23*mat._32-mat._12*mat._21*mat._33;
 }
 
-void quater::getRotation(const char* aChannell, double *aValue, bool bRightToLeft) const
+void quater::getRotation(const char* aChannell, m_real *aValue, bool bRightToLeft) const
 {
 	//!< to euler angle. aChannel="YXZ" or something like that.
 	vector3 euler;
 
 	char aChannel[3];
+
+	int numChannels=strlen(aChannell);
+
 	if(bRightToLeft)
 	{
-		aChannel[0]=aChannell[0];
-		aChannel[1]=aChannell[1];
-		aChannel[2]=aChannell[2];
+		for(int i=0; i<numChannels; i++)
+		{
+			aChannel[i]=aChannell[i];
+		}
 	}
 	else
 	{
-		aChannel[0]=aChannell[2];
-		aChannel[1]=aChannell[1];
-		aChannel[2]=aChannell[0];
+		for(int i=0; i<numChannels; i++)
+		{
+			aChannel[i]=aChannell[numChannels-i-1];
+		}
 	}
+
+	for(int i=numChannels; i<3; i++)
+	{
+		aChannel[i]='X';
+
+		for(int k=0; k<2; k++)
+		{
+			for(int j=0; j<i; j++)
+				if(aChannel[i]==aChannel[j]) aChannel[i]++;		
+		}
+	}
+
 	if(strncmp(aChannel, "XYZ", 3)==0 )
 	{
 		// R=RZ*RY*RX
-		euler=Quater2EulerAngle(*this);
+
+		euler=Quater2EulerAngleZYX(*this, numChannels);
 	}
 	else 
 	{
@@ -556,7 +590,7 @@ void quater::getRotation(const char* aChannell, double *aValue, bool bRightToLef
 
 		quater q;
 		q.setRotation(matRot2);
-		euler=Quater2EulerAngle(q);
+		euler=Quater2EulerAngleZYX(q, numChannels);
 		//printf("det %f\n", determinants(matT));
 		euler*=determinants(matT);
 	}
@@ -569,18 +603,44 @@ void quater::getRotation(const char* aChannell, double *aValue, bool bRightToLef
 	}
 	else
 	{
-		aValue[0]=euler.z;
-		aValue[1]=euler.y;
-		aValue[2]=euler.x;
+		if(numChannels==3)
+		{
+			aValue[0]=euler.z;
+			aValue[1]=euler.y;
+			aValue[2]=euler.x;
+		}
+		else if(numChannels==2)
+		{
+			ASSERT(isSimilar(euler.z,0));
+			aValue[0]=euler.y;
+			aValue[1]=euler.x;
+			aValue[2]=0.0;
+		}
+		else if(numChannels==1)
+		{
+			ASSERT(isSimilar(euler.z,0));
+//			ASSERT(isSimilar(euler.y,0));
+			aValue[0]=euler.x;
+			aValue[1]=0.0;
+			aValue[2]=0.0;
+		}
 	}
 
+#ifdef _DEBUG
+
+	quater qtest;
+	qtest.setRotation(aChannell, aValue, bRightToLeft);
+
+	qtest.align(*this);
+	//ASSERT(isSimilar(qtest%*this, 1.0));
+#endif
 	//	printf("get %f %f %f\n", aValue[0], aValue[1], aValue[2]);
 
 	// testing codes
 /*	quater q(0.813, -0.368, 0.228, 0.387);
 	q.normalize();
 	quater qtest;
-	double aValue[3];
+	m_real aValue[3];
 
 	q.getRotation("YZX", aValue, true);
 	qtest.setRotation("YZX", aValue, true);
@@ -602,11 +662,12 @@ void quater::setAxisRotation(const vector3& vecAxis, const vector3& front, const
 	this->setRotation(temp);
 }
 
-void quater::toAxisAngle(vector3& axis, double& angle) const
+void quater::toAxisAngle(vector3& axis, m_real& angle) const
 {
 /*
-buggy.-.-
+
 #ifdef USE_D3DFUNC
+	buggy.-.-
 	D3DXQuaternionToAxisAngle(*this, axis, &angle);	
 #else
 	*/
@@ -618,7 +679,7 @@ buggy.-.-
 //#endif
 }
 
-void cumQTQ(matrixn& p, const vectorn& q, double w)
+void cumQTQ(matrixn& p, const vectorn& q, m_real w)
 {
 	p[0][0]+=w*q[0]*q[0];
 	p[0][1]+=w*q[0]*q[1];
@@ -638,6 +699,40 @@ void cumQTQ(matrixn& p, const vectorn& q, double w)
 	p[3][3]+=w*q[3]*q[3];
 }
 
+void quater::blend(const vectorn& weight, matrixn& q)
+{
+	int n=weight.size();
+
+	quater& qx=*this;
+	matrixn m(4,4);
+	m.setAllValue(0);
+
+	for( int i=0; i<n; i++ )
+		cumQTQ(m, q.row(i), weight[i] );
+
+	matrixn qstar;
+	vectorn eigenV;
+	qstar.eigenVectors(m, eigenV);
+	
+	for(int i=0; i<4; i++)
+		qstar.row(i).normalize();
+
+	// find the best quaternion from these eigen vectors
+	vectorn SSD(4);	// sum of squared distance
+	SSD.setAllValue(0);
+	m_real t;
+	for(int j=0; j<4; j++)
+	{
+		for(int i=0; i<n; i++)
+		{
+			t=qstar.row(j)%q.row(i);
+			SSD[j]+=1-t*t;
+		}
+	}
+
+	qx=qstar.row(SSD.argMin()).toQuater();
+}
+
 void quater::difference(quater const& q1, quater const& q22)
 {
 	quater q2(q22);
@@ -650,11 +745,21 @@ void quater::difference(quater const& q1, quater const& q22)
 	// I am sure that kim myung soo's convention is wrong, since angular velocity is already defined in physics as q2 inv(q1)
 
 	mult(q2, q1.inverse());    
+	normalize();
+}
+
+void quater::toLocal(quater const& q1, quater const& q22)
+{	
+	quater q2(q22);
+	q2.align(q1);
+
+	mult(q1.inverse(), q2);	
+	normalize();
 }
 
 void quater::derivative(quater const& q1, quater const& q2)
 {
-	//!< q'(t)=(1/2) w q; or q'(t)=q2-q1; -> both produces almost same result
+	//!< q'(t)=(1/2) w q; or q'(t)=q2-q1; -> both produces almost the same result when q1 and q2 are very similar.
 
 	quater& out=*this;
 
@@ -670,22 +775,22 @@ void quater::derivative(quater const& q1, quater const& q2)
 
 /*
 extern double combinationR(int n, int k);
-double powR(double x, int k)
+m_real powR(m_real x, int k)
 {
-	double r=1;
+	m_real r=1;
 	for(int i=0; i<k; i++)
 		r*=x;
 	return r;
 }
 
 
-void quater::bezier(matrixn aq, double t)
+void quater::bezier(matrixn aq, m_real t)
 {
 	const int n=3;
-	double b[4];
+	m_real b[4];
 	
 	const int n=3;
-	double b[4];
+	m_real b[4];
 
 	for(int i=0; i<=n; i++)
 	{
@@ -697,12 +802,12 @@ void quater::bezier(matrixn aq, double t)
 	*this=...
 }*/
 
-void quater::bezier(const quater& q0, const quater& q1, const quater& q2, const quater& q3, double t)
+void quater::bezier(const quater& q0, const quater& q1, const quater& q2, const quater& q3, m_real t)
 {
 	// kim myung soo siggraph 96 paper
 	// cumulative bases
 
-	double b1, b2, b3;
+	m_real b1, b2, b3;
 	b1=1.f-CUBIC(1.f-t);
 	b2=3.f*SQR(t)-2.f*CUBIC(t);
 	b3=CUBIC(t);
@@ -722,12 +827,12 @@ void quater::bezier(const quater& q0, const quater& q1, const quater& q2, const 
 	this->normalize();
 }
 
-void quater::hermite(const quater& qa, const vector3& wa, const quater& qb, const vector3& wb, double t)
+void quater::hermite(const quater& qa, const vector3& wa, const quater& qb, const vector3& wb, m_real t)
 {
 	quater q0, q1, q2, q3;
 
 	// p0=pa, p1=pa+va/3, p2=pb-vb/3, p3=pb
-	// -> quaternion¿∏∑Œ πŸ≤Ÿ∏È..	
+	// -> quaternionÏúºÎ°ú Î∞îÍæ∏Î©¥..	
 	q0=qa;
 	q1.mult((wa/3.f).quaternion(), qa);
 	q2.mult((wb/3.f).quaternion().inverse(), qb);
@@ -736,7 +841,7 @@ void quater::hermite(const quater& qa, const vector3& wa, const quater& qb, cons
 	bezier(q0, q1, q2, q3, t);
 }
 
-void quater::scale(double s)
+void quater::scale(m_real s)
 {
 	vector3 rot;
 	rot.rotationVector(*this);
@@ -746,14 +851,16 @@ void quater::scale(double s)
 
 void quater::decompose(quater& rotAxis_y, quater& offset) const
 {
-	vector3 axis(0,1,0);
+	/* buggy: vector3 axis(0,1,0);
 	vector3 localFront(0,0,1);
 	vector3 globalFront;
 
 	globalFront.rotate(*this, localFront);
 	rotAxis_y.setAxisRotation(axis, localFront, globalFront);
 	//*this=rotAxis_y*offset;
-	offset=rotAxis_y.inverse()*(*this);
+	offset=rotAxis_y.inverse()*(*this);*/
+
+    decomposeTwistTimesNoTwist(vector3(0,1,0), rotAxis_y, offset);
 }
 
 void quater::decomposeTwistTimesNoTwist (const vector3& rkAxis, quater& rkTwist, quater& rkNoTwist) const
@@ -773,7 +880,7 @@ void quater::decomposeNoTwistTimesTwist (const vector3& rkAxis, quater& rkNoTwis
 	rkTwist.mult(rkNoTwist.inverse(),*this);
 }
 
-double quater::rotationAngleAboutAxis(const vector3& axis) const
+m_real quater::rotationAngleAboutAxis(const vector3& axis) const
 {
 	quater qoff, qaxis;
 	decomposeNoTwistTimesTwist(axis, qoff, qaxis);

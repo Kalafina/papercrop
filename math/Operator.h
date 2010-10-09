@@ -1,60 +1,80 @@
 #pragma once
 
 #include "math_macro.h"
-#include "tvector.h"
+#include "../math/tvector.h"
 namespace v
 {
-	int argMinRand(vectorn const& a, double thr=1.05, int start=0, int end=INT_MAX);
+	int argMinRand(vectorn const& a, m_real thr=1.05, int start=0, int end=INT_MAX);
+	void interpolate(vectorn & out, m_real t, vectorn const& a, vectorn const& b);
+	m_real sample(vectorn const& in, m_real criticalTime);
+
 }
 
 namespace m
 {
+	// covariance * numData: usually called the matrix S.
+	void covarianceN(vectorn& mean, matrixn& c, const matrixn& a) ;
+	// det = e**log_det
+	void LUinvert(matrixn& out, const matrixn& in, m_real& log_det);
+	// det = det_mantissa * 10**det_exponent
+	void LUinvert(matrixn& out, const matrixn& in, m_real & det_man, int& det_exp);
+
+	void Diaginvert(vectorn& out, const vectorn& in, m_real& log_det);
+	void SVinverse( matrixn& in_u, matrixn&mat ) ;
+
+	// in=>u*diag(s)*vT. in is replaced by u.
+	void SVdecompose(matrixn& in_u, vectorn & s, matrixn &v);
+	void LUsolve(matrixn const & A, vectorn const& b, vectorn& x);
+	void PIsolve(matrixn const & A, vectorn const& b, vectorn& x);
 	matrixn diag(vectorn const& a);
 	matrixn op1(m1::_op const& op, matrixn const& A);
 
 	// returns v^T * M * v
-	double vMv(vectorn const& v, matrixn const& M);
+	m_real vMv(vectorn const& v, matrixn const& M);
 	// returns v^T * Diag(M) * v
-	double vDv(vectorn const& v, vectorn const& diagM);
-	
+	m_real vDv(vectorn const& v, vectorn const& diagM);
+
 	// returns (a-b)^T * M *(a-b)
-	double sMs(vectorn const& a, vectorn const& b, matrixn const& M);
+	m_real sMs(vectorn const& a, vectorn const& b, matrixn const& M);
 
 	// returns (a-b)^T * Diag(M) *(a-b)
-	double sDs(vectorn const& a, vectorn const& b, vectorn const& diagM);
+	m_real sDs(vectorn const& a, vectorn const& b, vectorn const& diagM);
 
-	// returns (a-b)^T * (a-b)  : squared distance 
-	double ss(vectorn const& a, vectorn const& b);
+	// returns (a-b)^T * (a-b)  : squared distance
+	m_real ss(vectorn const& a, vectorn const& b);
+
+	m_real determinant(const matrixn& E);
 
 	void multAB(matrixn& out, matrixn const& a, matrixn const& b, bool transposeA=false, bool transposeB=false);
 	void multABC(matrixn& out, matrixn const& a, matrixn const& b, matrixn const& c, bool transposeA=false, bool transposeB=false, bool transposeC=false);
-	
+
 	void multA_diagB(matrixn& c, matrixn const& a, vectorn const& b);
 	void multAtB(vectorn& out, matrixn const& A, vectorn const& b);
 
-	// c: input e: eigen values, v: eigen vectors.
+	// c: input e: eigen values, v: eigen vectors (each column).
 	// c can be recovered from e and v using
 	//  c.op2(m2::multABAt(), v, m::diag(e));
 	//
 	// method==0 : jacobi
-	// method==1 : tqli, tred2 -> faster
+	// method==1 : tqli, tred2 -> faster, but only for symmetric tridiagonal matrices.
+	// eigen values and corresponding eigen vectors are sorted in decreasing eigen-values order.
 	void eigenDecomposition(matrixn const& c, vectorn & e, matrixn & v, int method=1);
 
 	index2 argMin(matrixn const& a);
-	index2 argMinRand(matrixn const& a, double thr=1.05);
+	index2 argMinRand(matrixn const& a, m_real thr=1.05);
 
 }
 
 namespace sop
 {
-	int interpolateInt(double t, int s, int e);
-	double interpolate(double t, double s, double e);
+	int interpolateInt(m_real t, int s, int e);
+	m_real interpolate(m_real t, m_real s, m_real e);
 
 	// smoothTransition(0)=0, smoothTransition(1)=1, dy/dx= 0 at x=0 and 1
-	double smoothTransition(double a);  
+	m_real smoothTransition(m_real a);
 	// if(t<min) return v1 elseif (t>max) return v2, otherwise, inbetween v1 and v2 linearly.
-	double clampMap(double t, double min, double max, double v1=0.0, double v2=1.0);
-	double map(double t, double min, double max, double v1=0.0, double v2=1.0);
+	m_real clampMap(m_real t, m_real min, m_real max, m_real v1=0.0, m_real v2=1.0);
+	m_real map(m_real t, m_real min, m_real max, m_real v1=0.0, m_real v2=1.0);
 }
 
 
@@ -66,7 +86,7 @@ namespace m0
 		drawSignals(const char* filename, float fMin=0.f, float fMax=0.f, bool bMultiDimensional=false, const intvectorn& vXplot=intvectorn())
 			: m_strFilename(filename), m_fMin(fMin), m_fMax(fMax), m_bMultiDimensional(bMultiDimensional), m_vXplot(vXplot),m_bUseTheSameMinMax(true) {}
 		drawSignals(const char* filename, bool useTheSameMinMax, const intvectorn& vXplot=intvectorn());
-		virtual void calc(matrixn& c) const;				
+		virtual void calc(matrixn& c) const;
 		const char* m_strFilename;
 		const intvectorn& m_vXplot;
 		float m_fMin, m_fMax;
@@ -77,13 +97,13 @@ namespace m0
 	struct diagonalize: public _op
 	{
 		diagonalize(){}
-		virtual void calc(matrixn& c) const;		
+		virtual void calc(matrixn& c) const;
 	};
 	struct draw : public _op
 	{
 		draw(const char* filename, float fMin=0.f, float fMax=0.f)
 			: m_strFilename(filename), m_fMin(fMin), m_fMax(fMax) {}
-		virtual void calc(matrixn& c) const;				
+		virtual void calc(matrixn& c) const;
 		const char* m_strFilename;
 		float m_fMin, m_fMax;
 	};
@@ -121,6 +141,11 @@ namespace m1
 		virtual void calc(matrixn& c, matrixn const& a) const;
 	};
 
+	struct cofactor:public _op
+	{
+		cofactor(){}
+		virtual void calc(matrixn& c, matrixn const& a) const;
+	};
 	struct add: public _op
 	{
 		add(){}
@@ -129,8 +154,8 @@ namespace m1
 
 	struct multAdd: public _op
 	{
-		multAdd(double mult):mMult(mult){}
-		double mMult;
+		multAdd(m_real mult):mMult(mult){}
+		m_real mMult;
 		virtual void calc(matrixn& c, matrixn const& a) const;
 	};
 
@@ -143,6 +168,22 @@ namespace m1
 	{
 		LUinvert(){}
 		virtual void calc(matrixn& c, const matrixn& a) const;/// c.op(a)
+	};
+
+	struct filter : public _op
+	{
+		filter(const vectorn& kernel, int numIter=1);
+		filter(int kernelSize, int numIter=1);
+		virtual void calc(matrixn& c, const matrixn& a) const;/// c.op(a)
+		vectorn m_vKernel;
+		int m_nNumIter;
+	};
+
+	struct splineFit : public _op
+	{
+		splineFit(int degree):m_nDegree(degree){}
+		virtual void calc(matrixn& c, const matrixn& a) const;/// c.op(a)
+		int m_nDegree;
 	};
 
 	struct superSampling : public _op
@@ -193,14 +234,14 @@ namespace m2
 
 	struct linstitch: public _op
 	{
-		double mStrength;
-		// strength°¡ Å¬¼ö·Ï c0stitch¿¡ °¡±î¿öÁø´Ù.(overshootingÈ®·üÀÌ Àû¾îÁø´Ù.) 0º¸´Ù Å«°ªÀ» ´ëÀÔÇØ¾ßÇÑ´Ù.
-		linstitch(double strength=5):mStrength(strength){}	
-		// aÀÇ ¸¶Áö¸· ÇÁ·¹ÀÓÀÌ bÀÇ Ã¹ÇÁ·¹ÀÓ°ú µ¿ÀÏÇØÁöµµ·Ï stitch. ÃÖÁ¾ ±æÀÌ´Â a.size()+b.size()-1ÀÌ µÈ´Ù.
+		m_real mStrength;
+		// strengthê°€ í´ìˆ˜ë¡ c0stitchì— ê°€ê¹Œì›Œì§„ë‹¤.(overshootingí™•ë¥ ì´ ì ì–´ì§„ë‹¤.) 0ë³´ë‹¤ í°ê°’ì„ ëŒ€ì…í•´ì•¼í•œë‹¤.
+		linstitch(m_real strength=5):mStrength(strength){}
+		// aì˜ ë§ˆì§€ë§‰ í”„ë ˆì„ì´ bì˜ ì²«í”„ë ˆì„ê³¼ ë™ì¼í•´ì§€ë„ë¡ stitch. ìµœì¢… ê¸¸ì´ëŠ” a.size()+b.size()-1ì´ ëœë‹¤.
 		virtual void calc(matrixn& c, const matrixn& a, const matrixn& b) const;
 	};
 
-	
+
 	// deprecated: use matrixn::multABt instead.
 	struct multABt : public _op
 	{ // C=A*B^T
@@ -215,19 +256,19 @@ namespace v0
 {
 	/// uniform sampling : sample centers of intervals in linspace of size n+1; eg> uniform (0,3, size=3) -> (  0.5, 1.5, 2.5 ).
 	struct uniformSampling : public _op
-	{	
-		double x1, x2;
+	{
+		m_real x1, x2;
 		int nSize;
-		uniformSampling (double xx1, double xx2, int nnSize=-1):x1(xx1),x2(xx2),nSize(nnSize){}		 
+		uniformSampling (m_real xx1, m_real xx2, int nnSize=-1):x1(xx1),x2(xx2),nSize(nnSize){}
 		virtual void calc(vectorn& c) const;
-		
+
 	};
 
 	struct linspace : public _op
 	{
-		linspace(double start, double end, int nSize=-1):mStart(start), mEnd(end), mnSize(nSize){}
+		linspace(m_real start, m_real end, int nSize=-1):mStart(start), mEnd(end), mnSize(nSize){}
 		virtual void calc(vectorn& c) const { c.linspace(mStart,mEnd, mnSize);}
-		double mStart,mEnd;
+		m_real mStart,mEnd;
 		int mnSize;
 	};
 
@@ -240,54 +281,54 @@ namespace v0
 
 	struct transition : public _op
 	{
-		transition(double start, double end, int nSize):mStart(start), mEnd(end), mnSize(nSize){}
+		transition(m_real start, m_real end, int nSize):mStart(start), mEnd(end), mnSize(nSize){}
 		virtual void calc(vectorn& c) const ;
-		double mStart,mEnd;
+		m_real mStart,mEnd;
 		int mnSize;
 	};
 
 	struct pow : public _op
 	{
-		pow(double k):mK(k){}
+		pow(m_real k):mK(k){}
 		virtual void calc(vectorn &c) const;
-		double mK;
+		m_real mK;
 	};
 
 	struct decay : public _op
 	{
-		// 0À¸·Î ¶³¾îÁö´Â Ä¿ºê¸¦ ¸¸µç´Ù.
+		// 0ìœ¼ë¡œ ë–¨ì–´ì§€ëŠ” ì»¤ë¸Œë¥¼ ë§Œë“ ë‹¤.
 		enum decayT { LINEAR, COS, TRANSITION } ;
-		decay(double startvalue, int nSize, decayT type=COS):mStart(startvalue), mnSize(nSize), mType(type){}
+		decay(m_real startvalue, int nSize, decayT type=COS):mStart(startvalue), mnSize(nSize), mType(type){}
 		void operator()(vectorn& c) const;
 		virtual void calc(vectorn& c) const ;
-		double mStart;
+		m_real mStart;
 		int mnSize;
 		decayT mType;
 	};
 
 
-	// usage: v0::zeroToOne(10, SLOW_START)(c);	-> c¸¦ 10ÇÁ·¹ÀÓÂ¥¸® 0¿¡¼­ 1·Î°¡´Â Ä¿ºê·Î ÃÊ±âÈ­.
+	// usage: v0::zeroToOne(10, SLOW_START)(c);	-> cë¥¼ 10í”„ë ˆì„ì§œë¦¬ 0ì—ì„œ 1ë¡œê°€ëŠ” ì»¤ë¸Œë¡œ ì´ˆê¸°í™”.
 	struct zeroToOne
 	{
-		// 0¿¡¼­ 1·Î ¿Ã¶ó°¡´Â Ä¿ºê¸¦ ¸¸µç´Ù.
-		// SLOW_START´Â Ä¿ºê ±â¿ï±â°¡ 0¿¡¼­ ½ÃÀÛÇØ¼­ Á¡Á¡Ä¿Áü.
-		// SLOW_END´Â Ä¿ºê ±â¿ï±â°¡ Á¡Á¡ 0À¸·Î ¼ö·Å.
-		// TRANSITIONÀº Ä¿ºê ½ÃÀÛ°ú ³¡ ±â¿ï±â°¡ 0
-		enum { LINEAR, SLOW_START, SLOW_END, TRANSITION } ;	
+		// 0ì—ì„œ 1ë¡œ ì˜¬ë¼ê°€ëŠ” ì»¤ë¸Œë¥¼ ë§Œë“ ë‹¤.
+		// SLOW_STARTëŠ” ì»¤ë¸Œ ê¸°ìš¸ê¸°ê°€ 0ì—ì„œ ì‹œì‘í•´ì„œ ì ì ì»¤ì§.
+		// SLOW_ENDëŠ” ì»¤ë¸Œ ê¸°ìš¸ê¸°ê°€ ì ì  0ìœ¼ë¡œ ìˆ˜ë ´.
+		// TRANSITIONì€ ì»¤ë¸Œ ì‹œì‘ê³¼ ë ê¸°ìš¸ê¸°ê°€ 0
+		enum { LINEAR, SLOW_START, SLOW_END, TRANSITION } ;
 		zeroToOne(int nSize, int type=SLOW_START):mnSize(nSize), mType(type){}
 		void operator()(vectorn& c) const;
 		int mnSize;
 		int mType;
 	};
 
-	// usage: v0::oneToZero(10, SLOW_START)(c);	-> c¸¦ 10ÇÁ·¹ÀÓÂ¥¸® 1¿¡¼­ 0À¸·Î°¡´Â Ä¿ºê·Î ÃÊ±âÈ­.
+	// usage: v0::oneToZero(10, SLOW_START)(c);	-> cë¥¼ 10í”„ë ˆì„ì§œë¦¬ 1ì—ì„œ 0ìœ¼ë¡œê°€ëŠ” ì»¤ë¸Œë¡œ ì´ˆê¸°í™”.
 	struct oneToZero
 	{
-		// 0¿¡¼­ 1·Î ¿Ã¶ó°¡´Â Ä¿ºê¸¦ ¸¸µç´Ù.
-		// SLOW_START´Â Ä¿ºê ±â¿ï±â°¡ 0¿¡¼­ ½ÃÀÛÇØ¼­ Á¡Á¡ÀÛ¾ÆÁü.
-		// SLOW_END´Â Ä¿ºê ±â¿ï±â°¡ Á¡Á¡ 0À¸·Î ¼ö·Å.
-		// TRANSITIONÀº Ä¿ºê ½ÃÀÛ°ú ³¡ ±â¿ï±â°¡ 0
-		enum { LINEAR, SLOW_START, SLOW_END, TRANSITION } ;	
+		// 0ì—ì„œ 1ë¡œ ì˜¬ë¼ê°€ëŠ” ì»¤ë¸Œë¥¼ ë§Œë“ ë‹¤.
+		// SLOW_STARTëŠ” ì»¤ë¸Œ ê¸°ìš¸ê¸°ê°€ 0ì—ì„œ ì‹œì‘í•´ì„œ ì ì ì‘ì•„ì§.
+		// SLOW_ENDëŠ” ì»¤ë¸Œ ê¸°ìš¸ê¸°ê°€ ì ì  0ìœ¼ë¡œ ìˆ˜ë ´.
+		// TRANSITIONì€ ì»¤ë¸Œ ì‹œì‘ê³¼ ë ê¸°ìš¸ê¸°ê°€ 0
+		enum { LINEAR, SLOW_START, SLOW_END, TRANSITION } ;
 		oneToZero(int nSize, int type=SLOW_START):mnSize(nSize), mType(type){}
 		void operator()(vectorn& c) const;
 		int mnSize;
@@ -307,7 +348,7 @@ namespace v0
 		float m_fMin, m_fMax;
 	};
 
-	/// c=SORT(c) Ã³·³ unaryop¸¦ »ç¿ëÇÑ´Ù.
+	/// c=SORT(c) ì²˜ëŸ¼ unaryopë¥¼ ì‚¬ìš©í•œë‹¤.
 	struct useUnary : public _op
 	{
 		useUnary(const v1::_op& cOP):m_cOperator(cOP) {}
@@ -333,7 +374,7 @@ namespace v1
 		}
 	};
 
-	/// c=ADD(c,d) Ã³·³ binaryop¸¦ »ç¿ëÇÑ´Ù. eg) matrix1.op1(m1::useBinary(m2::...()))..
+	/// c=ADD(c,d) ì²˜ëŸ¼ binaryopë¥¼ ì‚¬ìš©í•œë‹¤. eg) matrix1.op1(m1::useBinary(m2::...()))..
 	struct useBinary : public _op
 	{
 		useBinary(const v2::_op& cOP):m_op(cOP) {}
@@ -348,7 +389,7 @@ namespace v1
 		int m_nXn, m_nStart, m_nEnd;
 	};
 
-	
+
 	struct delta: public _op
 	{
 		delta(){}
@@ -364,6 +405,11 @@ namespace v1
 
 	};
 
+	struct secondDerivative: public _op
+	{
+		secondDerivative(){}
+		virtual void calc(vectorn& c, const vectorn& a) const;
+	};
 
 	struct freq : public _op
 	{
@@ -375,9 +421,9 @@ namespace v1
 
 	struct each: public _op
 	{
-		each(void (*s1_func)(double&,double)):op(s1_func){}
+		each(void (*s1_func)(m_real&,m_real)):op(s1_func){}
 		virtual void calc(vectorn& c, const vectorn& a) const			{ c.each1(op, a); }
-		void (*op)(double&,double);
+		void (*op)(m_real&,m_real);
 	};
 
 	struct radd : public _op
@@ -405,7 +451,7 @@ namespace v1
 	};
 
 /*
-	
+
 */
 	struct sort: public _op
 	{
@@ -422,7 +468,7 @@ namespace v1
 		int m_nNumIter;
 	};
 
-	/// cÀÇ ÀÏºÎ ÄÃ·³(m_vIndex)ÀÇ °ªÀ» a·Î ºÎÅÍ °¡Á®¿Í ÇÒ´çÇÑ´Ù. (Áï m_vIndex.size()==a.size())
+	/// cì˜ ì¼ë¶€ ì»¬ëŸ¼(m_vIndex)ì˜ ê°’ì„ aë¡œ ë¶€í„° ê°€ì ¸ì™€ í• ë‹¹í•œë‹¤. (ì¦‰ m_vIndex.size()==a.size())
 	struct assign : public _op
 	{
 		assign(){}
@@ -445,59 +491,59 @@ namespace v2
 		float m_fFrameTime;
 	};
 
-	
+
 	struct multAdd : public _op
 	{
 		multAdd(){}
-		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;	
-		virtual void calc(vectorn& c, const vectorn& a, double b) const;
+		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;
+		//virtual void calc(vectorn& c, const vectorn& a, m_real b) const;
 	};
 
 	struct cross : public _op
 	{
 		cross(){}
-		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;	
+		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;
 	};
 
 	struct minimum : public _op
-	{	
+	{
 		minimum(){}
-		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;	
+		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;
 	};
-	
+
 	struct maximum : public _op
-	{	
+	{
 		maximum(){}
-		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;	
+		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;
 	};
 
 	struct add : public _op
 	{
 		add(){}
-		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;	
-		virtual void calc(vectorn& c, const vectorn& a, double b) const;
-		virtual void calcInt(intvectorn& c, const intvectorn& a, const intvectorn& b) const;	
-		virtual void calcInt(intvectorn& c, const intvectorn& a, int b) const;
+		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;
+		//virtual void calc(vectorn& c, const vectorn& a, m_real b) const;
+		//virtual void calcInt(intvectorn& c, const intvectorn& a, const intvectorn& b) const;
+		//virtual void calcInt(intvectorn& c, const intvectorn& a, int b) const;
 	};
 
 	struct sub : public _op
 	{
 		sub(){}
-		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;	
-		virtual void calc(vectorn& c, const vectorn& a, double b) const;
+		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;
+		//virtual void calc(vectorn& c, const vectorn& a, m_real b) const;
 	};
 
 	struct mid : public _op
 	{
 		mid(){}
-		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;	
+		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;
 	};
 
 	struct interpolate : public _op
 	{
-		interpolate (double t):m_fT(t){}
+		interpolate (m_real t):m_fT(t){}
 		virtual void calc(vectorn& c, const vectorn& a, const vectorn& b) const;
-		double m_fT;
+		m_real m_fT;
 	};
 }
 
@@ -506,19 +552,18 @@ namespace sv2
 	struct dotProduct : public _op
 	{
 		dotProduct(){}
-		virtual double calc(const vectorn& a, const vectorn& b) const { return a%b; }
+		virtual m_real calc(const vectorn& a, const vectorn& b) const { return a%b; }
 	};
 
 /*	struct angle2D : public _op
 	{
 		angle2D(){}
-		virtual double calc(const vectorn& a, const vectorn& b) const { return a.angle2D(b); }
+		virtual m_real calc(const vectorn& a, const vectorn& b) const { return a.angle2D(b); }
 	};*/
 
 	struct angle : public _op
 	{
 		angle(){}
-		virtual double calc(const vectorn& a, const vectorn& b) const { return a.angle(b); }
+		virtual m_real calc(const vectorn& a, const vectorn& b) const { return a.angle(b); }
 	};
-
 }

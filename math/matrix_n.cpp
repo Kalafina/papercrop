@@ -1,30 +1,13 @@
-//
-// matrixn.H 
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
-
 #include "stdafx.h"
 #include "mathclass.h"
+#include "Filter.h"
+#include "Operator.h"
+#include "../utility/operatorString.h"
 
-matrixn& matrixn::operator=(const matrixnView& other)		{ assign(other); return *this;}	
 
-intmatrixn& intmatrixn::operator=(const intmatrixnView& other)		{ assign(other); return *this;}	
+matrixn& matrixn::operator=(const matrixnView& other)		{ assign(other); return *this;}
+
+intmatrixn& intmatrixn::operator=(const intmatrixnView& other)		{ assign(other); return *this;}
 
 intmatrixnView intmatrixn::range(int startRow, int endRow, int startColumn, int endColumn)
 {
@@ -32,7 +15,7 @@ intmatrixnView intmatrixn::range(int startRow, int endRow, int startColumn, int 
 }
 
 const intmatrixnView intmatrixn::range(int startRow, int endRow, int startColumn, int endColumn) const
-{ 
+{
 	return _range<intmatrixnView >(startRow, endRow, startColumn, endColumn);
 }
 
@@ -76,12 +59,12 @@ void intmatrixn::popBack(intvectorn* pOut)
 ////////////////////////////////////////////////////////////////////////////////
 
 matrixn ::matrixn(const matrixnView& other)
-:_tmat<double>()
+:_tmat<m_real>()
 {
-	assign(other);	
+	assign(other);
 }
 
-matrixnView::matrixnView(double* ptr, int nrow, int ncol, int stride2)
+matrixnView::matrixnView(m_real* ptr, int nrow, int ncol, int stride2)
 :matrixn(ptr, nrow, ncol, stride2)
 {
 }
@@ -91,7 +74,7 @@ matrixnView::~matrixnView()
 }
 ////////////////////////////////////////////////////////////////////////////////
 matrixn ::matrixn ( int x, int y)
-:_tmat<double>()
+:_tmat<m_real>()
 {
 	setSize(x,y);
 }
@@ -100,13 +83,43 @@ matrixn ::~matrixn ()
 {
 }
 
+matrixn& matrixn::inverse(const matrixn& other)
+{
+	matrixn temp(other);
+	m::SVinverse(temp, *this);
+	return *this;
+}
+
+matrixn& matrixn::pseudoInverse( const matrixn& a)
+{
+	// return inv(A'A)A' for over-determined system and A'inv(AA') for underdetermined system
+	matrixn& ret=*this;
+	if(a.rows() > a.cols())
+	{
+		static matrixn inv, ata, at;
+		at.transpose(a);
+		ata.mult(at,a);
+		inv.inverse(ata);
+		ret.mult(inv, at);//inv(A'A)A'
+	}
+	else
+	{
+		static matrixn at, inv, aat;
+		at.transpose(a);
+		aat.mult(a,at);
+		inv.inverse(aat);
+		ret.mult(at, inv);//A'inv(AA')
+	}
+	return ret;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
 
 
 
-matrixn& matrixn::align() 
+matrixn& matrixn::align()
 {
 	matrixn& c=*this;
 	for(int i=1; i<c.rows(); i++)
@@ -118,7 +131,7 @@ matrixn& matrixn::align()
 }
 
 
-matrixn& matrixn::each2(_tvectorn<double>& (_tvectorn<double>::*func)(_tvectorn<double> const&, _tvectorn<double> const& ),
+matrixn& matrixn::each2(_tvectorn<m_real>& (_tvectorn<m_real>::*func)(_tvectorn<m_real> const&, _tvectorn<m_real> const& ),
 				  matrixn const& a, matrixn const& b)
 {
 	setSameSize(a);
@@ -129,7 +142,7 @@ matrixn& matrixn::each2(_tvectorn<double>& (_tvectorn<double>::*func)(_tvectorn<
 	return *this;
 }
 
-matrixn& matrixn::each2(_tvectorn<double>& (_tvectorn<double>::*func)(_tvectorn<double> const&, _tvectorn<double> const& ), 
+matrixn& matrixn::each2(_tvectorn<m_real>& (_tvectorn<m_real>::*func)(_tvectorn<m_real> const&, _tvectorn<m_real> const& ),
 			matrixn const& a, vectorn const& b)
 {
 	setSameSize(a);
@@ -139,7 +152,7 @@ matrixn& matrixn::each2(_tvectorn<double>& (_tvectorn<double>::*func)(_tvectorn<
 	}
 	return *this;
 }
-matrixn& matrixn::each1(void (*s1_func)(double&,double), matrixn const& a)
+matrixn& matrixn::each1(void (*s1_func)(m_real&,m_real), matrixn const& a)
 {
 	matrixn& c=*this;
 	setSameSize(a);
@@ -176,7 +189,7 @@ matrixn& matrixn::each0(vectorn& (vectorn::*func)())
 		(row(i).*func)();
 	return *this;
 }
-matrixn& matrixn::each2(double (*s2_func)(double,double), matrixn const& a, matrixn const& b)
+matrixn& matrixn::each2(m_real (*s2_func)(m_real,m_real), matrixn const& a, matrixn const& b)
 {
 	matrixn& c=*this;
 	ASSERT(a.rows()==b.rows());
@@ -188,7 +201,7 @@ matrixn& matrixn::each2(double (*s2_func)(double,double), matrixn const& a, matr
 	return *this;
 }
 
-matrixn& matrixn::each2(double (*s2_func)(double,double), matrixn const& a, double b)
+matrixn& matrixn::each2(m_real (*s2_func)(m_real,m_real), matrixn const& a, m_real b)
 {
 	matrixn& c=*this;
 	c.setSameSize(a);
@@ -197,7 +210,7 @@ matrixn& matrixn::each2(double (*s2_func)(double,double), matrixn const& a, doub
 			c[i][j]=s2_func(a[i][j],b);
 	return *this;
 }
-matrixn& matrixn::each2(double (*s2_func)(double,double), double a, matrixn const& b)
+matrixn& matrixn::each2(m_real (*s2_func)(m_real,m_real), m_real a, matrixn const& b)
 {
 	matrixn& c=*this;
 	c.setSameSize(b);
@@ -221,6 +234,26 @@ bool matrixn::isValid() const
 				return false;
 		}
 	return true;
+}
+
+matrixn&  matrixn::assign( vector3N const& a)
+{
+	matrixn& c=(*this);
+	c.setSize(a.rows(), 3);
+
+	for(int i=0; i<a.rows(); i++)
+		c.row(i).assign(a.row(i));
+	return c;
+}
+
+matrixn&  matrixn::assign( quaterN const& a)
+{
+	matrixn& c=(*this);
+	c.setSize(a.rows(), 4);
+
+	for(int i=0; i<a.rows(); i++)
+		c.row(i).assign(a.row(i));
+	return c;
 }
 
 
@@ -255,10 +288,10 @@ void matrixn::toVector(vectorn& vec) const
 {
 	// concat all column vector of this matrix into one large vector.
 	vec.setSize(rows()*cols());
-	
+
 	for(int i=0; i<rows(); i++)
 	{
-		memcpy(&(vec[i*cols()]),operator[](i), sizeof(double)*cols() );
+		memcpy(&(vec[i*cols()]),operator[](i), sizeof(m_real)*cols() );
 	}
 }
 
@@ -266,22 +299,77 @@ matrixn& matrixn::fromVector(const vectorn& vec, int column)
 {
 	int row=vec.size()/column;
 	ASSERT(vec.size()%column==0);
-	
+
 	setSize(row, column);
 
 	for(int i=0; i< row; i++)
 		for(int j=0; j<column; j++)
 			value(i,j)=vec(i*column+j);
-	
+
 	return *this;
 }
 
 
+m_real matrixn::distance(matrixn const& other) const	// matrix ?êÍ∞ú ?¨Ïù¥??Í±∞Î¶¨, ?ïÏùò??Íµ¨ÌòÑ Ï∞∏Í≥†
+{
+	m_real distance=0;
+	ASSERT(rows()==other.rows());
+	ASSERT(cols()==other.cols());
 
+	for(int i=0; i<rows(); i++)
+	{
+		distance+=row(i).distance(other.row(i));
+	}
+	return distance;
+}
+
+matrixn&  matrixn::derivative(matrixn const& positions, bitvectorn const& discontinuity)
+{
+	// ex) velocities.delta(positions);
+	setSize(positions.rows(), positions.cols());
+
+	intvectorn encoding;
+	encoding.runLengthEncodeCut(discontinuity);
+
+	int numSeg=encoding.size()/2;
+
+	for(int seg=0; seg<numSeg; seg++)
+	{
+		int start=encoding[seg*2];
+		int end=encoding[seg*2+1];
+		range(start, end).derivative(positions.range(start, end));
+	}
+	return *this;
+}
+
+void matrixn::eigenVectors(const matrixn& mat, vectorn& eigenValues)
+{
+}
+
+
+matrixn&  matrixn::derivativeQuater(matrixn const& rotations)	// ex) angularVelocities.delta(rotations);
+{
+	ASSERT(rotations.cols()==4);
+	setSize(rotations.rows(), 3);
+	ASSERT(rows()>2);
+	for(int i=1; i<rotations.rows()-1; i++)
+	{
+		// w[i]*q[i-1]=q[i+1]
+		// w[i]=q[i+1]*q[i-1]^-1
+		quater invq;
+		invq.inverse(rotations.row(i-1).toQuater());
+		vector3 rotVector;
+		rotVector.rotationVector(rotations.row(i+1).toQuater()*invq);
+		row(i).assign(rotVector);
+	}
+	row(0)=row(1);
+	row(rotations.rows()-1)=row(rotations.rows()-2);
+	return *this;
+}
 
 matrixn&  matrixn::derivative(matrixn const& positions)	// ex) velocities.delta(positions);
 {
-	// this->op1(m1::derivative(), positions)∏¶ «ÿµµ ∞·∞˙¥¬ ∂»∞∞¥Ÿ.
+	// this->op1(m1::derivative(), positions)Î•??¥ÎèÑ Í≤∞Í≥º???ëÍ∞ô??
 
 	setSize(positions.rows(), positions.cols());
 
@@ -296,11 +384,22 @@ matrixn&  matrixn::derivative(matrixn const& positions)	// ex) velocities.delta(
 	return *this;
 }
 
+m_real matrixn::op1(CAggregate::aggregateOP eOP) const
+{
+	CAggregate cOP(eOP);
+	m_real cur=cOP.Init();
+
+	for( int i=0; i<rows();i++ )
+		for(int j=0; j<cols(); j++)
+			cOP.Update(cur, value(i,j));
+
+	return cOP.Final(cur, rows()*cols());
+}
 /*
 matrixn&  matrixn::derivative(matrixn const& positions, bitvectorn const& discontinuity)	// ex) velocities.delta(positions);
 {
 	setSize(positions.rows(), positions.cols());
-	
+
 	intvectorn encoding;
 	encoding.runLengthEncodeCut(discontinuity);
 
@@ -310,7 +409,7 @@ matrixn&  matrixn::derivative(matrixn const& positions, bitvectorn const& discon
 	{
 		int start=encoding[seg*2];
 		int end=encoding[seg*2+1];
-		op1(m1::domainRange(start, end, 1, m1::derivative()), positions);		        		
+		op1(m1::domainRange(start, end, 1, m1::derivative()), positions);
 	}
 	return *this;
 }*/
@@ -325,7 +424,7 @@ void matrixn::load(const char* filename, bool bLoadFromBinaryFile)
 		int nrow=file.UnpackInt();
 		int ncolumn=file.UnpackInt();
 		setSize(nrow, ncolumn);
-		file.UnpackArray(buffer, rows()*cols(), sizeof(double));
+		file.UnpackArray(buffer, rows()*cols(), sizeof(m_real));
 		file.CloseFile();
 	}
 	else
@@ -342,7 +441,7 @@ void matrixn::save(const char* filename, bool bSaveIntoBinaryFile) const
 		file.OpenWriteFile(filename);
 		file.PackInt(rows());
 		file.PackInt(cols());
-		file.PackArray(buffer, rows()*cols(), sizeof(double));
+		file.PackArray(buffer, rows()*cols(), sizeof(m_real));
 		file.CloseFile();
 	}
 	else
@@ -368,8 +467,8 @@ matrixnView matrixn::range(int startRow, int endRow, int startColumn, int endCol
 	return _range<matrixnView >(startRow,  endRow,  startColumn,  endColumn);
 }
 
-inline const matrixnView matrixn::range(int startRow, int endRow, int startColumn, int endColumn) const
-{ 
+const matrixnView matrixn::range(int startRow, int endRow, int startColumn, int endColumn) const
+{
 	return _range<matrixnView >( startRow,  endRow,  startColumn,  endColumn);
 }
 
@@ -397,10 +496,37 @@ matrixn&  matrixn::concatColumns( std::list<matrixn*> matrixes)
 	return *this;
 }
 
+matrixn&  matrixn::distanceMat(matrixn const& a)
+{
+	setSize(a.rows(), a.rows());
+	for(int i=0; i<a.rows(); i++)
+	{
+		for(int j=i; j<a.rows(); j++)
+		{
+			(*this)[j][i]=(*this)[i][j]=a.row(i).distance(a.row(j));
+		}
+	}
+	return *this;
+}
+
+matrixn&  matrixn::distance(matrixn const& a, matrixn const& b)
+{
+	// ??matrix??Í∞??êÏÜå Î≤°ÌÑ∞ Î™®Îì† Ï°∞Ìï© ?¨Ïù¥??Í±∞Î¶¨ Íµ¨Ìï®.
+	ASSERT(a.cols()==b.cols());
+	setSize(a.rows(), b.rows());
+	for(int i=0; i<a.rows(); i++)
+	{
+		for(int j=0; j<b.rows(); j++)
+		{
+			(*this)[i][j]=a.row(i).distance(b.row(j));
+		}
+	}
+	return *this;
+}
 /*
 void matrixn::bubbles(int nrow, int nbubbles)
 {
-	// nrow¿Ã«œ¥¬ nbubble∏∏≈≠ æ∆∑°∑Œ ≥ª∏∞¥Ÿ. ¡Ô matrix≈©±‚∞° nbubble∏∏≈≠ ºº∑Œ∑Œ ƒø¡ˆ∞Ì, ∫Ûƒ≠¿Ã ª˝±‰¥Ÿ.
+	// nrow?¥Ìïò??nbubbleÎßåÌÅº ?ÑÎûòÎ°??¥Î¶∞?? Ï¶?matrix?¨Í∏∞Í∞Ä nbubbleÎßåÌÅº ?∏Î°úÎ°?Ïª§Ï?Í≥? ÎπàÏπ∏???ùÍ∏¥??
 	int prev_row=rows();
 	resize(rows()+nbubbles, cols());
 
@@ -411,9 +537,12 @@ void matrixn::bubbles(int nrow, int nbubbles)
 		row(i).setAllValue(0);
 }*/
 
+void matrixn::spectrum(const vectorn& input, int windowSize)
+{
+}
 /*void matrixn::deleteRows(int start, int end)
 {
-	// end¿Ã«œ¥¬ end-start∏∏≈≠ ¿ß∑Œ ø√∂Û∞£¥Ÿ. ¡Ô matrix≈©±‚∞° end-start∏∏≈≠ ºº∑Œ∑Œ ¿€æ∆¡¯¥Ÿ.
+	// end?¥Ìïò??end-startÎßåÌÅº ?ÑÎ°ú ?¨ÎùºÍ∞ÑÎã§. Ï¶?matrix?¨Í∏∞Í∞Ä end-startÎßåÌÅº ?∏Î°úÎ°??ëÏïÑÏßÑÎã§.
 	int numRows=end-start;
 
 	for(int i=end; i<rows(); i++)
@@ -463,12 +592,12 @@ matrixn&  matrixn::assign( matrix4 const& mat, bool bOnly3x3)
 	return c;
 }
 
-	
 
-matrixn& matrixn::op0(const m1::_op & op) 
+
+matrixn& matrixn::op0(const m1::_op & op)
 {
 	matrixn temp(*this);
-	op.calc(*this, temp);	
+	op.calc(*this, temp);
 	return *this;
 }
 
@@ -481,15 +610,34 @@ matrixn&  matrixn::identity(int n)
 		ret[i][i]=1.0;
 	return ret;
 }
-	
 
 
 
+TString matrixn::output(const char* formatString, int start, int end) const
+{
+	TString	id;
+	if(end>rows()) end=rows();
 
-double matrixn::trace() const
+	TString temp;
+	id+="[\n";
+
+	for(int i=start; i<end; i++)
+	{
+		temp.format("%d ", i);
+		temp+=row(i).output(formatString);
+		id+=temp;
+		id+="\n";
+	}
+	id+="]";
+	return id;
+}
+
+
+
+m_real matrixn::trace() const
 {
 	int nn=MIN(rows(), cols());
-	double tr=0;
+	m_real tr=0;
 	for(int i=0; i<nn; i++)
 		tr+=(*this)[i][i];
 	return tr;
@@ -563,8 +711,8 @@ matrixn&  matrixn::linearResample(matrixn const& mat, vectorn const& samplingInd
 	int numSample=samplingIndex.size();
 	setSize(numSample, mat.cols());
 
-	double fl;
-	double t;
+	m_real fl;
+	m_real t;
 	int ifl;
 	for(int i=0; i<numSample; i++)
 	{
@@ -589,7 +737,7 @@ assert( this->rows() == this->cols() );
 
 int n = this->rows();
 int i, j, k, imax;
-double big, dum, sum, temp;
+m_real big, dum, sum, temp;
 
 static vectorn vv; vv.setSize( n );
 matrixn &a = (*this);
@@ -646,7 +794,7 @@ vv[imax] = vv[j];
 }
 
 index[j] = imax;
-if (a[j][j] == 0.0f) a[j][j] = (double)EPS;
+if (a[j][j] == 0.0f) a[j][j] = (m_real)EPS;
 
 if ( j!=n )
 {
@@ -666,7 +814,7 @@ int n = this->rows();
 matrixn &a = (*this);
 
 int i, ii = -1, ip, j;
-double sum;
+m_real sum;
 
 for ( i=0; i<n; i++ )
 {
@@ -839,16 +987,30 @@ b[i][j] = c[i][j+a.cols()];
 
 
 */
+void m::SVdecompose(matrixn& in_u, vectorn & s, matrixn &v)
+{
+}
 
+void m::SVinverse( matrixn& in_u, matrixn &mat )
+{
+}
 
-matrixn matrixn::Each2(double (*s2_func)(double,double), matrixn const& b) const { matrixn c; c.each2(s2_func, *this, b); return c;}
+matrixn matrixn::Each2(m_real (*s2_func)(m_real,m_real), matrixn const& b) const { matrixn c; c.each2(s2_func, *this, b); return c;}
 
 
 
 matrixn operator+( matrixn const& a, matrixn const& b)	{matrixn c; c.add(a,b); return c;};
 matrixn operator-( matrixn const& a, matrixn const& b)	{matrixn c; c.subtract(a,b); return c;};
 matrixn operator*( matrixn const& a, matrixn const& b)	{matrixn c; c.mult(a,b); return c;};
-matrixn operator/( matrixn  const& a, double b)		{matrixn  c; c.mult(a,1.0/b); return c;};
-matrixn operator*( matrixn const& a, double b )		{matrixn c;c.mult(a,b);return c;}
-matrixn operator*( double b , matrixn const& a)		{matrixn c;c.mult(a,b);return c;}
+matrixn operator/( matrixn  const& a, m_real b)		{matrixn  c; c.mult(a,1.0/b); return c;};
+matrixn operator*( matrixn const& a, m_real b )		{matrixn c;c.mult(a,b);return c;}
+matrixn operator*( m_real b , matrixn const& a)		{matrixn c;c.mult(a,b);return c;}
 
+quaterNView matrixn::toQuaterN() const
+{
+	return _column<quaterNView >(0);
+}
+vector3NView matrixn::toVector3N() const
+{
+	return _column<vector3NView >(0);
+}

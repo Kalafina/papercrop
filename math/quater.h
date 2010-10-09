@@ -1,23 +1,5 @@
-//
-// quater.H 
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
+#ifndef _QUATER_H_
+#define _QUATER_H_
 
 #pragma once
 #include "vector.h"
@@ -29,41 +11,39 @@
 	(axis*sin(theta/2), cos(theta/2))
 	
 
-¡÷¿« ªÁ«◊: 
-quaternion¿∫ q1*q2*v«¸≈¬∑Œ ¡§¿«ªÛ ø¿∏•¬ ≤≤ ∏’¿˙ ¡°ø° ∞ˆ«ÿ¡¯¥Ÿ∞Ì ª˝∞¢«ÿæﬂ «—¥Ÿ.
-openGL matrix¥¬ quaternion∞˙ ∏∂¬˙∞°¡ˆ∑Œ R1*r2*v«¸≈¬∑Œ ø¿∏•¬ ø° ¡°¿Ã ∞ˆ«ÿ¡¯¥Ÿ.
-«œ¡ˆ∏∏ D3DXMATRIX¥¬ v*R1*R2«¸≈¬∑Œ ¡°¿Ã øﬁ¬ ø° ∞ˆ«ÿ¡ˆ∞Ì, ∏∂¬˘∞°¡ˆ∑Œ D3DXQUATERNION¿∫ q1*q2∞° ø¯∑° ¡§¿«¿« q2*q1∞˙ ¿œƒ°«œµµ∑œ 
-∞ˆ«œ±‚º¯º≠∞° πŸ≤ÓæÓ ¿÷¥Ÿ. ¡Ô D3DXMATRIXøÕ D3DXQUATERNION∏µŒ øﬁ¬ ø° ¿÷¥¬ ∞Õ¿Ã ∑Œƒ√, ∞°¿Â ø¿∏•¬ ø° ¿÷¥¬ ∞Õ¿Ã ±€∑Œπ˙¿Ã¥Ÿ.
-π›∏È quater≈¨∑°Ω∫øÕ matrix4≈¨∑°Ω∫¥¬ openGL¿« convention¿ª µ˚∏•¥Ÿ. ∞°¿Â ø¿∏•¬ ø° ¿÷¥¬∞Õ¿Ã ∑Œƒ√ ∆Æ∑£Ω∫∆˚¿Ã¥Ÿ.
+Ï£ºÏùò ÏÇ¨Ìï≠: 
+quaterÌÅ¥ÎûòÏä§ÏôÄ matrix4ÌÅ¥ÎûòÏä§Îäî openGLÏùò conventionÏùÑ Îî∞Î•∏Îã§. Í∞ÄÏû• Ïò§Î•∏Ï™ΩÏóê ÏûàÎäîÍ≤ÉÏù¥ Î°úÏª¨ Ìä∏ÎûúÏä§ÌèºÏù¥Îã§.
+quaternionÎèÑ matrixÏôÄ ÎßàÏ∞¨Í∞ÄÏßÄÎ°ú q1*q2*vÌòïÌÉúÎ°ú Ï†ïÏùòÏÉÅ Ïò§Î•∏Ï™ΩÏóê Ï†ê ÏúÑÏπòÍ∞Ä Í≥±Ìï¥ÏßÑÎã§Í≥† ÏÉùÍ∞ÅÌï¥Ïïº ÌïúÎã§.
+Ï∞∏Í≥†: D3DXMATRIXÎäî v*R1*R2ÌòïÌÉúÎ°ú Ï†êÏù¥ ÏôºÏ™ΩÏóê Í≥±Ìï¥ÏßÄÍ≥†, ÎßàÏ∞¨Í∞ÄÏßÄÎ°ú D3DXQUATERNIONÏùÄ q1*q2Í∞Ä quater Ï†ïÏùòÏùò q2*q1Í≥º ÏùºÏπòÌïòÎèÑÎ°ù 
+Í≥±ÌïòÍ∏∞ÏàúÏÑúÍ∞Ä Î∞îÎÄåÏñ¥ Ï†ïÏùò ÎêòÏñ¥ÏûàÎã§. Ï¶â D3DXMATRIXÏôÄ D3DXQUATERNIONÎ™®Îëê ÏôºÏ™ΩÏóê ÏûàÎäî Í≤ÉÏù¥ Î°úÏª¨, Í∞ÄÏû• Ïò§Î•∏Ï™ΩÏóê ÏûàÎäî Í≤ÉÏù¥ Í∏ÄÎ°úÎ≤åÏù¥Îã§.
 */
+
 class quater
 {
 public:
-	double w, x, y, z;
+	m_real w, x, y, z;
 	
 	//
     // constructors
 	//
-    quater() {};
-    quater( double ww, double xx, double yy, double zz )			{ w=ww; x=xx; y=yy; z=zz;}
-    quater( double a[4] )										{ w=a[0]; x=a[1]; y=a[2]; z=a[3]; }
-	quater(const vector3& vec, double ww)						{ x=vec.x; y=vec.y; z=vec.z; w=ww;}
-	quater(double angle, const vector3& axis)					{ setRotation(axis, angle);}
+    quater() {}
+    quater( m_real ww, m_real xx, m_real yy, m_real zz )			{ w=ww; x=xx; y=yy; z=zz;}
+    quater( m_real a[4] )										{ w=a[0]; x=a[1]; y=a[2]; z=a[3]; }
+	quater(const vector3& vec, m_real ww)						{ x=vec.x; y=vec.y; z=vec.z; w=ww;}
+	quater(m_real angle, const vector3& axis)					{ setRotation(axis, angle);}
 	quater(const vector3& vec)									{ x=vec.x; y=vec.y; z=vec.z; w=0;}
-	quater(const quater& q)										{ memcpy(this,&q,sizeof(quater)); };
-#ifdef DIRECT3D_VERSION
-	quater(const D3DXQUATERNION& q)								{ x=q.x; y=q.y; z=q.z; w=q.w;}//memcpy(this,q,sizeof(D3DXQUATERNION)); };
-#endif
-    // binary operations
-	// ¿Ã∞ÊøÏ lvalue∞° output¿Ã µ»¥Ÿ. ¡Ô c=a+b -> c.add(a,b);
+	quater(const quater& q)										{ memcpy(this,&q,sizeof(quater)); }
+
+	// binary operations
+	// Ïù¥Í≤ΩÏö∞ lvalueÍ∞Ä outputÏù¥ ÎêúÎã§. Ï¶â c=a+b -> c.add(a,b);
 	void add(quater const& a, quater const& b);
 	void subtract(quater const& a, quater const& b);
-	void mult(quater const& a, double b);
+	void mult(quater const& a, m_real b);
 	void mult(quater const& a, quater const& b);// cross product
-    void pow( vector3 const&, double );
-    void slerp( quater const&, quater const&, double );
-	void safeSlerp( quater const&, quater const&, double );// align¿Ã æ»µ«æÓ ¿÷æÓµµ µø¿€
-    void interpolate( double, quater const&, quater const& );
+    void pow( vector3 const&, m_real );
+    void slerp( quater const&, quater const&, m_real );
+	void safeSlerp( quater const&, quater const&, m_real );// alignÏù¥ ÏïàÎêòÏñ¥ ÏûàÏñ¥ÎèÑ ÎèôÏûë
+    void interpolate( m_real, quater const&, quater const& );
 	void unitAxisToUnitAxis2(const vector3& vFrom, const vector3& vTo);
 	void axisToAxis( const vector3& vFrom, const vector3& vTo);
 	
@@ -83,26 +63,29 @@ public:
     // V1 and V2 (see Quaternion::Align), and q_twist is a rotation about V1.
     void decomposeNoTwistTimesTwist (const vector3& rkAxis, quater& rkNoTwist, quater& rkTwist) const;
 
-	void scale(double s);
+	void scale(m_real s);
 		
 	// derivatives
-	void difference(quater const& q1, quater const& q2);			//!< quaternion representation of "angular velocity w" : q2inv(q1);
+	void difference(quater const& q1, quater const& q2);			//!< quaternion representation of "angular velocity w" : q2*inv(q1);
+	void toLocal(quater const& parent, quater const& child);		//!< inv(parent)*child
 	void derivative(quater const& q1, quater const& q2);	//!< q'(t)=(1/2) w q; or q'(t)=q2-q1; -> both produces almost same result
 	
-	void toAxisAngle(vector3& axis, double& angle) const;
-	void bezier(const quater& q0, const quater& q1, const quater& q2, const quater& q3, double t);
-	void hermite(const quater& qa, const vector3& wa, const quater& qb, const vector3& wb, double t);
+	void toAxisAngle(vector3& axis, m_real& angle) const;
+	void blend(const vectorn& weight, matrixn& aInputQuater);
+	void bezier(const quater& q0, const quater& q1, const quater& q2, const quater& q3, m_real t);
+	void hermite(const quater& qa, const vector3& wa, const quater& qb, const vector3& wb, m_real t);
 		
-	double    operator%( quater const&) const;    // dot product
-	double	distance( quater const& ) const;
-	// æ∆∑° «‘ºˆµÈ¿∫ ¥¿∏Æπ«∑Œ ªÁøÎ¿ª ¿⁄¡¶.
-    quater    operator+( quater const& b) const { quater c;c.add(*this,b); return c;}
-    quater    operator-( quater const& b) const { quater c;c.subtract(*this,b); return c;}
-    quater    operator*( quater const& b) const { quater c;c.mult(*this,b); return c;}
-	quater    operator*( double b) const			{ quater c;c.mult(*this,b); return c;}
-	quater    operator/( double b) const			{ quater c;c.mult(*this,1/b);return c;}
-	friend quater    operator*(double a, quater const& b) { quater c;c.mult(b,a); return c;}
-	
+	m_real    operator%( quater const&) const;    // dot product
+	m_real	  distance( quater const& ) const;	
+    quater    operator+( quater const& b) const		{ quater c;c.add(*this,b); return c;}
+    quater    operator-( quater const& b) const		{ quater c;c.subtract(*this,b); return c;}
+    quater    operator-() const						{ quater c; c.negate(*this); return c;};
+	quater    operator*( quater const& b) const		{ quater c;c.mult(*this,b); return c;}
+	quater    operator*( m_real b) const			{ quater c;c.mult(*this,b); return c;}
+	vector3	  operator*(vector3 const& b) const		{ vector3 c; c.rotate(*this, b); return c;}
+	quater    operator/( m_real b) const			{ quater c;c.mult(*this,1/b);return c;}
+	friend quater    operator*(m_real a, quater const& b) { quater c;c.mult(b,a); return c;}
+
 	// unary operations
 	//! quaternion exp
 	/*!
@@ -113,64 +96,54 @@ public:
 	exp(Q) = (cos(theta/2), sin(theta/2) * v) -> theta rotation
 	*/
     void exp( vector3 const& );
-	vector3 log() const					{ vector3 o; o.ln(*this); return o;}
-    void inverse(const quater& a)		{ w=a.w; x=a.x*-1.f; y=a.y*-1.f; z=a.z*-1.f;}
+	vector3 log() const						{ vector3 o; o.ln(*this); return o;}
+    void inverse(const quater& a)			{ w=a.w; x=a.x*-1.f; y=a.y*-1.f; z=a.z*-1.f;}
+	quater   inverse() const				{ quater c; c.inverse(*this); return c;};
 	void negate(quater const& a);
 	void setRotation(const matrix4& a);
-	void setRotation(const char* aChannel, double *aValue, bool bRightToLeft=false);	//!< from euler angle. aChannel="YXZ" or something like that.
-	void getRotation(const char* aChannel, double *aValue, bool bRightToLeft=false) const;	//!< to euler angle. aChannel="YXZ" or something like that.
-	void setRotation(const vector3& axis, double angle);
+	void setRotation(const char* aChannel, m_real *aValue, bool bRightToLeft=false);	//!< from euler angle. aChannel="YXZ" or something like that.
+	void getRotation(const char* aChannel, m_real *aValue, bool bRightToLeft=false) const;	//!< to euler angle. aChannel="YXZ" or something like that.
+	void setRotation(const vector3& axis, m_real angle);
 	void setRotation(const vector3& rotationVector)	{ exp(rotationVector/2.f); }
+	// vecAxis should be a unit vector.
 	void setAxisRotation(const vector3& vecAxis, const vector3& front, const vector3& vecTarget);
 	void leftMult(quater const& a)			{ quater copy(*this); mult(a, copy);}
+	void rightMult(quater const& a)			{ quater copy(*this); mult(copy,a);}
 	void normalize(const quater& a);
 	void align(const quater& other)			{ quater& c=*this; if(c%other<0) c*=-1;}
-	void operator=(quater const& a)			{ setValue(a.w, a.x, a.y, a.z);}
+	void operator=(quater const& a)			{ setValue(a.w, a.x, a.y, a.z);} 
 	void operator+=(quater const& a)		{ add(*this,a);}
 	void operator-=(quater const& a)		{ subtract(*this,a);}
-	void operator*=(quater const& a)		{ quater copy=*this; mult(copy,a);}
-	void operator*=(double a)				{ x*=a; y*=a; z*=a; w*=a;}
-	void operator/=(double a)				{ double inv=1.f/a; (*this)*=inv;}
+	void operator*=(quater const& a)		{ rightMult(a);}
+	void operator*=(m_real a)				{ x*=a; y*=a; z*=a; w*=a;}
+	void operator/=(m_real a)				{ m_real inv=1.f/a; (*this)*=inv;}
 
-	// æ∆∑°«‘ºˆ¥¬ ¥¿∏Æ¥Ÿ.
-	quater   inverse() const	{ quater c; c.inverse(*this); return c;};
-	quater   operator-() const  { quater c; c.negate(*this); return c;};
 	vector3 rotationVector() const { vector3 c; c.rotationVector(*this); return c;}
-	/*
-    // transform with matrix
-    friend matrix    Quater2Matrix( quater const& );
-    friend quater    Matrix2Quater( matrix const& );
-    friend vector3    Quater2EulerAngle( quater const& );
-    friend quater    EulerAngle2Quater( vector3 const& );
-	*/
-	// void operations
-	
+
 	void normalize();
 	void negate()	{ negate(*this);}
 	void identity()	{ w=1.f; x=0.f; y=0.f; z=0.f;}
-	double rotationAngle() const	{ vector3 temp; temp.rotationVector(*this); return temp.length();}
-	double rotationAngle(const vector3& axis) const { vector3 temp; temp.rotationVector(*this); if(temp%axis<0) return temp.length()*-1.f; else return temp.length();}
-	double rotationAngleAboutAxis(const vector3& axis) const;
-	// stream
- //  friend ostream& operator<<( ostream&, quater const& );
-   // friend istream& operator>>( istream&, quater& );
+	m_real rotationAngle() const	{ vector3 temp; temp.rotationVector(*this); return temp.length();}
+	m_real rotationAngle(const vector3& axis) const { vector3 temp; temp.rotationVector(*this); if(temp%axis<0) return temp.length()*-1.f; else return temp.length();}
+	m_real rotationAngleAboutAxis(const vector3& axis) const;
 
 	//
     // inquiry functions
 	//
-	double	real() const		{ return w; }
-	// This is slow, so I recommend vector3::imagenaries function instead.
-	vector3 imaginaries() const { vector3 out; out.x=x; out.y=y; out.z=z; return out;}
-	double  length() const;
-	double& operator[] (int i)				{ switch(i) { case 0: return w; case 1: return x; case 2: return y; case 3: return z; } ASSERT(0); return x;}
-    const double& operator[] (int i) const 	{ switch(i) { case 0: return w; case 1: return x; case 2: return y; case 3: return z; } ASSERT(0); return x;}
-	double getValue(int i)const	{ switch(i) { case 0: return w; case 1: return x; case 2: return y; case 3: return z; } ASSERT(0); return x;}
-	void getValue( double d[4] )			{ d[0]=w; d[1]=x; d[2]=y; d[3]=z; }
-    void setValue( double d[4] )			{ w=d[0]; x=d[1]; y=d[2]; z=d[3]; }
-	void setValue( double ww,double xx, double yy, double zz ){ w=ww; x=xx; y=yy; z=zz;}
-	void setValue( const vector3& vec, double ww)			  { x=vec.x; y=vec.y; z=vec.z; w=ww;}
+	m_real	real() const					{ return w; }
+	vector3 imaginaries() const				{ vector3 out; out.x=x; out.y=y; out.z=z; return out;}
+	m_real  length() const;
+	m_real& operator[] (int i)				{ return (&w)[i];}
+    const m_real& operator[] (int i) const 	{ return (&w)[i];}
+	m_real getValue(int i)const				{ return (&w)[i];}
+	void getValue( m_real d[4] )			{ d[0]=w; d[1]=x; d[2]=y; d[3]=z; }
+    void setValue( m_real d[4] )			{ w=d[0]; x=d[1]; y=d[2]; z=d[3]; }
+	void setValue( m_real ww,m_real xx, m_real yy, m_real zz ){ w=ww; x=xx; y=yy; z=zz;}
+	void setValue( const vector3& vec, m_real ww)			  { x=vec.x; y=vec.y; z=vec.z; w=ww;}
 
 	TString output(bool rotationVector=false);
+
 };
 
 
+#endif

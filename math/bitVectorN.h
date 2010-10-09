@@ -1,23 +1,25 @@
+#ifndef _BITVECTORN_H_
+#define _BITVECTORN_H_
 #pragma once
- 
-//! BitArrayÀÇ Fast Version
-/*! ´Ù¸¥ Á¾·ùÀÇ BitArray´Â BitProxy class¸¦ »ç¿ëÇÏ¿© a[10]=0 Ã³·³ lvalue·Î »ç¿ëµÇ´Â °ÍÀÌ °¡´ÉÇÏÁö¸¸,
-ÀÌ BitArray´Â lvalue·Î »ç¿ëµÇ´Â °æ¿ì Assign ¶Ç´Â SetAt, ClearAtÀ» »ç¿ëÇÏ¿©¾ß ÇÑ´Ù. 
-¶ÇÇÑ 32º¸´Ù Å« Å©±âÀÇ array·Î »ç¿ëÇÒ ¼ö ¾ø´Ù.  
-±× ´ë½Å Á÷Á¢ bitwise operationÀ» ¼öÇàÇÏ´Â °Í¿¡ ºñÇØ ÀüÇô performance overhead°¡ ¾ø´Ù.
+
+//! BitArrayì˜ Fast Version
+/*! ë‹¤ë¥¸ ì¢…ë¥˜ì˜ BitArrayëŠ” BitProxy classë¥¼ ì‚¬ìš©í•˜ì—¬ a[10]=0 ì²˜ëŸ¼ lvalueë¡œ ì‚¬ìš©ë˜ëŠ” ê²ƒì´ ê°€ëŠ¥í•˜ì§€ë§Œ,
+ì´ BitArrayëŠ” lvalueë¡œ ì‚¬ìš©ë˜ëŠ” ê²½ìš° Assign ë˜ëŠ” SetAt, ClearAtì„ ì‚¬ìš©í•˜ì—¬ì•¼ í•œë‹¤.
+ë˜í•œ 32ë³´ë‹¤ í° í¬ê¸°ì˜ arrayë¡œ ì‚¬ìš©í•  ìˆ˜ ì—†ë‹¤.
+ê·¸ ëŒ€ì‹  ì§ì ‘ bitwise operationì„ ìˆ˜í–‰í•˜ëŠ” ê²ƒì— ë¹„í•´ ì „í˜€ performance overheadê°€ ì—†ë‹¤.
 */
-class BitArray  
+class BitArray
 {
 public:
 	BitArray(const BitArray& other) { m_Bits=other.m_Bits; };
 	BitArray() { m_Bits=0; };
 	~BitArray()	{};
-	//! b=a[10] Ã³·³ »ç¿ëÇÒ ¼ö ÀÖ´Ù.
+	//! b=a[10] ì²˜ëŸ¼ ì‚¬ìš©í•  ìˆ˜ ìˆë‹¤.
 	inline bool operator[](int nIndex) const				{ return (m_Bits>>nIndex &1);}
-	//! SetAt(1)Àº a[1]=true¿¡ ÇØ´ç 
+	//! SetAt(1)ì€ a[1]=trueì— í•´ë‹¹
 	inline void SetAt(int nIndex)							{ m_Bits|=1<<nIndex; }
 	inline void SetAt(int nIndex,int value)			{ if(value)m_Bits|=1<<nIndex;else m_Bits&=~(1<<nIndex); }
-	//! ClearAt(1)Àº a[1]=false¿¡ ÇØ´ç 
+	//! ClearAt(1)ì€ a[1]=falseì— í•´ë‹¹
 	inline void ClearAt(int nIndex)							{ m_Bits&=~(1<<nIndex); }
 
 	inline void Assign(int nIndex, bool bit)				{ if(bit) SetAt(nIndex); else ClearAt(nIndex);}
@@ -41,7 +43,7 @@ class intvectorn;
 /**
  * \ingroup group_math
  *
- * bitÀÇ vector
+ * bitì˜ vector
  *
  */
 class bitvectorn
@@ -55,64 +57,72 @@ public:
 	void setSize(int size);
 	void resize(int size);
 
-	//! b=a[10] Ã³·³ »ç¿ëÇÒ ¼ö ÀÖ´Ù.
-	inline bool operator[](int nIndex) const				{ ASSERT(nIndex<m_nSize); return m_aBitArrays[calcBitArrayPos(nIndex)][calcBitArrayIndex(nIndex)];};
-	inline bool operator()(int nIndex) const				{ return (*this)[nIndex];}
+	//! b=a[10] ì²˜ëŸ¼ ì‚¬ìš©í•  ìˆ˜ ìˆë‹¤.
+	bool operator[](int nIndex) const;
+	bool operator()(int nIndex) const;
+	bool getValue(int nIndex) const	;
+	bool value(int nIndex) const;
 
-	bool getValue(int nIndex) const							{ return this->operator [](nIndex);};
-	bool value(int nIndex) const							{ return this->operator [](nIndex);};
-
-	//! SetAt(1)Àº a[1]=true¿¡ ÇØ´ç 
-	void setAt(int nIndex)									{ ASSERT(nIndex<m_nSize); m_aBitArrays[calcBitArrayPos(nIndex)].SetAt(calcBitArrayIndex(nIndex));};
+	//! SetAt(1)ì€ a[1]=trueì— í•´ë‹¹
+	void setAt(int nIndex);
 	void setAt(const intvectorn& aIndex);
-	
-	//! ClearAt(1)Àº a[1]=false¿¡ ÇØ´ç 
-	void clearAt(int nIndex)								{ ASSERT(nIndex<m_nSize); m_aBitArrays[calcBitArrayPos(nIndex)].ClearAt(calcBitArrayIndex(nIndex));};
+	void setAll();
+
+	void toggle(int nIndex);
+
+	//! ClearAt(1)ì€ a[1]=falseì— í•´ë‹¹
+	void clearAt(int nIndex);
 	void clearAt(const intvectorn& aIndex);
-    
-	inline void setValue(int nIndex, bool bit)				{ if(bit) setAt(nIndex); else clearAt(nIndex);};
-	inline void setAllValue(bool bit)						{ if(bit) setAll(); else clearAll();}
+    void clearAll();
+
+	void setValue(int nIndex, bool bit);
 	void setValue(int start, int end, bool bit);
-	inline void setAll()									{ setValue(0, size(), true); }
-	inline void clearAll()									{ int index=calcBitArrayPos(m_nSize)+1; for(int i=0; i<index; i++) m_aBitArrays[i].ClearAll();};
-	int count()	const										{ if(m_nSize==0) return 0; int index=calcBitArrayPos(m_nSize)+1; int count=0; for(int i=0; i<index; i++) count+=m_aBitArrays[i].GetCount(); return count;};
-	int size() const										{ return m_nSize;};
+	void setAllValue(bool bit);
+
+	int count()	const;
+	int size() const;
+
 	bitvectorn& operator=( bitvectorn const& );
 	bitvectorn& operator=( vectorn const& );
 
 	bitvectorn& op(int (*s2_func)(int,int), const intvectorn& source, int value, int start=0, int end=INT_MAX);
-	bitvectorn& op(double (*s2_func)(double,double), const vectorn& source, double value, int start=0, int end=INT_MAX);
+	bitvectorn& op(m_real (*s2_func)(m_real,m_real), const vectorn& source, m_real value, int start=0, int end=INT_MAX);
 
 	// primary functions
 	// binary OP
-	void or(const bitvectorn& a, const bitvectorn& b);
-	void and(const bitvectorn& a, const bitvectorn& b);
+	void _or(const bitvectorn& a, const bitvectorn& b);
+	void _and(const bitvectorn& a, const bitvectorn& b);
+	bitvectorn operator|(bitvectorn const& b) const;
+	bitvectorn operator&(bitvectorn const& b) const;
+
 	// unary OP
-	bitvectorn& operator|=(bitvectorn const& a) { (*this).or((*this),a); return *this;};
-	bitvectorn& operator&=(bitvectorn const& a) { (*this).and((*this),a); return *this;};
+	bitvectorn& operator|=(bitvectorn const& a);
+
+	bitvectorn& operator&=(bitvectorn const& a);
+
 	bool operator==(bitvectorn const& other) const;
 	bool operator!=(bitvectorn const& other) const	{ return !operator==(other);};
 	// utility functions
-	enum zeroCrossingMode { ZC_MIN, ZC_MAX, ZC_ALL};	
-	//! zero-crossingÀ» Ã£´Â´Ù.	ZC_MIN: negative to positive crossing, ZC_MAX: positive to negative crossing
+	enum zeroCrossingMode { ZC_MIN, ZC_MAX, ZC_ALL};
+	//! zero-crossingì„ ì°¾ëŠ”ë‹¤.	ZC_MIN: negative to positive crossing, ZC_MAX: positive to negative crossing
 	void findZeroCrossing(const vectorn& signal, zeroCrossingMode mode=ZC_ALL);
-	//! local optimumÀ» Ã£´Â´Ù. ZC_MIN: local minimum, ZC_MAX: local maximum
+	//! local optimumì„ ì°¾ëŠ”ë‹¤. ZC_MIN: local minimum, ZC_MAX: local maximum
 	void findLocalOptimum(const vectorn& signal, zeroCrossingMode mode=ZC_MIN);
-	//! ÀÏÁ¾ÀÇ windowed global optimumÀÌ´Ù. ´Ü candidate´Â localOptimumÀÌ´Ù. ¼Ò½ºÄÚµå Âü°í.
+	//! ì¼ì¢…ì˜ windowed global optimumì´ë‹¤. ë‹¨ candidateëŠ” localOptimumì´ë‹¤. ì†ŒìŠ¤ì½”ë“œ ì°¸ê³ .
 	void refineLocalOptimum(const vectorn& signal, const bitvectorn& localOptimum, int windowSize, zeroCrossingMode mode=ZC_MIN);
-	//! true ¹ë·ùµéÀ» clusteringÇÑ´Ù. Áï °¡±îÀÌ ÀÖ´Â °Íµé³¢¸® ÇÏ³ª·Î ¹­¾î center¸¦ ±¸ÇÑ´Ù. (kmean»ç¿ë)
+	//! true ë°¸ë¥˜ë“¤ì„ clusteringí•œë‹¤. ì¦‰ ê°€ê¹Œì´ ìˆëŠ” ê²ƒë“¤ë¼ë¦¬ í•˜ë‚˜ë¡œ ë¬¶ì–´ centerë¥¼ êµ¬í•œë‹¤. (kmeanì‚¬ìš©)
 	void cluster(int windowSize);
 	void makeJumpIndex(intvectorn& jumpIndex) const;
-	//! output Å©±â´Â (end-start)*2-1ÀÌ´Ù. trueÀÎ ±ºÁıÀÇ centerÀ§Ä¡¿¡ true·Î assignÇÑ´Ù.
+	//! output í¬ê¸°ëŠ” (end-start)*2-1ì´ë‹¤. trueì¸ êµ°ì§‘ì˜ centerìœ„ì¹˜ì— trueë¡œ assigní•œë‹¤.
 	/// input    1 0 1 1 1 0 1 1 0 0
-	/// centers  1000001000000100000 
+	/// centers  1000001000000100000
 	bitvectorn& centers(int start, int end, const intvectorn& jumpIndex, const bitvectorn& bits, bool bLocal=true);
 
 	/// if there is no bValue return end;
 	int find(int start, int end, bool bValue=true) const;
 	int find(int start, bool bValue=true) const;
 	int findPrev(int start, bool bValue=true) const;
-	
+
 	// find bValue which is nearest to i. if fail, return -1;
     int findNearest(float i, bool bValue=true) const;
 	float distanceToNearest(float i, bool bValue=true) const;
@@ -121,8 +131,8 @@ public:
 	void output(TString& id, int start=0, int end=INT_MAX) const;
 	TString output(int start=0, int end=INT_MAX) const;
 
-	void save(const char* filename);	// text file¿¡ ¾²±â.ex) a.txt = 1 3 6 12
-	void load(int size, const char* filename);	// text file¿¡¼­ ÀĞ±â.ex) a.txt = 1 3 6 12
+	void save(const char* filename);	// text fileì— ì“°ê¸°.ex) a.txt = 1 3 6 12
+	void load(int size, const char* filename);	// text fileì—ì„œ ì½ê¸°.ex) a.txt = 1 3 6 12
 private:
 	inline int calcBitArrayPos(int nIndex) const			{ return nIndex/32;};
 	inline int calcBitArrayIndex(int nIndex) const			{ return nIndex%32;};
@@ -132,3 +142,4 @@ private:
 };
 
 
+#endif
