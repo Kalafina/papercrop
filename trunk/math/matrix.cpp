@@ -1,30 +1,10 @@
-//
-// matrix.H 
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
-
 // matrix.cpp: implementation of the matrix class.
 //
 //////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
 #include "mathclass.h"
 #include "matrix.h"
+#include "matrix3.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -33,7 +13,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 #ifdef DIRECT3D_VERSION
-#ifndef MATH_DOUBLE_PRECISION
+#ifdef MATH_SINGLE_PRECISION
 #define USE_D3DFUNC
 #endif
 #endif
@@ -50,7 +30,11 @@ matrix4::~matrix4()
 {
 
 }
-
+matrix4::matrix4(const transf& transf)
+{
+	setRotation(transf.rotation);
+	setTranslation(transf.translation);
+}
 void matrix4::lookAtLH(const vector3& eye, const vector3& at, const vector3& up)
 {	
 #ifdef USE_D3DFUNC
@@ -137,10 +121,17 @@ void matrix4::decomposeRH(vector3& eye, vector3& at, vector3& up)
 	at.sub(eye,zaxis);
 }
 
+vector3 matrix4::operator*(vector3 const& a) const
+{
+	vector3 out;
+	out.mult(*this, a);
+	return out;
+}
+
 void matrix4::inverse(const matrix4& a)
 {
 #ifdef USE_D3DFUNC
-	double fDet;
+	m_real fDet;
 	D3DXMatrixInverse(*this, &fDet, a);
 #else	
 	adjoint(a);
@@ -230,18 +221,65 @@ void matrix4::leftMultRotation(const quater& b)
 	leftMult(temp);
 }
 
-void matrix4::setTranslation(const vector3& vec)
+void matrix4::setTranslation(const vector3& vec, bool bPreserveCurrentRotation)
 {
+	if(!bPreserveCurrentRotation)
+		setIdentityRot();
+
 	_14=vec.x;
 	_24=vec.y;
 	_34=vec.z;
 }
+
+void matrix4::setValue( m_real x00, m_real x01, m_real x02,
+				   m_real x10, m_real x11, m_real x12,		// ÎÇòÎ®∏ÏßÄÎäî 0,1ÏúºÎ°ú Ï¥àÍ∏∞Ìôî 
+				   m_real x20, m_real x21, m_real x22 )	
+	{ m[0][0]=x00, m[0][1]=x01, m[0][2]=x02,  m[1][0]=x10, m[1][1]=x11, m[1][2]=x12,  
+m[2][0]=x20, m[2][1]=x21, m[2][2]=x22,  m[0][3]=0,m[1][3]=0,m[2][3]=0,m[3][0]=0,m[3][1]=0,m[3][2]=0,m[3][3]=1;}
+
+void matrix4::setValue( m_real x00, m_real x01, m_real x02, m_real x03,
+				   m_real x10, m_real x11, m_real x12, m_real x13,
+				   m_real x20, m_real x21, m_real x22, m_real x23,
+				   m_real x30, m_real x31, m_real x32, m_real x33)	
+	{ m[0][0]=x00, m[0][1]=x01, m[0][2]=x02,  m[0][3]=x03,
+	  m[1][0]=x10, m[1][1]=x11, m[1][2]=x12,  m[1][3]=x13,
+	  m[2][0]=x20, m[2][1]=x21, m[2][2]=x22,  m[2][3]=x23,
+	  m[3][0]=x30, m[3][1]=x31, m[3][2]=x32,  m[3][3]=x33;}
 
 void matrix4::setTransform(const quater& rot, const vector3& trans)
 {
 	setRotation(rot);
 	setTranslation(trans);
 }
+
+void matrix4::_discardTranslation()
+{
+	m[3][0]=0;
+	m[3][1]=0;
+	m[3][2]=0;
+	m[3][3]=1;
+
+	m[0][3]=0;
+	m[1][3]=0;
+	m[2][3]=0;
+}
+
+void matrix4::setRotation(const matrix3& m, bool bPreserveCurrentTranslation)
+{
+	_11=m._11;
+	_12=m._12;
+	_13=m._13;
+	_21=m._21;
+	_22=m._22;
+	_23=m._23;
+	_31=m._31;
+	_32=m._32;
+	_33=m._33;
+
+	if(!bPreserveCurrentTranslation)
+		_discardTranslation();
+}
+
 
 void matrix4::leftMultTranslation(const vector3& vec)
 {
@@ -256,30 +294,25 @@ void matrix4::leftMultTranslation(const vector3& vec)
 	_34+=vec.z;
 }
 
-void matrix4::leftMultRotation(const vector3& axis, double angle)
+void matrix4::leftMultRotation(const vector3& axis, m_real angle)
 {
 	matrix4 temp;
 	temp.setRotation(axis,angle);
 	leftMult(temp);
 }
 
-void matrix4::leftMultScaling(double sx, double sy, double sz)
+void matrix4::leftMultScaling(m_real sx, m_real sy, m_real sz)
 {
 	matrix4 s;
 	s.setScaling(sx,sy,sz);
 	leftMult(s);
 }
-void matrix4::setRotation(const quater& q)
-{
-#ifdef USE_D3DFUNC
-	D3DXMATRIX dxmat;
-	D3DXMatrixRotationQuaternion(&dxmat,q);	
-	fromDXmat(dxmat);
-#else
 
+void matrix4::setRotation(const quater& q, bool bPreserveCurrentTranslation)
+{
 	// jehee lee implementation
     matrix4& m=*this;
-    double s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
+    m_real s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
 
     s  = 2.0/q.length();
     xs = q.x * s;  ys = q.y * s;  zs = q.z * s;
@@ -296,18 +329,12 @@ void matrix4::setRotation(const quater& q)
     m.m[2][0] = xz - wy;
     m.m[2][1] = yz + wx;
     m.m[2][2] = 1.0 - (xx + yy);
-	
-	m.m[3][0]=0;
-	m.m[3][1]=0;
-	m.m[3][2]=0;
-	m.m[3][3]=1;
 
-	m.m[0][3]=0;
-	m.m[1][3]=0;
-	m.m[2][3]=0;
+	if(!bPreserveCurrentTranslation)
+		_discardTranslation();
 
-#endif
 }
+
 
 void matrix4::setIdentityRot()
 {
@@ -318,7 +345,7 @@ void matrix4::setIdentityRot()
 #endif
 }
 
-void matrix4::setRotation(const vector3& axis, double angle)
+void matrix4::setRotation(const vector3& axis, m_real angle, bool bPreserveCurrentTranslation)
 {
 #ifdef USE_D3DFUNC
 	D3DXMATRIX dxmat;
@@ -327,11 +354,11 @@ void matrix4::setRotation(const vector3& axis, double angle)
 #else
 	quater q;
 	q.setRotation(axis, angle);
-	setRotation(q);
+	setRotation(q,bPreserveCurrentTranslation);
 #endif
 }
 
-void matrix4::setScaling(double sx, double sy, double sz)
+void matrix4::setScaling(m_real sx, m_real sy, m_real sz)
 {
 #ifdef USE_D3DFUNC
 	D3DXMatrixScaling(*this,sx,sy,sz);
@@ -373,26 +400,26 @@ void matrix4::transpose()
 
 void matrix4::setAxisRotation( const vector3& vecAxis, const vector3& front, const vector3& vecTarget)
 {
-	// front∫§≈Õ∏¶ vecAxis∏¶ ¡ﬂΩ…¿∏∑Œ »∏¿¸«ÿº≠ vecTarget∞˙ vecAxis∞° ¿Ã∑Á¥¬ ∆Ú∏Èø° ≥ı¿Ãµµ∑œ ∏∏µÂ¥¬ Matrix∏¶ ±∏«—¥Ÿ.
+	// frontÎ≤°ÌÑ∞Î•º vecAxisÎ•º Ï§ëÏã¨ÏúºÎ°ú ÌöåÏ†ÑÌï¥ÏÑú vecTargetÍ≥º vecAxisÍ∞Ä Ïù¥Î£®Îäî ÌèâÎ©¥Ïóê ÎÜìÏù¥ÎèÑÎ°ù ÎßåÎìúÎäî MatrixÎ•º Íµ¨ÌïúÎã§.
 
-	// AxisøÕ vecTarget¿Ã ¿Ã∑Á¥¬ ∆Ú∏È¿« normal¿ª ∞ËªÍ«—¥Ÿ.
+	// AxisÏôÄ vecTargetÏù¥ Ïù¥Î£®Îäî ÌèâÎ©¥Ïùò normalÏùÑ Í≥ÑÏÇ∞ÌïúÎã§.
 	vector3 vecNormal, nVecNormal, vecProjVecTarget;
 	vecNormal.cross(vecAxis, vecTarget);
 	nVecNormal.normalize(vecNormal);
 	vecProjVecTarget.cross(nVecNormal, vecAxis);
 
-	// AxisøÕ front∞° ¿Ã∑Á¥¬ ∆Ú∏È¿« normal¿ª ∞ËªÍ«—¥Ÿ.
+	// AxisÏôÄ frontÍ∞Ä Ïù¥Î£®Îäî ÌèâÎ©¥Ïùò normalÏùÑ Í≥ÑÏÇ∞ÌïúÎã§.
 	vector3 vecNormal2,nVecNormal2, vecProjFront;
 	vecNormal2.cross(vecAxis, front);
 	nVecNormal2.normalize(vecNormal2);
 	vecProjFront.cross(nVecNormal2, vecAxis);	
 
-	// ¿Ã¡¶ æ∆∑°∞° º∫∏≥«œ¥¬ mtrxAxisAlignedBillboard¿ª ±∏«—¥Ÿ.
+	// Ïù¥Ï†ú ÏïÑÎûòÍ∞Ä ÏÑ±Î¶ΩÌïòÎäî mtrxAxisAlignedBillboardÏùÑ Íµ¨ÌïúÎã§.
 	// 							   (vecAxis		 )T    ( vecAxis          )T
 	//  mtrxAxisAlignedBillboard * (nVecNormal2  )  =  ( nVecNormal       )
 	// 							   (vecProjFront )	   ( vecProjVecTarget )
 
-	// µ˚∂Ûº≠							   vecAxis    T      	vecAxis    
+	// Îî∞ÎùºÏÑú							   vecAxis    T      	vecAxis    
 	//		mtrxAxisAlignedBillboard =    (nVecNormal)	 *	(	nVecNormal2)
 	//									 vecProjVecTarget		vecProjFront
 
@@ -411,7 +438,7 @@ void matrix4::setAxisRotation( const vector3& vecAxis, const vector3& front, con
 	mult(mat2,mat1);
 }
 
-void matrix4::setRotationX(double A)
+void matrix4::setRotationX(m_real A)
 {	
 #ifdef USE_D3DFUNC
 	D3DXMATRIX dxmat;
@@ -424,7 +451,7 @@ void matrix4::setRotationX(double A)
 #endif
 }
 
-void matrix4::setRotationY(double A)
+void matrix4::setRotationY(m_real A)
 {
 #ifdef USE_D3DFUNC
 	D3DXMATRIX dxmat;
@@ -437,7 +464,7 @@ void matrix4::setRotationY(double A)
 #endif
 }
 
-void matrix4::setRotationZ(double A)
+void matrix4::setRotationZ(m_real A)
 {	
 #ifdef USE_D3DFUNC
 	D3DXMATRIX dxmat;
@@ -450,7 +477,7 @@ void matrix4::setRotationZ(double A)
 #endif
 }
 
-void matrix4::setRotation(const char* aChannel, double *aValue, bool bRightToLeft)
+void matrix4::setRotation(const char* aChannel, m_real *aValue, bool bRightToLeft)
 {
 	//!< from euler angle. aChannel="YXZ" or something like that.
 
@@ -507,7 +534,7 @@ void matrix4::adjoint(const matrix4& a)
 }
 
 
-double matrix4::determinant() const
+m_real matrix4::determinant() const
 {
     return m[0][0] * minor(1, 2, 3, 1, 2, 3) -
         m[0][1] * minor(1, 2, 3, 0, 2, 3) +
@@ -515,7 +542,7 @@ double matrix4::determinant() const
         m[0][3] * minor(1, 2, 3, 0, 1, 2);
 }
 
-void matrix4::leftMult(double scalar)
+void matrix4::leftMult(m_real scalar)
 {
 	m[0][0]*=scalar;
 	m[1][0]*=scalar;
@@ -535,54 +562,27 @@ void matrix4::leftMult(double scalar)
 	m[3][3]*=scalar;
 }
 
-double matrix4::minor(const size_t r0, const size_t r1, const size_t r2, 
+void matrix4::setTransform(const vector3& position, const vector3& scale, const quater& orientation)
+{
+    // Ordering:
+    //    1. Scale
+    //    2. Rotate
+    //    3. Translate
+
+
+    matrix4 rot3x3, scale3x3;
+	rot3x3.setRotation(orientation);
+	scale3x3.setScaling(scale.x, scale.y, scale.z);
+
+    // Set up final matrix with scale, rotation and translation
+	this->mult(rot3x3 , scale3x3);
+	this->setTranslation(position);
+}
+
+m_real matrix4::minor(const size_t r0, const size_t r1, const size_t r2, 
 								const size_t c0, const size_t c1, const size_t c2) const
 {
     return m[r0][c0] * (m[r1][c1] * m[r2][c2] - m[r2][c1] * m[r1][c2]) -
         m[r0][c1] * (m[r1][c0] * m[r2][c2] - m[r2][c0] * m[r1][c2]) +
         m[r0][c2] * (m[r1][c0] * m[r2][c1] - m[r2][c0] * m[r1][c1]);
 }
-
-#ifdef DIRECT3D_VERSION
-#ifdef MATH_DOUBLE_PRECISION
-void matrix4::fromDXmat( const D3DXMATRIX &mat)  
-{
-	_11=mat._11;
-	_12=mat._21;
-	_13=mat._31;
-	_14=mat._41;
-	_21=mat._12;
-	_22=mat._22;
-	_23=mat._32;
-	_24=mat._42;
-	_31=mat._13;
-	_32=mat._23;
-	_33=mat._33;
-	_34=mat._43;
-	_41=mat._14;
-	_42=mat._24;
-	_43=mat._34;
-	_44=mat._44;
-}
-
-void matrix4::toDXmat(D3DXMATRIX& mat) const		
-{
-	mat._11=_11;
-	mat._21=_12;
-	mat._31=_13;
-	mat._41=_14;
-	mat._12=_21;
-	mat._22=_22;
-	mat._32=_23;
-	mat._42=_24;
-	mat._13=_31;
-	mat._23=_32;
-	mat._33=_33;
-	mat._43=_34;
-	mat._14=_41;
-	mat._24=_42;
-	mat._34=_43;
-	mat._44=_44;
-}
-#endif
-#endif

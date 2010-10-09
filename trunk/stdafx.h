@@ -1,3 +1,5 @@
+#ifndef _STDAFX_H_
+#define _STDAFX_H_
 //
 // stdafx.H 
 //
@@ -25,6 +27,7 @@
 // are changed infrequently
 //
 
+#ifdef _MSC_VER
 #pragma once
 
 // Modify the following defines if you have to target a platform prior to the ones specified below.
@@ -50,12 +53,13 @@
 
 // Windows Header Files:
 #include <windows.h>
+#include <tchar.h>
 
+#endif
 // C RunTime Header Files
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
-#include <tchar.h>
 
 
 #ifdef max
@@ -69,7 +73,6 @@
 // TODO: reference additional headers your program requires here
 
 #include <iostream>
-#include <tchar.h>
 
 // disable boost codepage warning.
 #pragma warning( disable : 4819)
@@ -113,19 +116,19 @@
 #pragma comment(lib, "devil/lib/DevIl.lib")
 #pragma comment(lib, "devil/lib/Ilu.lib")
 */
-#include <FL/FL.h>
-#include <FL/FL_window.h>
-#include <FL/Fl_Tabs.h>
+#include <FL/Fl.H>
+#include <FL/Fl_Window.H>
+#include <FL/Fl_Tabs.H>
 #include <FL/x.H>
 #include <FL/Fl_File_Chooser.H>
-#include <FL/Fl_value_slider.H>
+#include <FL/Fl_Value_Slider.H>
 #include <FL/fl_draw.H>
-#include <Fl/FL_Round_Button.H>
-#include <Fl/Fl_Value_Input.h>
-#include <Fl/Fl_Output.h>
-#include <Fl/Fl_PNG_Image.h>
-#include <Fl/Fl_JPEG_Image.h>
-#include <FL/Fl_Int_Input.h>
+#include <FL/Fl_Round_Button.H>
+#include <FL/Fl_Value_Input.H>
+#include <FL/Fl_Output.H>
+#include <FL/Fl_PNG_Image.H>
+#include <FL/Fl_JPEG_Image.H>
+#include <FL/Fl_Int_Input.H>
 
 #include <boost/noncopyable.hpp>
 
@@ -133,9 +136,11 @@
 
 #ifdef _DEBUG		
 #define ASSERT(x) assert(x)
+#define RANGE_ASSERT(x) assert(x)
 #define VERIFY(x) assert(x)
 #else
 #define ASSERT(x) ;
+#define RANGE_ASSERT(x) do {if(!(x)) throw std::runtime_error("range_error");} while(false);
 #define VERIFY(x)	(x)
 #endif
 
@@ -175,3 +180,4 @@ namespace Msg
 #include "math/mathclass.h"
 
 #define FLTK1
+#endif

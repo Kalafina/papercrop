@@ -1,3 +1,5 @@
+#ifndef _IMAGE_H_
+#define _IMAGE_H_
 //
 // Image.H 
 //
@@ -22,6 +24,8 @@
 
 #pragma once
 
+
+typedef unsigned char uchar;
 struct Int2D
 {
 	Int2D(){}
@@ -72,6 +76,7 @@ struct CPixelRGB8
 {
 	CPixelRGB8(){}
 	CPixelRGB8(uchar RR, uchar GG, uchar BB):R(RR),G(GG),B(BB){}
+	bool operator==(CPixelRGB8 o)	{ return (R==o.R)&& (G==o.G)&&(B==o.B);}
 	uchar R;
 	uchar G;
 	uchar B;
@@ -80,19 +85,19 @@ struct CPixelRGB8
 #include "../math/template_math.h"
 
 class CPixelsView;
-class CPixels: public _tvectorn<CPixelRGB8, uchar, 3>
+class CPixels: public _tvectorn<CPixelRGB8, uchar>
 {
 protected:
 	CPixels (uchar* ptrr, int size, int stride)
-		:_tvectorn<CPixelRGB8, uchar, 3>(ptrr,size,stride){}
+:_tvectorn<CPixelRGB8, uchar>(ptrr,size,stride){}
 public:
-	CPixels ():_tvectorn<CPixelRGB8, uchar, 3>(){}
+	CPixels ():_tvectorn<CPixelRGB8, uchar>(){}
 
 	// 값을 카피해서 받아온다.	
 	template <class VecType>
 	CPixels (const VecType& other)	{ assign(other);}
 
-	explicit CPixels ( int x):_tvectorn<CPixelRGB8, uchar, 3>() { setSize(x);}
+	explicit CPixels ( int x):_tvectorn<CPixelRGB8, uchar>() { setSize(x);}
 	~CPixels(){}
 
 	
@@ -102,7 +107,7 @@ public:
 	const CPixelsView range(int start, int end, int step=1) const	;
 
 	template <class VecType>
-	void operator=(const VecType& other)	{ _tvectorn<CPixelRGB8, uchar, 3>::assign(other);}
+void operator=(const VecType& other)	{ _tvectorn<CPixelRGB8, uchar>::assign(other);}
 
 	CPixelRGB8 average() const;
 };
@@ -120,7 +125,7 @@ public:
 
 	// L-value로 사용되는 경우, 값을 copy한다.
 	template <class VecType>
-	void operator=(const VecType& other)	{ _tvectorn<CPixelRGB8, uchar, 3>::assign(other);}
+void operator=(const VecType& other)	{ _tvectorn<CPixelRGB8, uchar>::assign(other);}
 
 };
 
@@ -163,6 +168,10 @@ public:
 		return CPixelsView(_dataPtr+_stride*(GetHeight()-i-1), GetWidth(), 3);
 	}
 
+CPixelsView GetVertLine(int i)
+	{
+		return CPixelsView(_dataPtr+3*i, GetHeight(), _stride);
+	}
 	// slow. use GetHorizLine when pixels are sequencially accessible.
 	CPixelRGB8 * GetPixel(int i, int j) const
 	{
@@ -174,3 +183,4 @@ public:
 
 };
 
+#endif

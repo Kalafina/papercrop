@@ -16,27 +16,34 @@ public:
 	void load(const char* filename);
 	void pushBack(int start, int end) 	{m_vStart.pushBack(start);m_vEnd.pushBack(end);}
 
-	// [start, end) °ú °ãÄ¡´Â intervalÀÇ index¸¦ return. ¾øÀ¸¸é -1
+	// [start, end) ê³¼ ê²¹ì¹˜ëŠ” intervalì˜ indexë¥¼ return. ì—†ìœ¼ë©´ -1
 	int findOverlap(int start, int end, int startInterval=0);
 
 	/**
-	* RunLength encodingÀ» ±¸ÇÑ´Ù.
+	* RunLength encodingì„ êµ¬í•œë‹¤.
 	* [1 1 1 0 0 0 0 1 0] -> [0 3], [7 8]
-	* 0 ºÎÅÍ 3±îÁö 1ÀÌ ³ª¿À°í, 7ºÎÅÍ 8±îÁö ³ª¿À°í 1ÀÌ ³ª¿Â´Ù´Â ¶æ.	 
+	* 0 ë¶€í„° 3ê¹Œì§€ 1ì´ ë‚˜ì˜¤ê³ , 7ë¶€í„° 8ê¹Œì§€ ë‚˜ì˜¤ê³  1ì´ ë‚˜ì˜¨ë‹¤ëŠ” ëœ».	 
 	*/
 	void runLengthEncode(const bitvectorn& source, int start=0, int end=INT_MAX);
+	
 
 	/**
-	* RunLength encodingÀ» ±¸ÇÑ´Ù.
+	* RunLength encodingì„ êµ¬í•œë‹¤.
 	* [1 1 1 3 3 3 3 4 4] -> [0 3], [3 7], [7 9]  
-	* 0 ºÎÅÍ 3±îÁö 1ÀÌ ³ª¿À°í, 3ºÎÅÍ 7±îÁö 3ÀÌ ³ª¿À°í, 4°¡ 9±îÁö ³ª¿Â´Ù´Â ¶æ.
+	* 0 ë¶€í„° 3ê¹Œì§€ 1ì´ ë‚˜ì˜¤ê³ , 3ë¶€í„° 7ê¹Œì§€ 3ì´ ë‚˜ì˜¤ê³ , 4ê°€ 9ê¹Œì§€ ë‚˜ì˜¨ë‹¤ëŠ” ëœ».
 	*/
 	void runLengthEncode(const intvectorn& source);
+
 	/**
-	* CutStateÀÇ RunLength encodingÀ» ±¸ÇÑ´Ù.
+	* [123789] -> [0 3], [3 6]
+	*/
+	void findConsecutiveIntervals(const intvectorn& source);
+
+	/**
+	* CutStateì˜ RunLength encodingì„ êµ¬í•œë‹¤.
 	* depricated. -> moved into intIntervals class.
 	* [1 0 0 1 0 0 0 1 0] -> [0 3, 3 7, 7 9]
-	* 0 ºÎÅÍ 3±îÁö °¡ Ã¹¹øÂ° ±¸°£, 3~7ÀÌ µÎ¹øÂ° ±¸°£, 7~9°¡ ¼¼¹øÂ° ±¸°£.*/
+	* 0 ë¶€í„° 3ê¹Œì§€ ê°€ ì²«ë²ˆì§¸ êµ¬ê°„, 3~7ì´ ë‘ë²ˆì§¸ êµ¬ê°„, 7~9ê°€ ì„¸ë²ˆì§¸ êµ¬ê°„.*/
 	void runLengthEncodeCut(const bitvectorn& cutState, int start=0, int end=INT_MAX);
 
 	void encodeIntoVector(intvectorn& out);

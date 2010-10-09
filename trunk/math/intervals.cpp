@@ -1,8 +1,10 @@
 #include "stdafx.h"
-#include "bitvectorn.h"
 #include "mathclass.h"
 #include "intervals.h"
 
+void intIntervals::load(const char* filename)
+{
+}
 
 int intIntervals::findOverlap(int startf, int endf, int startInterval)
 {
@@ -69,12 +71,43 @@ void intIntervals::runLengthEncode(const bitvectorn& source, int start, int end)
 	assert(m_vEnd.size()==m_vStart.size());
 }
 
+void intIntervals::findConsecutiveIntervals(const intvectorn& source)
+{
+	setSize(0);
+
+	bool bFindTrue=false;	
+	int i;
+	for(i=0; i<source.size(); i++)
+	{
+		if(bFindTrue)
+		{
+			if(source[i]!=source[i-1]+1)
+			{
+				m_vEnd.pushBack(i);	// end
+				m_vStart.pushBack(i);	// start
+			}
+		}
+		else
+		{
+			m_vStart.pushBack(i);	// start
+			bFindTrue=true;
+		}
+	}
+
+	if(bFindTrue)
+		m_vEnd.pushBack(i);	// end
+
+	assert(m_vEnd.size()==m_vStart.size());
+
+}
+
+
 void intIntervals::runLengthEncode(const intvectorn& source)
 {
 	/**
-	* RunLength encodingÀ» ±¸ÇÑ´Ù.
+	* RunLength encoding??êµ¬í•œ??
 	* [1 1 1 3 3 3 3 4 4] -> [0 1 3 3 7 4 9]
-	* 0 ºÎÅÍ 1ÀÌ 3±îÁö ³ª¿À°í, 3ÀÌ 7±îÁö ³ª¿À°í 4°¡ 9±îÁö ³ª¿Â´Ù´Â ¶æ.
+	* 0 ë¶€??1??3ê¹Œì? ?˜ì˜¤ê³? 3??7ê¹Œì? ?˜ì˜¤ê³?4ê°€ 9ê¹Œì? ?˜ì˜¨?¤ëŠ” ??
 	* \param source 
 	*/
 

@@ -42,7 +42,6 @@ include_directories (
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
 	${paperCrop_SOURCE_DIR}/luabind-0.9
 	${paperCrop_SOURCE_DIR}/devil/include
-	${paperCrop_SOURCE_DIR}/../fltk
 	${paperCrop_SOURCE_DIR}/poppler
 	${paperCrop_SOURCE_DIR}/poppler/goo
 	${paperCrop_SOURCE_DIR}/ext/jpeg
@@ -52,7 +51,15 @@ include_directories (
 	${paperCrop_SOURCE_DIR}/poppler/splash
 	${paperCrop_SOURCE_DIR}/FreeImage/Dist
 	)
-
+if(UNIX)
+	include_directories(
+		./include 
+		.
+		./unix
+		)
+else()
+	include_directories(${paperCrop_SOURCE_DIR}/../fltk)
+endif()
 set(src
 	"./GlobalUI.cpp"
 	"./GlobalUI.h"
@@ -87,6 +94,8 @@ set(src
 	"./math/mathclass.h"
 	"./math/matrix.cpp"
 	"./math/matrix.h"
+	"./math/matrix3.cpp"
+	"./math/matrix3.h"
 	"./math/matrix_n.cpp"
 	"./math/matrix_n.h"
 	"./math/Operator.cpp"
@@ -98,8 +107,14 @@ set(src
 	"./math/template_matrix.h"
 	"./math/tvector.cpp"
 	"./math/tvector.h"
+	"./math/transf.cpp"
+	"./math/transf.h"
 	"./math/vector.cpp"
 	"./math/vector.h"
+	"./math/vector3N.cpp"
+	"./math/vector3N.h"
+	"./math/quaterN.cpp"
+	"./math/quaterN.h"
 	"./math/vector_n.cpp"
 	"./math/vector_n.h"
 	"./image/Image.cpp"
@@ -119,6 +134,8 @@ set(src
 	"./utility/operatorString.h"
 	"./utility/TypeString.cpp"
 	"./utility/TypeString.h"
+	"./utility/TextFile.cpp"
+	"./utility/TextFile.h"
 	)
 
 add_executable(paperCrop

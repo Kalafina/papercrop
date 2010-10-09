@@ -1,46 +1,32 @@
-//
-// vector.cpp 
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
 
 #include "stdafx.h"
+#include "mathclass.h"
 #include "vector.h"
 #include "quater.h"
-#include "mathclass.h"
 
-static double eps = 0.0001f;
+static m_real eps = 0.0001f;
 
 #ifdef DIRECT3D_VERSION
-#ifndef MATH_DOUBLE_PRECISION
+#ifdef MATH_SINGLE_PRECISION
 #define USE_D3DFUNC
 #endif
 #endif
 
-
-void vector3::interpolate( double t, vector3 const& a, vector3 const& b )
+void vector3::interpolate( m_real t, vector3 const& a, vector3 const& b )
 {
 	add((1.0f-t)*a , t*b);
 }
 
-double len( vector3 const& v )
+m_real len( vector3 const& v )
 {
-    return (double)sqrt( v.x*v.x + v.y*v.y + v.z*v.z );
+    return (m_real)sqrt( v.x*v.x + v.y*v.y + v.z*v.z );
+}
+
+void vector3::zero()
+{
+	x=0;
+	y=0;
+	z=0;
 }
 
 void vector3::add(const vector3& a, const vector3& b)
@@ -71,10 +57,10 @@ void vector3::sub(const vector3& a, const vector3& b)
 	z=a.z-b.z;
 }
 
-double
+m_real
 vector3::length() const
 {
-    return (double)sqrt( x*x + y*y + z*z );
+    return (m_real)sqrt( x*x + y*y + z*z );
 }
 
 void vector3::operator+=( vector3 const& b)
@@ -90,7 +76,25 @@ void vector3::operator-=( vector3 const& b)
 	y-=b.y;
 	z-=b.z;
 }
-void vector3::operator*=( double a)
+
+
+bool vector3::operator==(vector3 const& a)const
+{
+	return x==a.x && y==a.y && z==a.z;
+}
+vector3    vector3::operator*( vector3 const& a) const
+{
+	return vector3(x*a.x, y*a.y, z*a.z);
+
+}
+void vector3::operator*=(vector3 const& a)
+{
+	x*=a.x;
+	y*=a.y;
+	z*=a.z;
+}
+
+void vector3::operator*=( m_real a)
 {
 	x*=a;
 	y*=a;
@@ -119,16 +123,17 @@ vector3    vector3::operator-( vector3 const& b) const
 	return c;
 }
 
-void vector3::operator/=( double a)
+void vector3::operator/=( m_real a)
 {
 	this->operator*=(1.f/a);
 }
 
-void vector3::operator=(vector3 const& a)
+vector3& vector3::operator=(vector3 const& a)
 {
 	x=a.x;
 	y=a.y;
 	z=a.z;
+	return *this;
 }
 
 /*
@@ -141,12 +146,12 @@ vector3::cross() const
 }
 */
 
-void vector3::mult(const vector3& a,double b)
+void vector3::mult(const vector3& a,m_real b)
 {
 	setValue(a.x*b, a.y*b, a.z*b);
 }
 
-void vector3::multadd(const vector3& a, double w)
+void vector3::multadd(const vector3& a, m_real w)
 {
 	x+=a.x*w;
 	y+=a.y*w;
@@ -162,7 +167,7 @@ void vector3::mult(const matrix4& mat, const vector3& v)
 	D3DXVec3TransformCoord(*this, v, &dxmat);
 #else
 	
-	double w=mat._41*v.x+mat._42*v.y+mat._43*v.z+mat._44;
+	m_real w=mat._41*v.x+mat._42*v.y+mat._43*v.z+mat._44;
 	x=mat._11*v.x+mat._12*v.y+mat._13*v.z+mat._14;
 	y=mat._21*v.x+mat._22*v.y+mat._23*v.z+mat._24;
 	z=mat._31*v.x+mat._32*v.y+mat._33*v.z+mat._34;
@@ -196,15 +201,15 @@ void vector3::cross(const vector3& a, const vector3& b)
     z = a.x*b.y - a.y*b.x;
 }
 
-vector3 vector3::operator*(vector3 const& b ) const
+/*vector3 vector3::operator*(vector3 const& b ) const
 {
 	vector3 const& a=*this;
     vector3 c;
 	c.cross(a,b);
     return c;
-}
+}*/
 
-vector3 vector3::operator*( double b) const
+vector3 vector3::operator*( m_real b) const
 {
 	vector3 const& a=*this;
 	vector3 c;
@@ -212,7 +217,7 @@ vector3 vector3::operator*( double b) const
 	return c;
 }
 
-vector3 vector3::operator/( double b) const
+vector3 vector3::operator/( m_real b) const
 {
 	vector3 const& a=*this;
 	vector3 c;
@@ -220,14 +225,14 @@ vector3 vector3::operator/( double b) const
 	return c;
 }
 
-vector3    operator*(double b, vector3 const& a )
+vector3    operator*(m_real b, vector3 const& a )
 {
 	vector3 c;
 	c.mult(a,b);
 	return c;
 }
 
-double vector3::operator%(vector3 const& b) const
+m_real vector3::operator%(vector3 const& b) const
 {
 	vector3 const& a=*this;
 	return a.x*b.x+a.y*b.y+a.z*b.z;
@@ -235,27 +240,27 @@ double vector3::operator%(vector3 const& b) const
 
 void vector3::ln(quater const& q)
 {
-    double sc = (double)sqrt(q.x * q.x + q.y * q.y + q.z * q.z);
-    double theta = (double)atan2((double)sc, (double)q.w);
+    m_real sc = (m_real)sqrt(q.x * q.x + q.y * q.y + q.z * q.z);
+    m_real theta = (m_real)atan2((m_real)sc, (m_real)q.w);
     if(sc > eps)
         sc = theta / sc;
     else  sc = 1.0 ;
     setValue(sc * q.x, sc * q.y, sc * q.z);
 }
 
-double vector3::cosTheta(vector3 const& b) const
+m_real vector3::cosTheta(vector3 const& b) const
 {
 	vector3 const& a=*this;
 	  return ( (a%b)/(len(a)*len(b)) );
 }
 
-double vector3::angle( vector3 const& b ) const
+m_real vector3::angle( vector3 const& b ) const
 {
 	vector3 const& a=*this;
-    return (double)ACOS( (a%b)/(len(a)*len(b)) );
+    return (m_real)ACOS( (a%b)/(len(a)*len(b)) );
 }
 
-double vector3::sinTheta(vector3 const& b) const
+m_real vector3::sinTheta(vector3 const& b) const
 {
 	vector3 const& a=*this;
 
@@ -271,7 +276,7 @@ double vector3::sinTheta(vector3 const& b) const
 	b3.x=b.x;
 	b3.y=b.y;
 	b3.z=0;
-	double sinTheta;
+	m_real sinTheta;
 	if(a%b>0)
 	{
 		vector3 crs;
@@ -291,28 +296,28 @@ double vector3::sinTheta(vector3 const& b) const
 }
 
 // calc angle between 0 to 2pi assumming z=0;
-double vector3::angle2d(vector3 const& b) const
+m_real vector3::angle2d(vector3 const& b) const
 {
 	vector3 const& a=*this;
 
-	double rad=a.angle(b);
-	// length ∞° 0¿Œ∞ÊøÏ πﬂª˝.
+	m_real rad=a.angle(b);
+	// length Í∞Ä 0Ïù∏Í≤ΩÏö∞ Î∞úÏÉù.
 	ASSERT(!_isnan(rad));	
 	if(a.sinTheta(b)<0)
-		return (double)(2.0*M_PI-rad);
+		return (m_real)(2.0*M_PI-rad);
 	
 	return rad;
 }
 
-double vector3::angle2ds(vector3 const& b) const
+m_real vector3::angle2ds(vector3 const& b) const
 {
-	double angle=angle2d(b);
+	m_real angle=angle2d(b);
 	if(angle>M_PI)
 		angle-=2*M_PI;
 	return angle;
 }
 
-double vector3::angle2ds(vector3 const& b, int axis) const
+m_real vector3::angle2ds(vector3 const& b, int axis) const
 {
 	vector3 c, d;
 	
@@ -351,7 +356,7 @@ istream& operator>>( istream& is, vector3& a )
 */
 void vector3::normalize()
 {
-	double invl;
+	m_real invl;
 	if(this->length()==0)
 		invl=0;
 	else
@@ -361,7 +366,7 @@ void vector3::normalize()
 
 void vector3::normalize( const vector3 & a)
 {
-	double invl;
+	m_real invl;
 	if(a.length()==0)
 		invl=0;
 	else
@@ -375,13 +380,13 @@ void vector3::negate(const vector3& a)
 	c.mult(a, -1);
 }
 
-double vector3::squaredDistance(const vector3& other) const
+m_real vector3::squaredDistance(const vector3& other) const
 {
 	vector3 s;
 	s.sub(*this, other);
 	return s%s;
 }
-double vector3::distance(const vector3& other) const
+m_real vector3::distance(const vector3& other) const
 {
 	vector3 s;
 	s.sub(*this, other);
@@ -456,13 +461,13 @@ quater	 vector3::exp() const
 	return c;
 }
 
-void vector3::hermite(const vector3& p1, const vector3& t1, const vector3& p2, const vector3& t2, double s)
+void vector3::hermite(const vector3& p1, const vector3& t1, const vector3& p2, const vector3& t2, m_real s)
 {
 	//!< hermite interpolation of p1 and p2. 0<=t<=1
-	double h1 =  2*CUBIC(s) - 3*SQR(s) + 1;          // calculate basis function 1
-	double h2 = -2*CUBIC(s) + 3*SQR(s);              // calculate basis function 2
-	double h3 =   CUBIC(s) - 2*SQR(s) + s;         // calculate basis function 3
-	double h4 =   CUBIC(s) -  SQR(s);              // calculate basis function 4
+	m_real h1 =  2*CUBIC(s) - 3*SQR(s) + 1;          // calculate basis function 1
+	m_real h2 = -2*CUBIC(s) + 3*SQR(s);              // calculate basis function 2
+	m_real h3 =   CUBIC(s) - 2*SQR(s) + s;         // calculate basis function 3
+	m_real h4 =   CUBIC(s) -  SQR(s);              // calculate basis function 4
 
 	// multiply and sum all funtions together to build the interpolated point along the curve.
 	*this= h1*p1 + h2*p2 + h3*t1 + h4*t2;
@@ -471,11 +476,11 @@ void vector3::hermite(const vector3& p1, const vector3& t1, const vector3& p2, c
 
 quater vector3::quaternion() const
 {
-	//!< rotation vector∏¶ quaternion¿∏∑Œ πŸ≤€¥Ÿ.	
+	//!< rotation vectorÎ•º quaternionÏúºÎ°ú Î∞îÍæºÎã§.	
 	quater q; q.setRotation(*this);  return q;
 }
 
-TString vector3::output()
+TString vector3::output() const
 {
 	TString temp;
 	temp.format("%g %g %g", x, y,z);

@@ -1,58 +1,43 @@
-//
-// template_math.H 
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
+#ifndef _TEMPLATE_MATH_H_
+#define _TEMPLATE_MATH_H_
 
+#if _MSC_VER>1000
 #pragma once
+#endif
 
 ///////////////////////////////////////////////
 //
-//  TÀÇ ¾î·¹ÀÌ. T´Â virtual ÇÔ¼ö¸¦ ÇÏ³ªµµ °®°í ÀÖÁö ¾Ê¾Æ¾ß ÇÔ. ex) int, double, quater, vector3 ...
-//  vector3´Â double ÀÌ 3°³ ÀÖ´Â°Í. µû¶ó¼­ vector3NÀº _tvectorn<vector3, double, 3> À» »ó¼ÓÇÏ¿© ±¸ÇöµÈ´Ù.
-// _tvectorn¿ª½Ã virtual ÇÔ¼ö°¡ ÇÊ¿ä¾øµµ·Ï ±¸ÇöµÇ¾ú´Ù. (¼Óµµ¸¦ À§ÇØ¼­ Áß¿ä)
+//  array of type T. type T should not have any virtual functions.
+//  ex) int, m_real, quater, vector3 ...
+//  vector3 can be seen as an array of m_real.
+//  so vector3N inherits _tvectorn<vector3, m_real>.
+// template class _tvectorn also does not have any virtual functions.
 //
 
 template <class T> class _tmat;
-
-template <class T, class T_base=T, int T_N=1>
-class _tvectorn 
+template <class T, class T_base=T>
+class _tvectorn
 {
 #ifdef _DEBUG
 	// For convenient use of debugger.
-	std::vector<T_base> _arrayDEBUG;	// valid only if owner==true in debug mode. 
+	std::vector<T_base> _arrayDEBUG;	// valid only if owner==true in debug mode.
 #endif
 	T_base *ptr;
 	int stride;	// space between two succesive elements in terms of sizeof(T_base)
-	int     n,	on;	// size of memory allocated. 
+	int     n,	on;	// size of memory allocated.
 	bool owner;	// ptr is allocated by this, so will be freed by this.
 
-	friend class _tmat<T>;
+	friend class _tmat<T_base>;
 
 	T* getStride1Pointer() const;
 protected:
-	
+
 	// disable default constructors (Do not use this class directly!)
 	_tvectorn(T_base* ptrr, int size, int stride);	// reference
-	_tvectorn(const _tvectorn<T,T_base,T_N>& other);	
-	_tvectorn();	
-	// L-value·Î »ç¿ëµÉ¼ö ÀÖ´Â, reference array·Î ¸¸µç´Ù. 
-	void assignRef(const _tvectorn<T,T_base,T_N>& other);
+	_tvectorn(const _tvectorn<T,T_base>& other);
+	_tvectorn();
+	// L-valueë¡œ ì‚¬ìš©ë ìˆ˜ ìˆëŠ”, reference arrayë¡œ ë§Œë“ ë‹¤.
+	void assignRef(const _tvectorn<T,T_base>& other);
 	template <class vecViewType>
 	vecViewType _range(int start, int end, int step)
 	{
@@ -69,8 +54,8 @@ protected:
 	template <class matViewType>
 	matViewType _column() const
 	{
-		// return n by T_N matrix, which can be used as L-value (reference matrix)
-		matViewType c(ptr, size(), T_N, stride);//sizeof(double));	
+		// return n by 1 matrix, which can be used as L-value (reference matrix)
+		matViewType c(ptr, size(), 1, stride);
 		return c;
 	}
 
@@ -82,11 +67,15 @@ protected:
 		return c;
 	}
 
+	/*
 	template <class vecViewType>
 	vecViewType _row(int i)const			{ assert(i>=0 && n>i); return vecViewType (&subValue(i,0), T_N, 1); }
-	template <class vecViewType>
-	vecViewType _column(int i)const			{ assert(i>=0 && T_N>i); return vecViewType (&subValue(0,i), size(), stride); }
+	*/
 
+	inline T_base& _subValue(int i, int j) const				{ RANGE_ASSERT(i>=0 && i<n); RANGE_ASSERT(j<stride); return *(ptr+i*stride+j);}
+
+	template <class vecViewType>
+	vecViewType _column(int i)const			{ return vecViewType (&_subValue(0,i), size(), stride); }
 
 public:
 	~_tvectorn();
@@ -94,42 +83,62 @@ public:
 	bool isReference() const	{ return !owner;}
 
 	void _getPrivate(T_base*& ptr, int& stride, int& n, int& on) const;
-	
+	int _getStride() const	{ return stride;}
+	T* dataPtr() const
+	{
+		ASSERT(stride==sizeof(T)/sizeof(T_base));
+		return (T*)ptr;
+	}
 
 	inline T&	x() const	{ return value(0);};
 	inline T&	y() const	{ return value(1);};
 	inline T&	z() const	{ return value(2);};
 	inline T&	w() const	{ return value(3);};
 
+
+	T		getValue( int i ) const						{ RANGE_ASSERT(i>=0 && i<n); return value(i); }
 	
-	T		getValue( int i ) const						{ assert(i>=0 && i<n); return value(i); }
-	void	setValue( int i, T d )						{ assert(i>=0 && i<n); value(i) = d; }
+	void	set( int i, T d )						{ RANGE_ASSERT(i>=0 && i<n); value(i) = d; }
+	void	setValue( int i, T d )						{ RANGE_ASSERT(i>=0 && i<n); value(i) = d; }
+
 	void	setAllValue(T d)							{ for(int i=0; i<n; i++) value(i)=d;}
 	void	setAllValue(int n, T d)						{ setSize(n); for(int i=0; i<n; i++) value(i)=d;}
+	// C-style setValues (non type-safe, slightly more effiencient)
 	void	setValues(int n, T x,...);					//!< setValues(3,4.3, 2.3, 4.3);
+
+	template <class T>
+	struct _tvec_setter
+	{
+		_tvectorn<T>& _a;
+		int _c;
+		_tvec_setter(_tvectorn<T>& a):_a(a),_c(0){}
+		_tvec_setter& operator,(T b){_a(_c)=b; _c=_c+1; return *this;}
+	};
+
+	inline _tvec_setter<T> setValues(int n) { setSize(n); return _tvec_setter<T>(*this);}  //!< setValues(3), 0,0.1,1.1;
+	inline _tvec_setter<T> setValues() { return _tvec_setter<T>(*this);}  //!< setValues(), 0,0.1,1.1;
 	void	setValues(T const* values);
 	void	clear(int start, int end);
 
-	void	extract(_tvectorn<T,T_base,T_N> const& in, _tvectorn<int> const & columns)	;
-	
-	void	assignSelective(_tvectorn<int> const & columns, _tvectorn<T,T_base,T_N> const& in);
+	void	extract(_tvectorn<T,T_base> const& in, _tvectorn<int> const & columns)	;
+
+	void	assignSelective(_tvectorn<int> const & columns, _tvectorn<T,T_base> const& in);
 	void	assignSelective(_tvectorn<int> const & columns, T in);
 	// eg. assignSelective(3, index1, value1, index2, value2, index3, value3, ...)  where value is of type T
 	void	assignSelective(int n, ...);
 
-	T* dataPtr() const		{ if(stride==T_N) return (T*)ptr; ASSERT(0); return NULL;}
-	// reference°¡ value·Î Ä«ÇÇµÈ´Ù.
-	_tvectorn<T,T_base,T_N>& assign(const _tvectorn<T,T_base,T_N>& other);
+
+	// referenceê°€ valueë¡œ ì¹´í”¼ëœë‹¤.
+	_tvectorn<T,T_base>& assign(const _tvectorn<T,T_base>& other);
 
 	// a.value(0)==a[0]==a(0)
-	inline T&   value(int i) const							{ ASSERT(i>=0 && i<n); return *((T*)(ptr+i*stride));}
+	inline T&   value(int i) const							{ RANGE_ASSERT(i>=0 && i<n); return *((T*)(ptr+i*stride));}
 	inline T&   operator[](int i) const						{ return value(i); }
 	inline T&   operator()(int i) const						{ return value(i);}
-	inline T_base& subValue(int i, int j) const				{ ASSERT(i>=0 && i<n); ASSERT(j<T_N); return *(ptr+i*stride+j);}
 
 	int  size() const										{ return n; }
 	void setSize( int );		// preserves data iff size decreases or doesn't change.
-	void resize(int nsize);		// always preserves data, and fills empty entries by 0. 
+	void resize(int nsize);		// always preserves data, and fills empty entries by 0.
 	void reserve( int rr)	{ if(rr>on) { int prev_n=n; resize(rr); n=prev_n; }}
 	void swap(int i, int j)								{ T temp=(*this)[i]; (*this)[i]=(*this)[j]; (*this)[j]=temp;};
 
@@ -140,51 +149,51 @@ public:
 	T popBack();
 	T& back(int i=0) const	{ return value(size()-1+i);}
 
-	// endÀÌÇÏ´Â end-start¸¸Å­ ´ç°ÜÁø´Ù. Áï vectorÅ©±â°¡ end-start¸¸Å­ ÀÛ¾ÆÁø´Ù.
-	void bubbleOut(int start, int end);	
-	// nrowÀÌÇÏ´Â nbubble¸¸Å­ ¿ìÃøÀ¸·Î ¿Å°ÜÁø´Ù. Áï vectorÅ©±â°¡ nbubble¸¸Å­ Ä¿Áö°í, ºóÄ­ÀÌ »ı±ä´Ù.	
+	// endì´í•˜ëŠ” end-startë§Œí¼ ë‹¹ê²¨ì§„ë‹¤. ì¦‰ vectorí¬ê¸°ê°€ end-startë§Œí¼ ì‘ì•„ì§„ë‹¤.
+	void bubbleOut(int start, int end);
+	// nrowì´í•˜ëŠ” nbubbleë§Œí¼ ìš°ì¸¡ìœ¼ë¡œ ì˜®ê²¨ì§„ë‹¤. ì¦‰ vectorí¬ê¸°ê°€ nbubbleë§Œí¼ ì»¤ì§€ê³ , ë¹ˆì¹¸ì´ ìƒê¸´ë‹¤.
 	void bubbles(int nrow, int nbubbles);
 
 	//////////////////////////////////////////////////////////////////////
-	// binary operations. 
+	// binary operations.
 	//////////////////////////////////////////////////////////////////////
 	// e.g > c.add(a,b) , c.cross(a,b), c=a.distance(b)..
-	// (unary operationÀ¸·Îµµ »ç¿ë°¡´É ex) c.add(c,b);m
+	// (unary operationìœ¼ë¡œë„ ì‚¬ìš©ê°€ëŠ¥ ex) c.add(c,b);m
 
-	_tvectorn<T,T_base,T_N>& add( _tvectorn<T,T_base,T_N> const&, _tvectorn<T,T_base,T_N> const& );
-	_tvectorn<T,T_base,T_N>& add( T a, _tvectorn<T,T_base,T_N> const& b);			
-	_tvectorn<T,T_base,T_N>& add( _tvectorn<T,T_base,T_N> const& a, T b);			
-	_tvectorn<T,T_base,T_N>& sub( _tvectorn<T,T_base,T_N> const&, _tvectorn<T,T_base,T_N> const& );
-	_tvectorn<T,T_base,T_N>& sub( T a, _tvectorn<T,T_base,T_N> const& b);			
-	_tvectorn<T,T_base,T_N>& sub( _tvectorn<T,T_base,T_N> const& a, T b);			
-	_tvectorn<T,T_base,T_N>& mult( _tvectorn<T,T_base,T_N> const&, T );
-	_tvectorn<T,T_base,T_N>& mult( _tvectorn<T,T_base,T_N> const& a, _tvectorn<T,T_base,T_N> const& b);	
-	_tvectorn<T,T_base,T_N>& div( _tvectorn<T,T_base,T_N> const& a, T b)				{ return mult(a, 1/b);}
-	_tvectorn<T,T_base,T_N>& div( _tvectorn<T,T_base,T_N> const& a, _tvectorn<T,T_base,T_N> const& b);
-	_tvectorn<T,T_base,T_N>& multAdd(const _tvectorn<T,T_base,T_N>& a, const _tvectorn<T,T_base,T_N>& b) ;
-	_tvectorn<T,T_base,T_N>& multAdd(const _tvectorn<T,T_base,T_N>& a, T b) ;
-	_tvectorn<T,T_base,T_N>& concat(_tvectorn<T, T_base, T_N> const& a, _tvectorn<T, T_base, T_N> const& b);
+	_tvectorn<T,T_base>& add( _tvectorn<T,T_base> const&, _tvectorn<T,T_base> const& );
+	_tvectorn<T,T_base>& add( T a, _tvectorn<T,T_base> const& b);
+	_tvectorn<T,T_base>& add( _tvectorn<T,T_base> const& a, T b);
+	_tvectorn<T,T_base>& sub( _tvectorn<T,T_base> const&, _tvectorn<T,T_base> const& );
+	_tvectorn<T,T_base>& sub( T a, _tvectorn<T,T_base> const& b);
+	_tvectorn<T,T_base>& sub( _tvectorn<T,T_base> const& a, T b);
+	_tvectorn<T,T_base>& mult( _tvectorn<T,T_base> const&, T );
+	_tvectorn<T,T_base>& mult( _tvectorn<T,T_base> const& a, _tvectorn<T,T_base> const& b);
+	_tvectorn<T,T_base>& div( _tvectorn<T,T_base> const& a, T b)				{ return mult(a, 1/b);}
+	_tvectorn<T,T_base>& div( _tvectorn<T,T_base> const& a, _tvectorn<T,T_base> const& b);
+	_tvectorn<T,T_base>& multAdd(const _tvectorn<T,T_base>& a, const _tvectorn<T,T_base>& b) ;
+	_tvectorn<T,T_base>& multAdd(const _tvectorn<T,T_base>& a, T b) ;
+	_tvectorn<T,T_base>& concat(_tvectorn<T, T_base> const& a, _tvectorn<T, T_base> const& b);
 
-	void multmat( _tmat<T> const&, _tvectorn<T, T_base, T_N> const& );
-	void multmat( _tvectorn<T, T_base, T_N> const&, _tmat<T> const& );
+	void multmat( _tmat<T> const&, _tvectorn<T, T_base> const& );
+	void multmat( _tvectorn<T, T_base> const&, _tmat<T> const& );
 
 	//////////////////////////////////////////////////////////////////////
 	// unary operations
 	//
-	// - binary operationÀÌ unary·Î »ç¿ë°¡´ÉÇÏ±â¿¡, ¸¹ÀÌ »ı·«µÇ¾úÀ½. 
+	// - binary operationì´ unaryë¡œ ì‚¬ìš©ê°€ëŠ¥í•˜ê¸°ì—, ë§ì´ ìƒëµë˜ì—ˆìŒ.
 	//     ex) a.add(a,b)
 	//////////////////////////////////////////////////////////////////////
-	_tvectorn<T, T_base, T_N>& operator+=( _tvectorn<T, T_base, T_N> const& other);							
-	_tvectorn<T, T_base, T_N>& operator+=( T value )	;								
-	_tvectorn<T, T_base, T_N>& operator-=( _tvectorn<T, T_base, T_N> const& other);							
-	_tvectorn<T, T_base, T_N>& operator-=( T value );								
-	_tvectorn<T, T_base, T_N>& operator*=( _tvectorn<T, T_base, T_N> const& other);							
-	_tvectorn<T, T_base, T_N>& operator*=( T value );								
-	_tvectorn<T, T_base, T_N>& operator/=( T value );								
+	_tvectorn<T, T_base>& operator+=( _tvectorn<T, T_base> const& other);
+	_tvectorn<T, T_base>& operator+=( T value )	;
+	_tvectorn<T, T_base>& operator-=( _tvectorn<T, T_base> const& other);
+	_tvectorn<T, T_base>& operator-=( T value );
+	_tvectorn<T, T_base>& operator*=( _tvectorn<T, T_base> const& other);
+	_tvectorn<T, T_base>& operator*=( T value );
+	_tvectorn<T, T_base>& operator/=( T value );
 
 	int argMin() const;
 	int argMax() const;
-	int argNearest(T_base value) const;
+	int argNearest(T value) const;
 
 	/// deprecated
 	//void	  getValue(int start, int end, _tvectorn<T, T_base, T_N>& value);
@@ -193,36 +202,36 @@ public:
 	//void	  setValuePtr( int start, int end, T* v);	//!< (*this)[start]=value[0]..
 };
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>::_tvectorn()
+template <class T, class T_base>
+_tvectorn<T, T_base>::_tvectorn()
 {
-	on = n = 0;		
-	stride = T_N;
+	on = n = 0;
+	stride = sizeof(T)/sizeof(T_base);
 	owner=true;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>::_tvectorn(T_base* ptrr, int size, int str) 
+template <class T, class T_base>
+_tvectorn<T, T_base>::_tvectorn(T_base* ptrr, int size, int str)
 {
 	on=0;
 	ptr=ptrr;
 	n=size;
 	stride=str;
-	owner=false;	
+	owner=false;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>::_tvectorn(const _tvectorn<T, T_base, T_N>& other)
+template <class T, class T_base>
+_tvectorn<T, T_base>::_tvectorn(const _tvectorn<T, T_base>& other)
 {
-	on = n = 0;		
-	stride = T_N;
+	on = n = 0;
+	stride = sizeof(T)/sizeof(T_base);
 	owner=true;
 
 	assign(other);
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::_getPrivate(T_base*& ptr2, int& stride2, int& n2, int& on2) const
+template <class T, class T_base>
+void _tvectorn<T, T_base>::_getPrivate(T_base*& ptr2, int& stride2, int& n2, int& on2) const
 {
 	ptr2=ptr;
 	stride2=stride;
@@ -231,9 +240,9 @@ void _tvectorn<T, T_base, T_N>::_getPrivate(T_base*& ptr2, int& stride2, int& n2
 }
 
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>::~_tvectorn()
-{	
+template <class T, class T_base>
+_tvectorn<T, T_base>::~_tvectorn()
+{
 	//if ( owner && on>0 ) delete[] ptr;
 #ifndef _DEBUG
 	if ( owner && on>0 ) free(ptr);
@@ -242,14 +251,16 @@ _tvectorn<T, T_base, T_N>::~_tvectorn()
 
 
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::setSize( int x )
+template <class T, class T_base>
+void _tvectorn<T, T_base>::setSize( int x )
 {
 	if(n==x)
 		return;
 
 	if(!owner)
 		Msg::error("setSize called, but not an owner");
+
+	int T_N=sizeof(T)/sizeof(T_base);
 
 #ifdef _DEBUG
 	if(stride!=T_N)
@@ -258,7 +269,7 @@ void _tvectorn<T, T_base, T_N>::setSize( int x )
 
 	if ( on<x )
 	{
-		// ¾Æ·¡ assert°¡ failÀÌ ³¯¼ö ÀÖ´Â °æ¿ì´Â on==0ÀÎµ¥ n!=xÀÎ °æ¿ìÀÌ´Ù.
+		// ì•„ë˜ assertê°€ failì´ ë‚ ìˆ˜ ìˆëŠ” ê²½ìš°ëŠ” on==0ì¸ë° n!=xì¸ ê²½ìš°ì´ë‹¤.
 		ASSERT(on>=n);
 
 #ifdef _DEBUG
@@ -279,27 +290,23 @@ void _tvectorn<T, T_base, T_N>::setSize( int x )
 	n = x;
 }
 
-template <class T, class T_base, int T_N>  
-void _tvectorn<T, T_base, T_N>::clear(int start, int end)
+template <class T, class T_base>
+void _tvectorn<T, T_base>::clear(int start, int end)
 {
-	if(T_N==1)
-	{
-		for(int i=start; i<end; i++)
-			value(i)=(T)0;
-	}
-	else
-	{
-		for(int i=start; i<end; i++)
-			for(int j=0; j<T_N; j++)
-				subValue(i,j)=(T_base)0;
-	}
+	for(int i=start; i<end; i++)
+		value(i)=baselib::traits<T, T_base>::zero();
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::resize(int nsize)
+template <class T, class T_base>
+void _tvectorn<T, T_base>::resize(int nsize)
 {
+	if(n==nsize)
+		return;
+
 	if(!owner)
 		Msg::error("resize called, but not an owner");
+
+	int T_N=sizeof(T)/sizeof(T_base);
 
 #ifdef _DEBUG
 	if(stride!=T_N)
@@ -317,11 +324,11 @@ void _tvectorn<T, T_base, T_N>::resize(int nsize)
 	else
 	{
 		int capacity=MAX(on,10);
-		// capacity°¡ nsize¸¦ Æ÷ÇÔÇÒ¶§±îÁö doubling
+		// capacityê°€ nsizeë¥¼ í¬í•¨í• ë•Œê¹Œì§€ doubling
 		while(capacity<nsize)	capacity*=2;
 
-		
-		/* previous implementation is based on data copy.		
+
+		/* previous implementation is based on data copy.
 		int prev_size=n;
 		_tvectorn<T, T_base, T_N> backup;
 		backup.assign(*this);
@@ -345,12 +352,12 @@ void _tvectorn<T, T_base, T_N>::resize(int nsize)
 		int prevSize=n;
 		n=nsize;
 		clear(prevSize, nsize);
-		
+
 	}
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::setValues( int n, T x, ... )
+template <class T, class T_base>
+void _tvectorn<T, T_base>::setValues( int n, T x, ... )
 {
 	va_list marker;
 	va_start( marker, x);     /* Initialize variable arguments. */
@@ -364,16 +371,16 @@ void _tvectorn<T, T_base, T_N>::setValues( int n, T x, ... )
 	va_end( marker );              /* Reset variable arguments.      */
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::setValues(T const* values)
+template <class T, class T_base>
+void _tvectorn<T, T_base>::setValues(T const* values)
 {
 	for(int i=0; i<size(); i++)
 		value(i)=values[i];
 }
 
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::assign(const _tvectorn<T, T_base, T_N>& other)
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::assign(const _tvectorn<T, T_base>& other)
 {
 	setSize(other.size());
 	for( int i=0; i<n; i++ )
@@ -381,16 +388,16 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::assign(const _tvectorn<T, 
 	return *this;
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::assignRef(const _tvectorn<T, T_base, T_N>& other)
+template <class T, class T_base>
+void _tvectorn<T, T_base>::assignRef(const _tvectorn<T, T_base>& other)
 {
 	other._getPrivate(ptr, stride, n, on);
 	on=0;
 	owner=false;
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::pushFront(T x)
+template <class T, class T_base>
+void _tvectorn<T, T_base>::pushFront(T x)
 {
 	resize(size()+1);
 	for(int i=size()-1; i>0; i--)
@@ -398,10 +405,10 @@ void _tvectorn<T, T_base, T_N>::pushFront(T x)
 	value(0)=x;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::mult( _tvectorn<T, T_base, T_N> const& b, T a )
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::mult( _tvectorn<T, T_base> const& b, T a )
 {
-	_tvectorn<T, T_base, T_N> &c = (*this);
+	_tvectorn<T, T_base> &c = (*this);
 	c.setSize( b.size() );
 
 	for( int i=0; i<c.size(); i++ )
@@ -409,10 +416,10 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::mult( _tvectorn<T, T_base,
 	return c;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::mult( _tvectorn<T, T_base, T_N> const& a, _tvectorn<T, T_base, T_N> const& b)	
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::mult( _tvectorn<T, T_base> const& a, _tvectorn<T, T_base> const& b)
 {
-	_tvectorn<T, T_base, T_N> &c = (*this);
+	_tvectorn<T, T_base> &c = (*this);
 	c.setSize( b.size() );
 
 	for( int i=0; i<c.size(); i++ )
@@ -420,10 +427,10 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::mult( _tvectorn<T, T_base,
 	return c;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::div( _tvectorn<T, T_base, T_N> const& a, _tvectorn<T, T_base, T_N> const& b)		
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::div( _tvectorn<T, T_base> const& a, _tvectorn<T, T_base> const& b)
 {
-	_tvectorn<T, T_base, T_N> &c = (*this);
+	_tvectorn<T, T_base> &c = (*this);
 	c.setSize( b.size() );
 
 	for( int i=0; i<c.size(); i++ )
@@ -431,20 +438,20 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::div( _tvectorn<T, T_base, 
 	return c;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::add(_tvectorn<T, T_base, T_N> const& a, _tvectorn<T, T_base, T_N> const& b)		
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::add(_tvectorn<T, T_base> const& a, _tvectorn<T, T_base> const& b)
 {
-	_tvectorn<T, T_base, T_N> &c = (*this);
+	_tvectorn<T, T_base> &c = (*this);
 	c.setSize( b.size() );
 
 	for( int i=0; i<c.size(); i++ )
 		c[i] = a[i]+b[i];
 	return c;
 }
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::sub(_tvectorn<T, T_base, T_N> const& a, _tvectorn<T, T_base, T_N> const& b)		
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::sub(_tvectorn<T, T_base> const& a, _tvectorn<T, T_base> const& b)
 {
-	_tvectorn<T, T_base, T_N> &c = (*this);
+	_tvectorn<T, T_base> &c = (*this);
 	c.setSize( b.size() );
 
 	for( int i=0; i<c.size(); i++ )
@@ -452,22 +459,22 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::sub(_tvectorn<T, T_base, T
 	return c;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::concat(_tvectorn<T, T_base, T_N> const& a, _tvectorn<T, T_base, T_N> const& b)
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::concat(_tvectorn<T, T_base> const& a, _tvectorn<T, T_base> const& b)
 {
 	if(&a==this)
 	{
-		_tvectorn<T, T_base, T_N> aa(a);
+		_tvectorn<T, T_base> aa(a);
 		return concat(aa,b);
 	}
 
 	if(&b==this)
 	{
-		_tvectorn<T, T_base, T_N> bb(b);
+		_tvectorn<T, T_base> bb(b);
 		return concat(a,bb);
 	}
 
-	_tvectorn<T, T_base, T_N> &c = (*this);
+	_tvectorn<T, T_base> &c = (*this);
 	c.setSize(a.size()+b.size());
 
 	for(int i=0; i<a.size(); i++)
@@ -481,10 +488,10 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::concat(_tvectorn<T, T_base
 
 // macro functions
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::add( _tvectorn<T, T_base, T_N> const& a, T b)				
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::add( _tvectorn<T, T_base> const& a, T b)
 {
-	_tvectorn<T, T_base, T_N>& c=*this;
+	_tvectorn<T, T_base>& c=*this;
 	c.setSize( a.size() );
 
 	for( int i=0; i<a.size(); i++ )
@@ -492,26 +499,26 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::add( _tvectorn<T, T_base, 
 	return c;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::add( T a, _tvectorn<T, T_base, T_N> const& b)				
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::add( T a, _tvectorn<T, T_base> const& b)
 {
 	return add(b, a);
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::sub( T a, _tvectorn<T, T_base, T_N> const& b)
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::sub( T a, _tvectorn<T, T_base> const& b)
 {
-	_tvectorn<T, T_base, T_N>& c=*this;
+	_tvectorn<T, T_base>& c=*this;
 	c.setSize( b.size() );
 
 	for( int i=0; i<b.size(); i++ )
 		c[i] = a - b[i];
 	return c;
 }
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::sub( _tvectorn<T, T_base, T_N> const& a, T b)				
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::sub( _tvectorn<T, T_base> const& a, T b)
 {
-	_tvectorn<T, T_base, T_N>& c=*this;
+	_tvectorn<T, T_base>& c=*this;
 	c.setSize( a.size() );
 
 	for( int i=0; i<a.size(); i++ )
@@ -519,11 +526,11 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::sub( _tvectorn<T, T_base, 
 	return c;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::multAdd(const _tvectorn<T, T_base, T_N>& a, const _tvectorn<T, T_base, T_N>& b) 
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::multAdd(const _tvectorn<T, T_base>& a, const _tvectorn<T, T_base>& b)
 {
-	_tvectorn<T, T_base, T_N>& c=*this;
-	ASSERT(c.size()==a.size() && c.size()==b.size());
+	_tvectorn<T, T_base>& c=*this;
+	RANGE_ASSERT(c.size()==a.size() && c.size()==b.size());
 
 	for(int i=0; i<c.size(); i++)
 	{
@@ -532,11 +539,11 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::multAdd(const _tvectorn<T,
 	return c;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::multAdd(const _tvectorn<T, T_base, T_N>& a, T b) 
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::multAdd(const _tvectorn<T, T_base>& a, T b)
 {
-	_tvectorn<T, T_base, T_N>& c=*this;
-	ASSERT(c.size()==a.size() );
+	_tvectorn<T, T_base>& c=*this;
+	RANGE_ASSERT(c.size()==a.size() );
 
 	for(int i=0; i<c.size(); i++)
 	{
@@ -545,54 +552,54 @@ _tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::multAdd(const _tvectorn<T,
 	return c;
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::operator+=( _tvectorn<T, T_base, T_N> const& other)				
-{	
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::operator+=( _tvectorn<T, T_base> const& other)
+{
 	return add(*this, other);
 }
 
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::operator+=( T value )					
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::operator+=( T value )
 {
 	return add(*this, value);
 }
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::operator-=( _tvectorn<T, T_base, T_N> const& other)				
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::operator-=( _tvectorn<T, T_base> const& other)
 {
 	return sub(*this, other);
 }
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::operator-=( T value )					
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::operator-=( T value )
 {
 	return sub(*this, value);
 }
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::operator*=( _tvectorn<T, T_base, T_N> const& other)				
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::operator*=( _tvectorn<T, T_base> const& other)
 {
 	return mult(*this, other);
 }
 // component wise multiplication
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::operator*=( T value )					
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::operator*=( T value )
 {
 	return mult(*this, value);
 }
-template <class T, class T_base, int T_N> 
-_tvectorn<T, T_base, T_N>& _tvectorn<T, T_base, T_N>::operator/=( T value )					
+template <class T, class T_base>
+_tvectorn<T, T_base>& _tvectorn<T, T_base>::operator/=( T value )
 {
 	return mult(*this, 1.0/value);
 }
 
-template <class T, class T_base, int T_N> 
-T _tvectorn<T, T_base, T_N>::popBack()
+template <class T, class T_base>
+T _tvectorn<T, T_base>::popBack()
 {
 	T out=(*this)[size()-1];
 	resize(size()-1);
 	return out;
 }
 
-template <class T, class T_base, int T_N> 
-T _tvectorn<T, T_base, T_N>::popFront()
+template <class T, class T_base>
+T _tvectorn<T, T_base>::popFront()
 {
 	T out=(*this)[0];
 
@@ -604,10 +611,10 @@ T _tvectorn<T, T_base, T_N>::popFront()
 	return out;
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::bubbleOut(int start, int end)
+template <class T, class T_base>
+void _tvectorn<T, T_base>::bubbleOut(int start, int end)
 {
-	// endÀÌÇÏ´Â end-start¸¸Å­ À§·Î ¿Ã¶ó°£´Ù. Áï matrixÅ©±â°¡ end-start¸¸Å­ ¼¼·Î·Î ÀÛ¾ÆÁø´Ù.
+	// endì´í•˜ëŠ” end-startë§Œí¼ ìœ„ë¡œ ì˜¬ë¼ê°„ë‹¤. ì¦‰ matrixí¬ê¸°ê°€ end-startë§Œí¼ ì„¸ë¡œë¡œ ì‘ì•„ì§„ë‹¤.
 	int numCols=end-start;
 
 	for(int i=end; i<size(); i++)
@@ -618,10 +625,10 @@ void _tvectorn<T, T_base, T_N>::bubbleOut(int start, int end)
 	resize(size()-numCols);
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::bubbles(int nrow, int nbubbles)
+template <class T, class T_base>
+void _tvectorn<T, T_base>::bubbles(int nrow, int nbubbles)
 {
-	// nrowÀÌÇÏ´Â nbubble¸¸Å­ ¾Æ·¡·Î ³»¸°´Ù. Áï matrixÅ©±â°¡ nbubble¸¸Å­ ¼¼·Î·Î Ä¿Áö°í, ºóÄ­ÀÌ »ı±ä´Ù.
+	// nrowì´í•˜ëŠ” nbubbleë§Œí¼ ì•„ë˜ë¡œ ë‚´ë¦°ë‹¤. ì¦‰ matrixí¬ê¸°ê°€ nbubbleë§Œí¼ ì„¸ë¡œë¡œ ì»¤ì§€ê³ , ë¹ˆì¹¸ì´ ìƒê¸´ë‹¤.
 	int prev_row=size();
 	resize(size()+nbubbles);
 
@@ -632,8 +639,8 @@ void _tvectorn<T, T_base, T_N>::bubbles(int nrow, int nbubbles)
 			(*this)[i]=0;
 }
 
-template <class T, class T_base, int T_N> 
-void  _tvectorn<T, T_base, T_N>::extract(_tvectorn<T, T_base, T_N> const& in, _tvectorn<int> const& columns)
+template <class T, class T_base>
+void  _tvectorn<T, T_base>::extract(_tvectorn<T, T_base> const& in, _tvectorn<int> const& columns)
 {
 	setSize(columns.size());
 
@@ -643,23 +650,23 @@ void  _tvectorn<T, T_base, T_N>::extract(_tvectorn<T, T_base, T_N> const& in, _t
 	}
 }
 
-template <class T, class T_base, int T_N> 
-void  _tvectorn<T, T_base, T_N>::assignSelective(_tvectorn<int> const & columns, _tvectorn<T, T_base, T_N> const& in )
+template <class T, class T_base>
+void  _tvectorn<T, T_base>::assignSelective(_tvectorn<int> const & columns, _tvectorn<T, T_base> const& in )
 {
 	for(int j=0; j<columns.size(); j++)
 		(*this)[columns[j]]=in[j];
 }
 
 
-template <class T, class T_base, int T_N> 
-void  _tvectorn<T, T_base, T_N>::assignSelective(_tvectorn<int> const & columns, T in )
+template <class T, class T_base>
+void  _tvectorn<T, T_base>::assignSelective(_tvectorn<int> const & columns, T in )
 {
 	for(int j=0; j<columns.size(); j++)
 		(*this)[columns[j]]=in;
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::assignSelective(int N, ...)
+template <class T, class T_base>
+void _tvectorn<T, T_base>::assignSelective(int N, ...)
 {
 	va_list marker;
 	va_start( marker, N);     /* Initialize variable arguments. */
@@ -674,16 +681,16 @@ void _tvectorn<T, T_base, T_N>::assignSelective(int N, ...)
 
 }
 
-template <class T, class T_base, int T_N>
-T* _tvectorn<T, T_base, T_N>::getStride1Pointer() const
+template <class T, class T_base>
+T* _tvectorn<T, T_base>::getStride1Pointer() const
 {
-	// ÇÑ º¤ÅÍ°¡ ¿©·¯¹ø ¹İº¹ÇØ¼­ ÀĞ¾îÁö´Â °æ¿ì, stride°¡ 1ÀÌ ¾Æ´Ñ°æ¿ì 1ÀÎ ³ğ¿¡ Ä«ÇÇÇØ¼­ ÀĞ´Â°ÍÀÌ ´õ È¿À²ÀûÀÓ.
+	// í•œ ë²¡í„°ê°€ ì—¬ëŸ¬ë²ˆ ë°˜ë³µí•´ì„œ ì½ì–´ì§€ëŠ” ê²½ìš°, strideê°€ 1ì´ ì•„ë‹Œê²½ìš° 1ì¸ ë†ˆì— ì¹´í”¼í•´ì„œ ì½ëŠ”ê²ƒì´ ë” íš¨ìœ¨ì ì„.
 	T* bb;
 	if(stride==1)
 		bb=ptr;
 	else
 	{
-		static _tvectorn<T, T_base, T_N> copy;
+		static _tvectorn<T, T_base> copy;
 		copy.setSize(size());
 		bb=copy.ptr;
 		for(int i=0; i<size(); i++)
@@ -692,12 +699,11 @@ T* _tvectorn<T, T_base, T_N>::getStride1Pointer() const
 	return bb;
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::multmat( _tmat<T> const& a, _tvectorn<T, T_base, T_N> const& b )
+template <class T, class T_base>
+void _tvectorn<T, T_base>::multmat( _tmat<T> const& a, _tvectorn<T, T_base> const& b )
 {
-	ASSERT(T_N==1);
-    _tvectorn<T, T_base, T_N> &c = (*this);
-    assert( a.cols()==b.size() );
+    _tvectorn<T, T_base> &c = (*this);
+    RANGE_ASSERT( a.cols()==b.size() );
     c.setSize( a.rows() );
 
 	T* bb=b.getStride1Pointer() ;
@@ -711,15 +717,14 @@ void _tvectorn<T, T_base, T_N>::multmat( _tmat<T> const& a, _tvectorn<T, T_base,
     }
 }
 
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::multmat( _tvectorn<T, T_base, T_N> const& b, _tmat<T> const& a )
+template <class T, class T_base>
+void _tvectorn<T, T_base>::multmat( _tvectorn<T, T_base> const& b, _tmat<T> const& a )
 {
-	ASSERT(T_N==1);
-    _tvectorn<T, T_base, T_N> &c = (*this);
-    assert( a.rows()==b.size() );
+    _tvectorn<T, T_base> &c = (*this);
+    RANGE_ASSERT( a.rows()==b.size() );
     c.setSize( a.cols() );
 
-	
+
 	T* bb=b.getStride1Pointer() ;
     for( int i=0; i<a.cols(); i++ )
     {
@@ -730,18 +735,16 @@ void _tvectorn<T, T_base, T_N>::multmat( _tvectorn<T, T_base, T_N> const& b, _tm
     }
 }
 
-template <class T, class T_base, int T_N> 
-int _tvectorn<T,T_base, T_N>::argMin() const
+template <class T, class T_base>
+int _tvectorn<T,T_base>::argMin() const
 {
-	ASSERT(T_N==1);
-
-	T_base min_v=std::numeric_limits<T_base>::max();
+	T min_v=std::numeric_limits<T>::max();
 
 	int min_index=0;
 
 	for(int i=0; i<size(); i++)
 	{
-		T_base v=subValue(i,0);
+		T v=value(i);
 		if(v<min_v)
 		{
 			min_v=v;
@@ -752,16 +755,15 @@ int _tvectorn<T,T_base, T_N>::argMin() const
 	return min_index;
 }
 
-template <class T, class T_base, int T_N> 
-int _tvectorn<T,T_base, T_N>::argMax() const
+template <class T, class T_base>
+int _tvectorn<T,T_base>::argMax() const
 {
-	ASSERT(T_N==1);
-	T_base max_v=-1*std::numeric_limits<T_base>::max();
+	T max_v=-1*std::numeric_limits<T>::max();
 	int max_index;
 
 	for(int i=0; i<size(); i++)
 	{
-		T_base v=subValue(i,0);
+		T v=value(i);
 		if(v>max_v)
 		{
 			max_v=v;
@@ -771,8 +773,8 @@ int _tvectorn<T,T_base, T_N>::argMax() const
 	return max_index;
 }
 
-template <class T, class T_base, int T_N> 
-int _tvectorn<T,T_base, T_N>::argNearest(T_base value) const
+template <class T, class T_base>
+int _tvectorn<T,T_base>::argNearest(T v) const
 {
 	int argNearest=-1;
 	T_base min=std::numeric_limits<T_base>::max();
@@ -780,7 +782,7 @@ int _tvectorn<T,T_base, T_N>::argNearest(T_base value) const
 	T_base dist;
 	for(int i=0; i<size(); i++)
 	{
-		if((dist=(T_base)(ABS(subValue(i,0)-value))) < min)
+		if((dist=baselib::traits<T,T_base>::distance(value(i), v))< min)
 		{
 			min=dist;
 			argNearest=i;
@@ -791,25 +793,25 @@ int _tvectorn<T,T_base, T_N>::argNearest(T_base value) const
 
 // deprecated
 /*
-template <class T, class T_base, int T_N> 
-void _tvectorn<T, T_base, T_N>::setValue( int start, int end, _tvectorn<T, T_base, T_N> const& vec)
+template <class T, class T_base>
+void _tvectorn<T, T_base>::setValue( int start, int end, _tvectorn<T, T_base, T_N> const& vec)
 {
 	for(int i=start; i<end; i++)
 	{
 		value(i)=vec.value(i-start);
-	}	
+	}
 }
 
-template <class T, class T_base, int T_N> 
+template <class T, class T_base>
 void _tvectorn<T, T_base, T_N>::setValuePtr( int start, int end, T* values)
 {
 	for(int i=start; i<end; i++)
 	{
 		value(i)=values[i-start];
-	}	
+	}
 }
 
-template <class T, class T_base, int T_N> 
+template <class T, class T_base>
 void _tvectorn<T, T_base, T_N>::getValue(int start, int end, _tvectorn<T, T_base, T_N>& vv)
 {
 	vv.setSize(end-start);
@@ -821,3 +823,5 @@ void _tvectorn<T, T_base, T_N>::getValue(int start, int end, _tvectorn<T, T_base
 }
 
 */
+
+#endif
