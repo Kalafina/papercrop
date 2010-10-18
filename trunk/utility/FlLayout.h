@@ -5,6 +5,7 @@
 
 
 #include "luabindWorker.h"
+#include "namedmapsupport.h"
 class FlChoice;
 class FlLayout;
 class FlLayoutGroup : public Fl_Group

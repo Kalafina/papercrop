@@ -60,6 +60,9 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
+#include <assert.h>
+#include <stdio.h>
+#include <stdexcept>
 
 
 #ifdef max
@@ -77,8 +80,9 @@
 // disable boost codepage warning.
 #pragma warning( disable : 4819)
 
-// Fltk¸¦ dynamic likingÇÒ²¨¸é FL_DLLÀ» µğÆÄÀÎ ÇÏ½Ã¿À. 
-// - mainlibPythonÀ» ¾²´Â °æ¿ì³ª ¸µÅ©¿¡·¯°¡ ³ª´Â°æ¿ì¸¦ Á¦¿ÜÇÏ°í´Â FL_DLL ºñÃß.
+#ifdef _MSC_VER
+// Fltkë¥¼ dynamic likingí• êº¼ë©´ FL_DLLì„ ë””íŒŒì¸ í•˜ì‹œì˜¤. 
+// - mainlibPythonì„ ì“°ëŠ” ê²½ìš°ë‚˜ ë§í¬ì—ëŸ¬ê°€ ë‚˜ëŠ”ê²½ìš°ë¥¼ ì œì™¸í•˜ê³ ëŠ” FL_DLL ë¹„ì¶”.
 #define FL_DLL 
 
 /*
@@ -116,6 +120,7 @@
 #pragma comment(lib, "devil/lib/DevIl.lib")
 #pragma comment(lib, "devil/lib/Ilu.lib")
 */
+#endif
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Tabs.H>
@@ -146,7 +151,7 @@
 
 namespace Msg
 {
-	void verify(bool bExpression, const char*, ...);// release¿¡¼­µµ ¾ø¾îÁöÁö ¾Ê´Â verify¸¦ ÇÏ°í ½ÍÀº°æ¿ì »ç¿ë.
+	void verify(bool bExpression, const char*, ...);// releaseì—ì„œë„ ì—†ì–´ì§€ì§€ ì•ŠëŠ” verifyë¥¼ í•˜ê³  ì‹¶ì€ê²½ìš° ì‚¬ìš©.
 	void print(const char*,...);
 	void print2(const char*,...);
 	void error(const char*,...);
@@ -168,7 +173,7 @@ namespace Msg
 		virtual void error(const char* msg);
 		virtual void msgBox(const char* msg);
 		virtual void output(const char* key, const char* msg);
-		// ¾ÆÁ÷ ±¸Çö¾ÈµÊ. »ç¿ëÀÚ¿¡°Ô yes or no¹°¾îº¸´Â ±â´É.
+		// ì•„ì§ êµ¬í˜„ì•ˆë¨. ì‚¬ìš©ìì—ê²Œ yes or noë¬¼ì–´ë³´ëŠ” ê¸°ëŠ¥.
 		virtual bool confirm(const char* msg);
 		bool m_bOutput;
 		

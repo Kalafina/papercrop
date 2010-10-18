@@ -21,7 +21,7 @@
 
 
 #pragma once
-#include "utility/fllayout.h"
+#include "utility/FlLayout.h"
 
 class PDFwin;
 class RightPanel :

@@ -11,6 +11,15 @@
 
 #include "template_math.h"
 template <class T>
+struct _tmat_setter
+{
+	_tmat<T>& _a;
+	int _crow,_ccol;
+	_tmat_setter(_tmat<T>& a):_a(a),_crow(0),_ccol(0){}
+	_tmat_setter& operator,(T b){_a(_crow,_ccol)=b; _crow+=(_ccol +1)/_a.cols(); _ccol=(_ccol+1)%_a.cols();return *this;}
+};
+
+template <class T>
 class _tmat
 {
 protected:
@@ -81,15 +90,6 @@ public:
 	void    setValue( int, int, T );
 	// C-style setValue. (non type-safe, slightly more efficient)
 	void	setValues(int m, int n, T x00, ...);					//!< setValues(3,1, 0.0, 0.1, 1.1);
-	template <class T>
-	struct _tmat_setter
-	{
-		_tmat<T>& _a;
-		int _crow,_ccol;
-		_tmat_setter(_tmat<T>& a):_a(a),_crow(0),_ccol(0){}
-		_tmat_setter& operator,(T b){_a(_crow,_ccol)=b; _crow+=(_ccol +1)/_a.cols(); _ccol=(_ccol+1)%_a.cols();return *this;}
-	};
-
 	// C++ style setValue 
 	inline _tmat_setter<T> setValues(int m, int n) { setSize(m,n); return _tmat_setter<T>(*this);}  //!< setValues(3,1), 0,0.1,1.1;
 	inline _tmat_setter<T> setValues() { return _tmat_setter<T>(*this);}  //!< setValues(), 0,0.1,1.1;
@@ -714,6 +714,7 @@ void _tmat<T>::extractColumns(_tmat<T> const& mat, _tvectorn<int> const& columns
 template <class T>
 void _tmat<T>::load(const char* filename)
 {
+	/*
 	TFile file;
 	file.OpenReadFile(filename);
 	int nrow=file.UnpackInt();
@@ -722,18 +723,20 @@ void _tmat<T>::load(const char* filename)
 	for(int i=0; i<rows(); i++)
 		file.UnpackArray(&value(i,0), rows()*cols(), sizeof(T));
 	file.CloseFile();
+	*/
 }
 
 template <class T>
 void _tmat<T>::save(const char* filename) const
 {
-	TFile file;
+	/*TFile file;
 	file.OpenWriteFile(filename);
 	file.PackInt(rows());
 	file.PackInt(cols());
 	for(int i=0; i<rows(); i++)
 		file.PackArray(&value(i,0), cols(), sizeof(T));
 	file.CloseFile();
+	*/
 }
 
 template <class T>

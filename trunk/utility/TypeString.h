@@ -1,40 +1,23 @@
-//
-// TypeString.h
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
+#ifndef _TSTRING_H_
+#define _TSTRING_H_
 
 #pragma once
-
+#include <typeinfo>
+#include <cstdarg>
+#include <limits.h>
 class TString;
-
 namespace sz0
 {
 	struct Operator
 	{
 		Operator(){}
 		virtual ~Operator(){}
-		virtual void calc(TString& c) const;
+		virtual void operator()(TString& c) const;
 	};
 }
 
 /// Null terminated string. Do not make virtual function.
-class TString  
+class TString
 {
 public:
 	TString();
@@ -51,41 +34,42 @@ public:
 	void replace(char a, char b);
 	void replace(const char* a, const char* b);
 
-	/// Almost private functions. Á÷Á¢ access. Do not forget to updateLength!!!
+	/// Almost private functions. ì§ì ‘ access. Do not forget to updateLength!!!
 	char* ptr_ref(int n=0)					{ return m_psData+n; }
-	void allocate(int AllocLen);
+	void reserve(int AllocLen);
 	void alloc(const char* strData, int nLen = -1);
-	void alloc(const TString& Src, int start = 0, int end = INT_MAX);	
+	void alloc(const TString& Src, int start = 0, int end = INT_MAX);
 	void _format(const char* pszFormat, va_list& argList);
 
 	void updateLength()						{ m_nDataLen=(int)strlen(m_psData); }
 
 	//find
-	//startºÎÅÍ nLenÀ» ºñ±³ÇÏ¿© Ã£´Â´Ù.(0 - indexing)
-	int findChar(int start, char one) const;    
+	//startë¶€í„° nLenì„ ë¹„êµí•˜ì—¬ ì°¾ëŠ”ë‹¤.(0 - indexing)
+	int findChar(int start, char one) const;
 	int findCharRight(char one, int start=INT_MAX) const;
-	// ¸øÃ£À¸¸é -1 return 
+
+	// returns -1 when not found
 	int findStr(int start, const char* src, int Len=-1) const;
 	int find(const char* src) const;
-	
+
 	void makeUpper();
 	TString toUpper();
-	// i¹øÂ° character°¡ srcÀÇ ¹®ÀÚÁß ÇÏ³ªÀÎÁö?
+	// ië²ˆì§¸ characterê°€ srcì˜ ë¬¸ìì¤‘ í•˜ë‚˜ì¸ì§€?
 	bool isOneOf(int i, const TString& src) const;
 
-	// loop¸¦ µ¹¸é¼­ start°¡ end°¡ µÇ¸é ¸ØÃâ°Í.
+	// loopë¥¼ ëŒë©´ì„œ startê°€ endê°€ ë˜ë©´ ë©ˆì¶œê²ƒ.
 	void token(int &start, const TString& delimiter, TString& token) const;
 
-	//delimiter·Î ±¸ºĞµÇ´Â index¹øÂ° ÅäÅ« (1 - indexing) ex) "abc def".token(" ,",1)=="abc"
+	//delimiterë¡œ êµ¬ë¶„ë˜ëŠ” indexë²ˆì§¸ í† í° (1 - indexing) ex) "abc def".token(" ,",1)=="abc"
 	TString token(char delimiter, int index = 1) const;
 	TString token(const char* delimiter, int index = 1) const;
 
-	//substring : [start, end] »çÀÌÀÇ string
+	//substring : [start, end] ì‚¬ì´ì˜ string
 	TString subString( int start = 0, int end = INT_MAX) const;
 
-	/// n<0 ÀÎ°æ¿ì ¹İ´ëÂÊºÎÅÍ Ä«¿îÆ®.
+	/// n<0 ì¸ê²½ìš° ë°˜ëŒ€ìª½ë¶€í„° ì¹´ìš´íŠ¸.
 	TString left(int n) const				{ if(n<0) return subString(0, length()+n); return subString(0, n);}
-	/// n<0 ÀÎ°æ¿ì ¹İ´ëÂÊºÎÅÍ Ä«¿îÆ®.
+	/// n<0 ì¸ê²½ìš° ë°˜ëŒ€ìª½ë¶€í„° ì¹´ìš´íŠ¸.
 	TString right(int n) const				{ if(n<0) return TString(ptr(-1*n)); int start=length()-n; return subString(start);}
 
 	void trimLeft(const char* delimiter);
@@ -94,19 +78,19 @@ public:
 	const char* right2(int n) const			{ int start=length()-n; return ptr(start);}
 
 	//compare
-	int strncmp(const TString &str, int n=-1) const;              
+	int strncmp(const TString &str, int n=-1) const;
 	int strcmp(const TString &str) const;
 	int strcmp(const char* str) const;
 
 	int isEmpty() const;
 	void empty();
 
-	void op0(const sz0::Operator& op)	{op.calc(*this);}
+	void op0(const sz0::Operator& op)	{op(*this);}
 
 	//sprintf
 	TString& add(const char* pszFormat, ...);
 	TString& format(const char* pszFormat, ...);
-	
+
 	//OPerater "="
 	const TString& operator =( const TString& Str );
 	const TString& operator =( const char* strStr);
@@ -116,9 +100,9 @@ public:
 	//OPerator "[]"
 	char& operator []( int index ) const	{	return m_psData[index];	}
 	char& value(int index) const			{	return m_psData[index];	}
-	
-	//Concat 
-	void concat(const TString &str, int n = 0);   
+
+	//Concat
+	void concat(const TString &str, int n = 0);
 	void concat(const char*  str, int n =0);
 
 	//operator "+"
@@ -130,7 +114,7 @@ public:
 	bool operator ==(const TString &Str2) const;
 	bool operator ==(const char* Str2) const;
 	friend bool  operator ==(const char* Str1, const TString &Str2);
-	
+
 	//operator "!="
 	bool operator !=(const TString &Str2) const;
 	bool operator !=(const char* Str2) const;
@@ -153,7 +137,7 @@ private:
 
 
 #include <vector>
-class TStrings 
+class TStrings
 {
 	std::vector<TString> mStrings;
 public:
@@ -163,7 +147,7 @@ public:
 	TString& operator[](int i)				{ return mStrings[i];}
 	TString& data(int i)					{ return mStrings[i];}
 	TString& back()							{ return data(size()-1);}
-	
+
 	TString const& operator[](int i)const	{ return mStrings[i];}
 	TString const& data(int i)const			{ return mStrings[i];}
 	TString const& back() const				{ return data(size()-1);}
@@ -175,24 +159,9 @@ public:
 	void resize(int n)						{ mStrings.resize(n);}
 	void pushBack(const TString& other)		{ mStrings.push_back(other);}
 
-	TString prefix() const;	// ¸ğµç ¹®ÀÚ¿­ÀÌ °°Àº prefix·Î ½ÃÀÛÇÏ´Â °æ¿ì ÇØ´ç prefix return.
-    void trimSamePrefix(const TStrings& other);	// ¸ğµç ¹®ÀÚ¿­ÀÌ °°Àº prefix·Î ½ÃÀÛÇÏ´Â °æ¿ì Àß¶óÁØ´Ù.
-	// ¸øÃ£À¸¸é size() return;
+	TString prefix() const;	// ëª¨ë“  ë¬¸ìì—´ì´ ê°™ì€ prefixë¡œ ì‹œì‘í•˜ëŠ” ê²½ìš° í•´ë‹¹ prefix return.
+    void trimSamePrefix(const TStrings& other);	// ëª¨ë“  ë¬¸ìì—´ì´ ê°™ì€ prefixë¡œ ì‹œì‘í•˜ëŠ” ê²½ìš° ì˜ë¼ì¤€ë‹¤.
+	// ëª»ì°¾ìœ¼ë©´ size() return;
 	int find(const char* other) const;
-
 };
-
-#pragma warning (disable: 4786)
-#include <map>
-#include <string>
-#include <functional>
-
-#pragma warning (disable: 4800)
-
-struct cmpTString: std::binary_function<TString const &, TString const &, bool>
-{
-	bool operator()(TString const & _X, TString const & _Y) const
-	{
-		return _X.strcmp(_Y)<0;
-	}
-};
+#endif

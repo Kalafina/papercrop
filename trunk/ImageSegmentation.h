@@ -1,3 +1,5 @@
+#ifndef IMAGE_SEGMENTATION_H_
+#define IMAGE_SEGMENTATION_H_
 #pragma once
 
 //
@@ -21,7 +23,7 @@
 // USA.
 //
 
-#include "image/image.h"
+#include "image/Image.h"
 class SummedAreaTable
 {
 	CImage* mImage;
@@ -64,3 +66,4 @@ public:
 
 	void _getResult(std::vector<TRect>& results);
 };
+#endif

@@ -1,24 +1,3 @@
-//
-// TypeString.cpp 
-//
-// Copyright 2004 by Taesoo Kwon.
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
-
 // TypeString.cpp: implementation of the TypeString class.
 //
 //////////////////////////////////////////////////////////////////////
@@ -60,7 +39,7 @@ void TString::initData()
 {
 	m_nDataLen = 0;
 	m_nAllocLen = 0;
-	
+
 	m_psData = NULL;
 }
 
@@ -68,7 +47,7 @@ void TString::freeData()
 {
 	if(m_psData != NULL){
 		free(m_psData);
-		m_psData = NULL;
+		initData();
 	}
 
 }
@@ -88,7 +67,7 @@ void TString::empty()
 TString::TString(const sz0::Operator& op)
 {
 	initData();
-	op.calc(*this);
+	op(*this);
 }
 
 TString::TString(const char* strString)
@@ -118,7 +97,7 @@ void TString::alloc(const TString& Src, int start, int end)
 	if(m_nDataLen<=0)
 		empty();
 	else{
-		allocate(m_nDataLen + 1);
+		reserve(m_nDataLen + 1);
 
 		memcpy(m_psData,Src.ptr(start), m_nDataLen*sizeof(char));
 		m_psData[m_nDataLen] = '\0';
@@ -129,12 +108,12 @@ void TString::alloc(const TString& Src, int start, int end)
 void TString::alloc(const char* strData, int nLen)
 {
 	if(nLen == -1)
-		nLen = (strData==NULL)? 0 : lstrlen(strData);
+		nLen = (strData==NULL)? 0 : strlen(strData);
 	m_nDataLen = nLen;
 
 
 	if(m_nDataLen!=0) {
-		allocate(m_nDataLen + 1);
+		reserve(m_nDataLen + 1);
 		memcpy(m_psData,strData,m_nDataLen*sizeof(char));
 	}
 
@@ -148,10 +127,12 @@ void TString::replace(char a, char b)
 	for(int i=0; i<length(); i++)
 		if(value(i)==a) value(i)=b;
 }
+
+
 void TString::replace(const char* a, const char* b)
 {
 	TString aa(a);
-	
+
 	TString output;
 
 //	ASSERT(aa.length()==bb.length());
@@ -168,6 +149,27 @@ void TString::replace(const char* a, const char* b)
 	output.add("%s",this->right(aa.length()).ptr());
 	*this=output;
 }
+/*
+void TString::replace(const char* a, const char* b)
+{
+	TString aa(a);
+	TString bb(b);
+
+	ASSERT(aa.length()==bb.length());
+	for(int i=0; i<length()-aa.length(); i++)
+	{
+		if(subString(i,i+aa.length())==aa)
+		{
+			for(int j=0; j<bb.length(); j++)
+			{
+				(*this)[i+j]=bb[j];
+			}
+
+			i+=aa.length()-1;
+		}
+	}
+}
+*/
 
 int TString::strcmp(const TString &str2) const
 {
@@ -196,13 +198,15 @@ void TString::concat(const TString & str2, int n)
 
 void TString::concat(const char* str2, int n )
 {
-	int appLen = lstrlen(str2) - n;
-	int concatLen = m_nDataLen + appLen; 
+	if(str2==NULL)
+		return;
+	int appLen = strlen(str2) - n;
+	int concatLen = m_nDataLen + appLen;
 
 	if(appLen<0) return;
-	
-	allocate(concatLen+1);
-	
+
+	reserve(concatLen+1);
+
 	memcpy(m_psData+m_nDataLen, str2+n, appLen);
 	m_nDataLen = concatLen;
 	m_psData[m_nDataLen] = '\0';
@@ -220,33 +224,51 @@ TString& TString::add(const char* pszFormat, ...)
 }
 
 //%s,%d,%i,%x, and  %c, %s ...
-// %3sµîÀÇ formatÁö¿øÇØ¾ßÇÔ..
+// %3së“±ì˜ formatì§€ì›í•´ì•¼í•¨..
 TString& TString::format(const char* pszFormat, ...)
-{	
+{
 	va_list argList;
 	va_start(argList,pszFormat);
 	_format(pszFormat, argList);
 	return *this;
 }
 
-void TString::allocate(int AllocLen)
+void TString::reserve(int AllocLen)
 {
 	if(m_nAllocLen < AllocLen){
 		m_nAllocLen = AllocLen;
-		m_psData = (LPSTR) realloc((void *)m_psData, m_nAllocLen*sizeof(char) );
+		//m_psData = (LPSTR) realloc((void *)m_psData, m_nAllocLen*sizeof(char) );
+
+
+		char* prevData=m_psData;
+		m_psData=(char*) malloc(m_nAllocLen*sizeof(char));
+
+		if(prevData)
+		{
+		    #ifdef _MSC_VER
+			strncpy_s(m_psData, m_nAllocLen, prevData, m_nDataLen);
+			#else
+			strncpy(m_psData, prevData, m_nDataLen);
+			#endif
+			free(prevData);
+		}
 	}
 }
 
 void TString::_format(const char* pszFormat, va_list& argList)
 {
-	int nMaxLen =_vscprintf(pszFormat, argList);   
-	allocate(nMaxLen+1);
-	vsprintf_s(m_psData, nMaxLen+1, pszFormat, argList);
-	m_nDataLen = lstrlen(m_psData);
+    #ifdef _MSC_VER
+	int nMaxLen =_vscprintf(pszFormat, argList);
+	#else
+	int nMaxLen=1000;//vscprintf(pszFormat, argList);
+	#endif
+	reserve(nMaxLen+1);
+	vsprintf(m_psData, pszFormat, argList);
+	m_nDataLen = strlen(m_psData);
 }
 
 //find
-int TString::findChar(int start, char one) const 
+int TString::findChar(int start, char one) const
 {
 	for(int i=start; i<m_nDataLen; i++){
 		if(m_psData[i]==one)
@@ -267,7 +289,7 @@ int TString::findCharRight(char one, int start) const
 
 int TString::findStr(int start, const char* src, int Len) const
 {
-	int srcLen = (src==NULL)? 0: (Len==-1)? lstrlen(src): Len;
+	int srcLen = (src==NULL)? 0: (Len==-1)? strlen(src): Len;
 	if(srcLen == 0)
 		return -1;
 	for(int i=start; i<m_nDataLen-srcLen+1; i++){
@@ -283,7 +305,7 @@ int TString::find(const char* src) const
 }
 //substring
 TString TString::subString( int start, int end) const
-{	
+{
 	TString Result;
 
 	Result.alloc(*this,start,end);
@@ -296,7 +318,7 @@ void TString::trimLeft(const char* delimiter)
 
 	int i;
 	for(i=0; i<length(); i++)
-	{	
+	{
 		int j;
 		for(j=0; j<nchar; j++)
 			if(value(i)==delimiter[j])	break;
@@ -317,7 +339,7 @@ void TString::trimRight(const char* delimiter)
 
 	int i;
 	for(i=length()-1; i>=0; i--)
-	{		
+	{
 		int j;
 		for(j=0; j<nchar; j++)
 			if(value(i)==delimiter[j]) break;
@@ -348,10 +370,10 @@ bool TString::isOneOf(int i, const TString& src) const
 }
 
 
-// loop¸¦ µ¹¸é¼­ start°¡ end°¡ µÇ¸é ¸ØÃâ°Í.
+// loopë¥¼ ëŒë©´ì„œ startê°€ endê°€ ë˜ë©´ ë©ˆì¶œê²ƒ.
 void TString::token(int &start, const TString& delimiter, TString& token) const
 {
-	
+
 	int i ;
 	for(i=start; i<length(); i++)
 	{
@@ -368,7 +390,7 @@ void TString::token(int &start, const TString& delimiter, TString& token) const
 }
 
 //Extract
-TString TString::token( char src, int index) const          
+TString TString::token( char src, int index) const
 {
 	TString Result;
 	int startpos=-1;
@@ -378,7 +400,7 @@ TString TString::token( char src, int index) const
 	for(int i = 0; i<m_nDataLen; i++){
 		if(m_psData[i]==src){
 			currin ++;
-			if(currin==index-1) 
+			if(currin==index-1)
 				startpos = i;
 			else if(currin==index){
 				endpos = i;
@@ -398,14 +420,14 @@ TString TString::token(const char* src, int index) const
 	int endpos=-1;
 	int currin=0;
 	int i,j;
-	int srcLen = lstrlen(src);
+	int srcLen = strlen(src);
 
 	for(i = 0; i<m_nDataLen; i++){
 		for(j = 0; j<srcLen; j++)
 		{
 			if(m_psData[i]==src[j]){
 				currin ++;
-				if(currin==index-1) 
+				if(currin==index-1)
 					startpos = i;
 				else if(currin==index){
 					endpos = i;
@@ -414,8 +436,8 @@ TString TString::token(const char* src, int index) const
 			}
 		}
 	}
-	
-	if(startpos!=-1 || index == 1) 
+
+	if(startpos!=-1 || index == 1)
 		Result.alloc(*this,startpos+1,endpos);
 	return Result;
 }
@@ -501,7 +523,7 @@ bool  TString::operator !=(const TString &Str2) const
 
 	if(Str1.strcmp(Str2))
 		return true;
-	else 
+	else
 		return false;
 }
 
@@ -511,7 +533,7 @@ bool  TString::operator !=(const char* Str2) const
 
 	if(Str1.strcmp(Str2))
 		return true;
-	else 
+	else
 		return false;
 }
 
@@ -519,15 +541,15 @@ bool  operator !=(const char* Str1, const TString &Str2)
 {
 	if(Str2.strcmp(Str1))
 		return true;
-	else 
+	else
 		return false;
 }
 
 
-TString TStrings::prefix() const	// ¸ðµç ¹®ÀÚ¿­ÀÌ °°Àº prefix·Î ½ÃÀÛÇÏ´Â °æ¿ì ÇØ´ç prefix return.
+TString TStrings::prefix() const	// ëª¨ë“  ë¬¸ìžì—´ì´ ê°™ì€ prefixë¡œ ì‹œìž‘í•˜ëŠ” ê²½ìš° í•´ë‹¹ prefix return.
 {
 	TStrings const& other=*this;
-	// ¸ðµç ¹®ÀÚ¿­ÀÌ °°Àº prefix·Î ½ÃÀÛÇÏ´Â °æ¿ì Àß¶óÁØ´Ù.
+	// ëª¨ë“  ë¬¸ìžì—´ì´ ê°™ì€ prefixë¡œ ì‹œìž‘í•˜ëŠ” ê²½ìš° ìž˜ë¼ì¤€ë‹¤.
 	int prefixEnd=0;
 	for(; prefixEnd< other[0].length(); prefixEnd++)
 	{
@@ -545,7 +567,7 @@ TString TStrings::prefix() const	// ¸ðµç ¹®ÀÚ¿­ÀÌ °°Àº prefix·Î ½ÃÀÛÇÏ´Â °æ¿ì ÇØ
 }
 void TStrings::trimSamePrefix(const TStrings& other)
 {
-	// ¸ðµç ¹®ÀÚ¿­ÀÌ °°Àº prefix·Î ½ÃÀÛÇÏ´Â °æ¿ì Àß¶óÁØ´Ù.
+	// ëª¨ë“  ë¬¸ìžì—´ì´ ê°™ì€ prefixë¡œ ì‹œìž‘í•˜ëŠ” ê²½ìš° ìž˜ë¼ì¤€ë‹¤.
 	int prefixEnd=0;
 	for(; prefixEnd< other[0].length(); prefixEnd++)
 	{
@@ -559,9 +581,9 @@ void TStrings::trimSamePrefix(const TStrings& other)
 		}
 		if (i!=other.size()) break;
 	}
-	
+
 	init(other.size());
-	
+
 	for(int i=0; i<size(); i++)
         data(i)=other[i].subString(prefixEnd);
 }
@@ -608,7 +630,7 @@ void TypeString::InitData()
 {
 	m_nDataLen = 0;
 	m_nAllocLen = 0;
-	
+
 	m_psData = NULL;
 }
 
@@ -679,7 +701,7 @@ void TypeString::AllocMBSTR(const TypeString& Src, int start, int end)
 void TypeString::AllocMBSTR(LPCSTR strData, int nLen)
 {
 	if(nLen == -1)
-		nLen = (strData==NULL)? 0 : lstrlen(strData);
+		nLen = (strData==NULL)? 0 : strlen(strData);
 	m_nDataLen = nLen;
 
 
@@ -697,19 +719,19 @@ void TypeString::AllocMBSTR(LPCWSTR wstrData, int nLen)
 {
 	if(wstrData == NULL)
 		return;
-	
+
 	if(nLen == -1)
 		m_nDataLen = wcslen(wstrData)*2;
-	
+
 	m_psData = AllocWideToMultiByte(wstrData, m_nDataLen);
 
 	m_nAllocLen = m_nDataLen+1;
-	m_nDataLen = lstrlen(m_psData);
+	m_nDataLen = strlen(m_psData);
 }
 
 
 BSTR TypeString::SysAllocString()
-{ 
+{
 	return( SysAllocString(m_psData, m_nDataLen) );
 
 }
@@ -718,9 +740,9 @@ BSTR TypeString::SysAllocString()
 //static
 BSTR TypeString::SysAllocString(LPCSTR strData, int nLen)
 {
-	
+
 	if(nLen == -1)
-		 nLen = lstrlen(strData);
+		 nLen = strlen(strData);
 
 	int nWLen = MultiByteToWideChar(CP_ACP, 0, strData,	nLen, NULL, NULL);
 	BSTR bstr = ::SysAllocStringLen(NULL, nWLen);
@@ -740,7 +762,7 @@ LPSTR TypeString::AllocWideToMultiByte(LPCWSTR wstrData, int nLen)
 	if(nLen == -1)
 		nLen = wcslen(wstrData)*2;
 	Data =  (LPSTR)calloc( (nLen+1), sizeof(char) );
-	
+
 	WideCharToMultiByte(CP_ACP,0,wstrData,-1,Data,(nLen+1),NULL,NULL);
 
 	return Data;
@@ -751,7 +773,7 @@ LPWSTR TypeString::AllocMultiByteToWide(LPCSTR strCon, int nLen)
 {
 	wchar_t *wData;
 	if(nLen == -1)
-		nLen = lstrlen(strCon);
+		nLen = strlen(strCon);
 	wData = (LPWSTR)calloc( (nLen+1), sizeof(wchar_t) );
 
 	MultiByteToWideChar(CP_ACP, 0, strCon,-1, wData, (nLen+1) );
@@ -789,13 +811,13 @@ void TypeString::ConCatNMBSTR(const TypeString & str2, int n)
 
 void TypeString::ConCatNMBSTR(LPCSTR str2, int n )
 {
-	int appLen = lstrlen(str2) - n;
-	int concatLen = m_nDataLen + appLen; 
+	int appLen = strlen(str2) - n;
+	int concatLen = m_nDataLen + appLen;
 
 	if(appLen<0) return;
-	
+
 	Allocate(concatLen+1);
-	
+
 	memcpy(m_psData+m_nDataLen, str2+n, appLen);
 	m_nDataLen = concatLen;
 	m_psData[m_nDataLen] = '\0';
@@ -803,9 +825,9 @@ void TypeString::ConCatNMBSTR(LPCSTR str2, int n )
 
 
 //%s,%d,%i,%x, and  %c, %s ...
-// %3sµîÀÇ formatÁö¿øÇØ¾ßÇÔ..
+// %3së“±ì˜ formatì§€ì›í•´ì•¼í•¨..
 void TypeString::FormatTS(LPCSTR pszFormat, ...)
-{	
+{
 
 #define FORCE_ANSI      0x10000
 #define FORCE_UNICODE   0x20000
@@ -948,7 +970,7 @@ void TypeString::FormatTS(LPCSTR pszFormat, ...)
 				   nItemLen = 6;  // "(null)"
 				else
 				{
-				   nItemLen = lstrlen(pstrNextArg);
+				   nItemLen = strlen(pstrNextArg);
 				   nItemLen = max(1, nItemLen);
 				}
 			}
@@ -971,7 +993,7 @@ void TypeString::FormatTS(LPCSTR pszFormat, ...)
 				   nItemLen = 6; // "(null)"
 				else
 				{
-				   nItemLen = lstrlenA(pstrNextArg);
+				   nItemLen = strlenA(pstrNextArg);
 				   nItemLen = max(1, nItemLen);
 				}
 #endif
@@ -1103,7 +1125,7 @@ void TypeString::Allocate(int AllocLen)
 }
 
 //find
-int TypeString::FindChar(int start, char one) const 
+int TypeString::FindChar(int start, char one) const
 {
 	for(int i=start; i<m_nDataLen; i++){
 		if(m_psData[i]==one)
@@ -1140,7 +1162,7 @@ TypeString TypeString::SubString( int start, int end) const
 
 
 //Extract
-TypeString TypeString::ExtractDel( char src, int index) const          
+TypeString TypeString::ExtractDel( char src, int index) const
 {
 	TypeString Result;
 	int startpos=-1;
@@ -1150,7 +1172,7 @@ TypeString TypeString::ExtractDel( char src, int index) const
 	for(int i = 0; i<m_nDataLen; i++){
 		if(m_psData[i]==src){
 			currin ++;
-			if(currin==index-1) 
+			if(currin==index-1)
 				startpos = i;
 			else if(currin==index){
 				endpos = i;
@@ -1177,7 +1199,7 @@ TypeString TypeString::ExtractDel(LPCSTR src, int index) const
 		{
 			if(m_psData[i]==src[j]){
 				currin ++;
-				if(currin==index-1) 
+				if(currin==index-1)
 					startpos = i;
 				else if(currin==index){
 					endpos = i;
@@ -1186,8 +1208,8 @@ TypeString TypeString::ExtractDel(LPCSTR src, int index) const
 			}
 		}
 	}
-	
-	if(startpos!=-1 || index == 1) 
+
+	if(startpos!=-1 || index == 1)
 		Result.AllocMBSTR(*this,startpos,endpos);
 	return Result;
 }
@@ -1279,7 +1301,7 @@ bool __stdcall operator !=(const TypeString &Str1, const TypeString &Str2)
 {
 	if(Str1.StringCmp(Str2))
 		return true;
-	else 
+	else
 		return false;
 }
 
@@ -1287,7 +1309,7 @@ bool __stdcall operator !=(const TypeString &Str1, LPCSTR Str2)
 {
 	if(Str1.StringCmp(Str2))
 		return true;
-	else 
+	else
 		return false;
 }
 
@@ -1295,7 +1317,7 @@ bool __stdcall operator !=(LPCSTR Str1, const TypeString &Str2)
 {
 	if(Str2.StringCmp(Str1))
 		return true;
-	else 
+	else
 		return false;
 }
 

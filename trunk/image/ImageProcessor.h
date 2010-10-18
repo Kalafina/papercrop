@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "image.h"
+#include "Image.h"
 
 namespace Imp
 {

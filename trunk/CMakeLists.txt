@@ -25,11 +25,18 @@ endif()
 if(UNIX)
 	set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
 	set(LUA_LIB "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include/liblua.a")
-	set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_34_1")
+	set(boost_INCLUDE "/usr/include")
+	set(image_INCLUDE
+		) # all in /usr/include 
 else()
 	set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
 	set(LUA_LIB "${paperCrop_SOURCE_DIR}/../lua5.1.4/lua5.1.lib")
 	set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_34_1")
+	set(image_INCLUDE 
+		"${paperCrop_SOURCE_DIR}/devil/include"
+		"${paperCrop_SOURCE_DIR}/FreeImage/Dist"
+	)
+
 endif()
 
 add_subdirectory(luabind-0.9)
@@ -41,7 +48,6 @@ include_directories (
 	${paperCrop_SOURCE_DIR}
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
 	${paperCrop_SOURCE_DIR}/luabind-0.9
-	${paperCrop_SOURCE_DIR}/devil/include
 	${paperCrop_SOURCE_DIR}/poppler
 	${paperCrop_SOURCE_DIR}/poppler/goo
 	${paperCrop_SOURCE_DIR}/ext/jpeg
@@ -49,7 +55,6 @@ include_directories (
 	${paperCrop_SOURCE_DIR}/ext/freetype231/include
 	${paperCrop_SOURCE_DIR}/poppler/poppler
 	${paperCrop_SOURCE_DIR}/poppler/splash
-	${paperCrop_SOURCE_DIR}/FreeImage/Dist
 	)
 if(UNIX)
 	include_directories(

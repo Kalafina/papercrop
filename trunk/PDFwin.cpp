@@ -19,7 +19,7 @@
 // USA.
 //
 
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "PDFwin.h"
 
 #include <boost/smart_ptr.hpp>
@@ -39,9 +39,9 @@
 #include "SplashBitmap.h"
 #include "SplashOutputDev.h"
 #include "TextOutputDev.h"
-#include "image/image.h"
-#include "image/imagepixel.h"
-#include "math/operator.h"
+#include "image/Image.h"
+#include "image/ImagePixel.h"
+#include "math/Operator.h"
 
 
 #include "ImageSegmentation.h"
@@ -58,8 +58,8 @@ public:
 
 	PDFDoc* _pdfDoc ;
 	SplashOutputDev* _outputDev;
-	std::vector<boost::shared_ptr<CImage>> _bmpCache;
-	std::vector<boost::shared_ptr<intmatrixn>> _textCache;	
+	std::vector<boost::shared_ptr<CImage> > _bmpCache;
+	std::vector<boost::shared_ptr<intmatrixn> > _textCache;	
 	int _textCacheState;
 	PDFmodel()
 	{
@@ -662,7 +662,7 @@ int PDFwin::handle(int event)
 		}
 		break;
 	}
-	return __super::handle(event);
+	return Fl_Double_Window::handle(event);
 }
 
 void PDFwin::onIdle()
@@ -937,7 +937,7 @@ void PDFwin::pageChanged()
 
 void PDFwin::draw()
 {
-	__super::draw();
+	Fl_Double_Window::draw();
 
 
 	int ww=w()-2;
