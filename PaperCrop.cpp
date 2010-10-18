@@ -45,9 +45,10 @@ void MainWin::onIdle()
 	mPDFwin->onIdle();
 }
 
-#include <il/il.h>
-#include <il/ilu.h>
+#include <IL/il.h>
+#include <IL/ilu.h>
 
+#ifdef _MSC_VER
 //#ifdef _DEBUG	// console·Î ºôµåÇÏµµ·Ï ÇØ³ùÀ½.
 int _tmain(int argc, _TCHAR* argv[])
 /*#else
@@ -56,6 +57,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
 #endif*/
+#else
+int main(int argc, char* argv[])
+#endif
 {
 
 	if (!Fl::visual(FL_DOUBLE|FL_INDEX))

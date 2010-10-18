@@ -23,7 +23,7 @@
 #pragma once
 
 #include "utility/TypeString.h"
-#include "image/image.h"
+#include "image/Image.h"
 
 class PDFmodel;
 
@@ -42,7 +42,7 @@ public:
 class FlLayout;
 class PDFwin : public Fl_Double_Window
 {
-	std::list<SelectionRectangle>::iterator PDFwin::findRect(int x, int y);
+	std::list<SelectionRectangle>::iterator findRect(int x, int y);
 
 public:
 	PDFwin(int x, int y, int w, int h);

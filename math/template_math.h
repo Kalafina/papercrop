@@ -15,6 +15,15 @@
 //
 
 template <class T> class _tmat;
+template <class T, class T_base> class _tvectorn;
+template <typename T, class T_base>
+struct _tvec_setter
+{
+	_tvectorn<T,T_base>& _a;
+	int _c;
+	_tvec_setter(_tvectorn<T,T_base>& a):_a(a),_c(0){}
+	_tvec_setter& operator,(T b){_a(_c)=b; _c=_c+1; return *this;}
+};
 template <class T, class T_base=T>
 class _tvectorn
 {
@@ -106,17 +115,9 @@ public:
 	// C-style setValues (non type-safe, slightly more effiencient)
 	void	setValues(int n, T x,...);					//!< setValues(3,4.3, 2.3, 4.3);
 
-	template <class T>
-	struct _tvec_setter
-	{
-		_tvectorn<T>& _a;
-		int _c;
-		_tvec_setter(_tvectorn<T>& a):_a(a),_c(0){}
-		_tvec_setter& operator,(T b){_a(_c)=b; _c=_c+1; return *this;}
-	};
 
-	inline _tvec_setter<T> setValues(int n) { setSize(n); return _tvec_setter<T>(*this);}  //!< setValues(3), 0,0.1,1.1;
-	inline _tvec_setter<T> setValues() { return _tvec_setter<T>(*this);}  //!< setValues(), 0,0.1,1.1;
+	inline _tvec_setter<T, T_base> setValues(int n) { setSize(n); return _tvec_setter<T, T_base>(*this);}  //!< setValues(3), 0,0.1,1.1;
+	inline _tvec_setter<T, T_base> setValues() { return _tvec_setter<T, T_base>(*this);}  //!< setValues(), 0,0.1,1.1;
 	void	setValues(T const* values);
 	void	clear(int start, int end);
 

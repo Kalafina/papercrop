@@ -19,9 +19,11 @@
 // USA.
 //
 
+#ifndef PAPERCROP_H_
+#define PAPERCROP_H_
 #pragma once
 
-#include "resource.h"
+#include "Resource.h"
 
 
 enum { WIDTH=644+180, HEIGHT=700, RENDERER_WIDTH=644 };
@@ -44,3 +46,4 @@ public:
 	RightPanel* mRightPanel;
 };
 
+#endif

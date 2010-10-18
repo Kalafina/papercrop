@@ -1,3 +1,5 @@
+#ifndef BASELIB_LUA_H
+#define BASELIB_LUA_H
 #pragma once
 /*
 extern "C"
@@ -67,3 +69,4 @@ public:
 };
 
 
+#endif

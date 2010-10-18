@@ -20,11 +20,11 @@
 //
 
 
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "ImageSegmentation.h"
-#include "image/imagepixel.h"
-#include "math/operator.h"
-#include "Image/imageprocessor.h"
+#include "image/ImagePixel.h"
+#include "math/Operator.h"
+#include "image/ImageProcessor.h"
 #include "math/intervals.h"
 
 void SummedAreaTable::_init()
