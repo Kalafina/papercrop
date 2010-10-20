@@ -1,6 +1,6 @@
 
 /* 
-   luabind·Î ¹Ù²Ù´Â Áß.
+   luabindï¿½ï¿½ ï¿½Ù²Ù´ï¿½ ï¿½ï¿½.
    lua
    function f(a) return a.x+a.y end
 
@@ -28,8 +28,8 @@ f(table);
 
 #include <iostream>
 
-#include "image/image.h"
-#include "image/imageprocessor.h"
+#include "image/Image.h"
+#include "image/ImageProcessor.h"
 
 #include "math/matrix3.h"
 #include <luabind/luabind.hpp>
@@ -43,8 +43,8 @@ f(table);
 #include <luabind/dependency_policy.hpp>
 #include <luabind/luabind.hpp>
 
-#include "baseliblua2.h"
-#include "baseliblua3.h"
+#include "BaselibLUA2.h"
+#include "BaselibLUA3.h"
 
 using namespace luabind;
 void addBaselibModule(lua_State* L)

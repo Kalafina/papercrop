@@ -6,14 +6,16 @@
 //#pragma message("Compiling math_macro.h - this should happen just once per project.\n")
 #endif
 
-// 만약 renderer?�서 ?�용??것이�?
+// 만약 renderer?�서 ?�용??것이�?
 #include "../stdafx.h"
 
 #define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
 
 #include <stdio.h>
 #include <stdarg.h>
+#ifndef unix
 #include <tchar.h>
+#endif
 
 #include <math.h>
 #include <assert.h>
@@ -54,7 +56,7 @@ namespace s2
 
 namespace s1
 {
-	// (scalar->scalar?�산)
+	// (scalar->scalar?�산)
 	void COS(m_real&b,m_real a);
 	void SIN(m_real&b,m_real a);
 	void EXP(m_real&b,m_real a);

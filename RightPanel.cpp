@@ -19,11 +19,11 @@
 // USA.
 //
 
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "RightPanel.h"
 #include "PDFwin.h"
 #include "utility/operatorString.h"
-#include "WrapperLua/baseliblua.h"
+#include "WrapperLua/BaselibLUA.h"
 #include <luabind/luabind.hpp>
 #include <luabind/function.hpp>
 //#include <luabind/policy.hpp>
@@ -164,7 +164,7 @@ RightPanel::~RightPanel(void)
 bool CreateDirectory(const char *PathToCreate);
 bool DeleteAllFiles(const char* path, const char* mask,bool bConfirm);
 
-#include "fltk/Fl_Native_File_Chooser-0.84/FL/Fl_Native_File_Chooser.h"
+#include "fltk/Fl_Native_File_Chooser-0.84/FL/Fl_Native_File_Chooser.H"
 void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int userData)
 {
 	if(w.mId=="update")

@@ -26,11 +26,11 @@
 #include "stdafx.h"
 #include "ImageProcessor.h"
 #include "Image.h"
-#include <il/il.h>
-#include <il/ilu.h>
+#include <IL/il.h>
+#include <IL/ilu.h>
 #include "ImagePixel.h"
 #include "../math/mathclass.h"
-#include "../math/bitvectorn.h"
+#include "../math/bitVectorN.h"
 
 #define CHECK_OUT_VALID ASSERT((!out._dataPtr || out._dataPtr==ilGetData()) && out.GetWidth()==ilGetInteger(IL_IMAGE_WIDTH) && out.GetHeight()==ilGetInteger(IL_IMAGE_HEIGHT))
 
@@ -224,7 +224,11 @@ void SafeDelete(CImage* pImage, const char* filename)
 		return; 
 
 	if(IsFileExist(filename))
+#ifdef linux
+		remove(filename);
+#else
 		DeleteFile(filename);
+#endif
 	pImage->Save(filename); 
 	delete pImage;
 }
@@ -393,7 +397,7 @@ CImage* StitchHoriz(CImage* pLeft, CImage* pRight)
 
 void DrawGraph(CImage* pInput, int numVertex, std::list<int>& listEdge)
 {
-	// vertex:0 to n , edge : integer 2°³, Áï listÀÇ ±æÀÌ´Â 2ÀÇ¹è¼ö¿©¾ß ÇÔ.
+	// vertex:0 to n , edge : integer 2ï¿½ï¿½, ï¿½ï¿½ listï¿½ï¿½ ï¿½ï¿½ï¿½Ì´ï¿½ 2ï¿½Ç¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½.
 	ASSERT(pInput->GetWidth() > numVertex*2);
 	ASSERT(pInput->GetHeight() > numVertex*2);
 
@@ -418,7 +422,7 @@ void DrawGraph(CImage* pInput, int numVertex, std::list<int>& listEdge)
 
 		if(from<to)
 		{
-			// ¾Æ·¡ÂÊÀ¸·Î edge¸¦ ±×¸°´Ù.
+			// ï¿½Æ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ edgeï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½.
 			int length=to-from;
 
 			// parameters are x, y, length
@@ -427,7 +431,7 @@ void DrawGraph(CImage* pInput, int numVertex, std::list<int>& listEdge)
 		}
 		else
 		{
-			// À§ÂÊÀ¸·Î edge¸¦ ±×¸°´Ù.
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ edgeï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½.
 			int length=from-to;
 
 			// parameters are x, y, length
@@ -453,7 +457,7 @@ void _private::DrawChart(CImage* pInput, int numFrame, double* aValue,float min,
 	ASSERT(pInput->GetWidth() >= numFrame);
 	ASSERT(pInput->GetHeight() >= _private::g_nChartPrecision+yoffset);
 	
-	// minÀÌÇÏ´Â pixel (_private::g_nChartPrecision-1)¿¡ ±×·ÁÁö°í, maxÀÌ»óÀº 0¿¡ ±×·ÁÁø´Ù. Áï ¾Æ·¡ÂÊÀÌ min°ª
+	// minï¿½ï¿½ï¿½Ï´ï¿½ pixel (_private::g_nChartPrecision-1)ï¿½ï¿½ ï¿½×·ï¿½ï¿½ï¿½ï¿½ï¿½, maxï¿½Ì»ï¿½ï¿½ï¿½ 0ï¿½ï¿½ ï¿½×·ï¿½ï¿½ï¿½ï¿½. ï¿½ï¿½ ï¿½Æ·ï¿½ï¿½ï¿½ï¿½ï¿½ minï¿½ï¿½
 
 	CImagePixel inputptr(pInput);
 
@@ -731,7 +735,7 @@ CImage* Plot(const matrixn& samples, const vectorn& min, const vectorn& max)
 }
 
 
-/// pInputÀ» 2x2 matrix pTransf¸¦ °¡Áö°í transformÇÑ ÀÌ¹ÌÁö¸¦ returnÇÑ´Ù.
+/// pInputï¿½ï¿½ 2x2 matrix pTransfï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ transformï¿½ï¿½ ï¿½Ì¹ï¿½ï¿½ï¿½ï¿½ï¿½ returnï¿½Ñ´ï¿½.
 /*!
 	(source_x,source_y)*matrix=(target_x,target_y)
 */
@@ -739,10 +743,10 @@ CImage* Transform(matrixn& transf, CImage* pInput)
 {
 	vectorn point[4];
 	matrixn invTransf;
-	//invTransf.SVinverse(transf);	ÀÌÇÔ¼ö ¹× SVinverseÇÔ¼ö ÀüÇô µ¿ÀÛ ¾ÈÇÔ.-.-
+	//invTransf.SVinverse(transf);	ï¿½ï¿½ï¿½Ô¼ï¿½ ï¿½ï¿½ SVinverseï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.-.-
 	
 	invTransf.transpose(transf);
-	// ad-bc·Î ³ª´²ÁØ´Ù.
+	// ad-bcï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ø´ï¿½.
 	invTransf/=transf[0][0]*transf[1][1]-transf[0][1]*transf[1][0];
 
 	int width=pInput->GetWidth();
@@ -800,7 +804,7 @@ CImage* Rotate(float radian, CImage* pInput)
 	return Transform(temp, pInput);
 }
 
-CImage* DrawChart(const matrixn& matrix, int chart_type, float min, float max , float horizLine)	//!< 0 frameºÎÅÍ n-1ÇÁ·¹ÀÓ±îÁöÀÇ ¿©·¯ signalµéÀ» ±×¸°´Ù.)
+CImage* DrawChart(const matrixn& matrix, int chart_type, float min, float max , float horizLine)	//!< 0 frameï¿½ï¿½ï¿½ï¿½ n-1ï¿½ï¿½ï¿½ï¿½ï¿½Ó±ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ signalï¿½ï¿½ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½.)
 {
 	if(min==max)
 	{

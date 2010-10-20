@@ -19,15 +19,23 @@
 // USA.
 //
 
-#include "StdAfx.h"
-#include "fltkaddon.h"
+#include "stdafx.h"
+#include "FltkAddon.h"
 #include <FL/Fl_Color_Chooser.H>
+
+#ifdef unix
+#include <unistd.h>
+#endif
 
 TString FlChooseFile(const char* message, const char* path, const char* Mask, bool bCreate)
 {
 	// utility. It opens the file dialog and choose file.
 	char szCurrDirectory[512];
+#ifdef unix
+	getcwd(szCurrDirectory,512);
+#else
 	GetCurrentDirectory(512, szCurrDirectory);
+#endif
 	
 	int mask;
 	if(bCreate)
@@ -43,7 +51,12 @@ TString FlChooseFile(const char* message, const char* path, const char* Mask, bo
 	if (fc.count() > 0)
 	{
 		printf("%s", fc.value(1));
-		SetCurrentDirectory(szCurrDirectory);	
+#ifdef unix		
+//aaron to fix		SetCurrentDirectory(szCurrDirectory);
+#else
+		SetCurrentDirectory(szCurrDirectory);
+
+#endif
 		return TString(fc.value(1));
 	}
 
@@ -181,7 +194,7 @@ void FlMenu::item(int item, const char* text, int shortcut_,  int user_data_,  i
 		m_pMenu->menu(m_aMenuItem);
 	}
 }
-#include "FL/Fl_Scroll.h"
+#include "FL/Fl_Scroll.H"
 
 class Fl_Vert_Scroll : public Fl_Scroll
 {

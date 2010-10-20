@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "FltkAddon.h"
 #include "FlLayout.h"
-#include "FL/Fl_Scroll.h"
-#include "FL/Fl_Adjuster.h"
-#include "FL/Fl_Multi_Browser.h"
-#include "FL/Fl_Select_Browser.h"
-#include "FL/Fl_Multiline_Input.h"
-#include "FL/Fl_Box.h"
-#include "math/operator.h"
+#include "FL/Fl_Scroll.H"
+#include "FL/Fl_Adjuster.H"
+#include "FL/Fl_Multi_Browser.H"
+#include "FL/Fl_Select_Browser.H"
+#include "FL/Fl_Multiline_Input.H"
+#include "FL/Fl_Box.H"
+#include "math/Operator.h"
 
 #ifdef NO_GUI
 #define FL_VOID(x)
@@ -115,7 +115,7 @@ void FlLayout::setUniformGuidelines(int totalSlot)
 
 void FlLayout::setWidgetPosUniform(int totalSlot, int slot)
 {
-	// °¡·Î·Î totalSlotµîºÐÀ» ÇØ¼­, ¸î¹øÂ°¿¡ ³Ö¾î¶ó.
+	// ï¿½ï¿½ï¿½Î·ï¿½ totalSlotï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ø¼ï¿½, ï¿½ï¿½ï¿½Â°ï¿½ï¿½ ï¿½Ö¾ï¿½ï¿½.
 	guideLines().linspace(0, 1.0, totalSlot+1);
 	setWidgetPos(slot, slot+1);
 }
@@ -465,7 +465,7 @@ void FlLayout::updateLayout()
 		for(int j=0; j<guidelines.size(); j++)
 			guidelines[j]=sop::interpolateInt(mWidgets[i].mState.mGuideLines[j], 3, w()-2);
 
-		// widget°£ 5ÇÈ¼¿ °£°ÝÀÌ »ý±âµµ·Ï ÇÑ´Ù.
+		// widgetï¿½ï¿½ 5ï¿½È¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½âµµï¿½ï¿½ ï¿½Ñ´ï¿½.
 
 		//int gap=5;
 		int gap=mWidgets[i].mState.mHorizSpace;
@@ -476,7 +476,7 @@ void FlLayout::updateLayout()
 
 
 		/*
-		// title ¸¸Å­ ÀÚµ¿À¸·Î offset ÇÏ´Â ±â´ÉÀº ¾ø¾ÝÀ½. ¼öÀÛ¾÷À¸·Î Àû´çÈ÷ widget pos¸¦ Á¶Á¤ÇØ¼­ ÇÒ °Í.
+		// title ï¿½ï¿½Å­ ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ offset ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½. ï¿½ï¿½ï¿½Û¾ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ widget posï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ø¼ï¿½ ï¿½ï¿½ ï¿½ï¿½.
 		if((mWidgets[i].mType=="Slider" ||
 			mWidgets[i].mType=="Choice" ||
 			mWidgets[i].mType=="Input"||
@@ -527,9 +527,9 @@ void FlLayout::updateLayout()
 	// connect
 	for(int i=0; i<mWidgets.size()-1; i++)
 	{
-		// parent°¡ °®°í ÀÖ´Â ¸ðµç widget°ú ¸Þ´º´Â °°Àº layout¿¡ ¿¬°áµÊÀ» °¡Á¤ÇÏ¿´´Ù.
-		// ½ÇÁ¦ÀûÀ¸·Î ±¸ÇöÇÒ¶§´Â parentÀÚÃ¼°¡ callee°¡ µÇµµ·Ï ÇÏ´Â°Ô °¡Àå È®½ÇÇÏ´Ù.
-		// Áï parent´Â  Fl_Group(¶Ç´Â Fl_Window µî)°ú FlLayout¸¦ µ¿½Ã»ó¼Ó.
+		// parentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ widgetï¿½ï¿½ ï¿½Þ´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ layoutï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½.
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ò¶ï¿½ï¿½ï¿½ parentï¿½ï¿½Ã¼ï¿½ï¿½ calleeï¿½ï¿½ ï¿½Çµï¿½ï¿½ï¿½ ï¿½Ï´Â°ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ï´ï¿½.
+		// ï¿½ï¿½ parentï¿½ï¿½  Fl_Group(ï¿½Ç´ï¿½ Fl_Window ï¿½ï¿½)ï¿½ï¿½ FlLayoutï¿½ï¿½ ï¿½ï¿½ï¿½Ã»ï¿½ï¿½.
 
 		Fl_Widget*o=mWidgets[i].mWidget;
 
@@ -569,7 +569,7 @@ Fl_Widget* FlLayout::_createWidget(const char* id, Fl_Widget* o)
 	}
 #endif
 	mWidgets.resize(mWidgets.size()+1);
-	// state´Â ÀÌÀü state¸¦ À¯ÁöÇÑ´Ù.
+	// stateï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ stateï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
 	mWidgets[mWidgets.size()-1].mState=mWidgets[mWidgets.size()-2].mState;
 
 	mWidgets[mWidgets.size()-2].mId=id;

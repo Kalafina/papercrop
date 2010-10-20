@@ -245,7 +245,7 @@ public:
 #ifdef USE_FONT_DETECTION
 		if(_textCacheState!=-1)
 		{
-			// Ä³½¬ ÇÏ¸é ¾ÈµÉµí.. ³Ê¹« ¸¹À½. ±×³É ±×¸®±â·Î..
+			// Ä³ï¿½ï¿½ ï¿½Ï¸ï¿½ ï¿½ÈµÉµï¿½.. ï¿½Ê¹ï¿½ ï¿½ï¿½ï¿½ï¿½. ï¿½×³ï¿½ ï¿½×¸ï¿½ï¿½ï¿½ï¿½..
 			//printf("%c", c);
 			//fflush(stdout);
 			const int MAX_CHAR_PER_PAGE=30000;
@@ -860,7 +860,7 @@ void PDFwin::pageChanged()
 
 		std::list<TRect> results;
 		int min_gap=int((double)bmp->GetWidth()*min_gap_percentage*0.01 +0.5);
-		int min_box_size=100;	// 10ÇÈ¼¿ÀÌÇÏÀÇ ¹Ú½º´Â ¹ö¸°´Ù.
+		int min_box_size=100;	// 10ï¿½È¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 
 		CImagePixel orig(bmp_orig);
 

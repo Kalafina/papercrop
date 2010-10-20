@@ -17,8 +17,8 @@
 #include <luabind/class_info.hpp> 
 
 
-#include <Fl/Fl_ask.h>
-#include <Fl/Fl_Browser.h>
+#include <FL/fl_ask.H>
+#include <FL/Fl_Browser.H>
 
 int FlGenShortcut(const char* s)
 {
@@ -63,7 +63,7 @@ int addItemRecursive(int curItem, bool bSubMenu, FlMenu & menu, luabind::object 
 			else
 				{
 					curItem=addItemRecursive(curItem, true, menu, *i);
-					menu.item(curItem, 0);	// submenu´Ý±â.
+					menu.item(curItem, 0);	// submenuï¿½Ý±ï¿½.
 					curItem++;
 				}
 

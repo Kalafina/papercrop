@@ -2,7 +2,9 @@
 #include "stdafx.h"
 #include "mathclass.h"
 #include "float.h"
+#ifndef unix
 #include "Filter.h"
+#endif
 #ifdef USE_NUMERICAL_RECIPE
 #include "nr/nr.h"
 #endif

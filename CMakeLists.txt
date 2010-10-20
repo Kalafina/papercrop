@@ -25,7 +25,7 @@ endif()
 if(UNIX)
 	set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
 	set(LUA_LIB "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include/liblua.a")
-	set(boost_INCLUDE "/usr/include")
+	set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../Boost_1_44_0")
 	set(image_INCLUDE
 		) # all in /usr/include 
 else()
@@ -40,12 +40,16 @@ else()
 endif()
 
 add_subdirectory(luabind-0.9)
-add_subdirectory(poppler)
+#add_subdirectory(poppler)
 
 include_directories (
-	${LUA_INCLUDE}
+	#${LUA_INCLUDE}
 	${boost_INCLUDE}
+	${paperCrop_SOURCE_DIR}/../lua-5.1.4/src
+	#${paperCrop_SOURCE_DIR}/../Boost_1_44_0
 	${paperCrop_SOURCE_DIR}
+	${paperCrop_SOURCE_DIR}/../FLTK
+	${paperCrop_SOURCE_DIR}/../FLTK/Fl_Native_File_Chooser-0.84
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
 	${paperCrop_SOURCE_DIR}/luabind-0.9
 	${paperCrop_SOURCE_DIR}/poppler
@@ -55,6 +59,7 @@ include_directories (
 	${paperCrop_SOURCE_DIR}/ext/freetype231/include
 	${paperCrop_SOURCE_DIR}/poppler/poppler
 	${paperCrop_SOURCE_DIR}/poppler/splash
+	
 	)
 if(UNIX)
 	include_directories(
@@ -65,6 +70,29 @@ if(UNIX)
 else()
 	include_directories(${paperCrop_SOURCE_DIR}/../fltk)
 endif()
+
+if(UNIX)
+link_directories(
+
+	${paperCrop_SOURCE_DIR}/../FLTK/lib
+	${paperCrop_SOURCE_DIR}/libharu-2.0.8
+	${paperCrop_SOURCE_DIR}/devil/lib
+	${paperCrop_SOURCE_DIR}/../FreeImage/Dist
+	${paperCrop_SOURCE_DIR}/poppler/poppler/ 
+	${paperCrop_SOURCE_DIR}/../Freetype/objs/.libs 
+	${paperCrop_SOURCE_DIR}/luabind-0.9/Debug
+	${paperCrop_SOURCE_DIR}/../lua-5.1.4/src
+)
+endif()
+
+#${paperCrop_SOURCE_DIR}
+#	if(UNIX)
+#	"./fltk/Fl_Native_File_Chooser-0.84/Fl_Native_File_Chooser.cxx"
+#	else()	
+#	"./fltk/Fl_Native_File_Chooser-0.84/Fl_Native_File_Chooser_WIN32.cxx"
+#	"./fltk/Fl_Native_File_Chooser-0.84/FL/Fl_Native_File_Chooser_WIN32.H"
+#	end()
+
 set(src
 	"./GlobalUI.cpp"
 	"./GlobalUI.h"
@@ -76,7 +104,7 @@ set(src
 	"./PDFwin.h"
 	"./PDFWriter.cpp"
 	"./PDFWriter.h"
-	"./poppler.cpp"
+	#"./poppler.cpp"
 	"./RightPanel.cpp"
 	"./RightPanel.h"
 	"./stdafx.cpp"
@@ -129,8 +157,9 @@ set(src
 	"./image/ImageProcessor.cpp"
 	"./image/ImageProcessor.h"
 	"./fltk/Fl_Native_File_Chooser-0.84/FL/Fl_Native_File_Chooser.H"
-	"./fltk/Fl_Native_File_Chooser-0.84/Fl_Native_File_Chooser_WIN32.cxx"
-	"./fltk/Fl_Native_File_Chooser-0.84/FL/Fl_Native_File_Chooser_WIN32.H"
+	"./fltk/Fl_Native_File_Chooser-0.84/Fl_Native_File_Chooser.cxx"
+##	"./fltk/Fl_Native_File_Chooser-0.84/Fl_Native_File_Chooser_WIN32.cxx"
+##	"./fltk/Fl_Native_File_Chooser-0.84/FL/Fl_Native_File_Chooser_WIN32.H"
 	"./utility/FlLayout.cpp"
 	"./utility/FlLayout.h"
 	"./utility/FltkAddon.cpp"
@@ -143,9 +172,34 @@ set(src
 	"./utility/TextFile.h"
 	)
 
+
+
+
 add_executable(paperCrop
 	${src}
 	)
+
+if(UNIX)
+
+	target_link_libraries(paperCrop
+	
+	fltk_images
+	fltk
+	hpdf
+	X11
+	ILU
+	poppler
+	freeimage
+	z
+	jpeg
+	freetype
+	luabind-0.9.1
+	lua
+	fontconfig
+	)
+
+endif()
+
 
 IF(MSVC)
 	target_link_libraries(paperCrop

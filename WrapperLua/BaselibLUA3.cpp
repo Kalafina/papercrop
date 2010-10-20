@@ -1,7 +1,7 @@
 
 #include "stdafx.h"
 #include "BaselibLUA.h"
-#include "math/operator.h"
+#include "math/Operator.h"
 
 #include <luabind/luabind.hpp>
 #include <luabind/operator.hpp>

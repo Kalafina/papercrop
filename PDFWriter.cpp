@@ -21,7 +21,7 @@
 
 #include "stdafx.h"
 #include "PDFWriter.h"
-#include "image/image.h"
+#include "image/Image.h"
 
 //#pragma comment(lib, "libharu-2.0.8/libhpdf.lib")
 

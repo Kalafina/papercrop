@@ -20,7 +20,7 @@
 //
 
 #pragma once
-#include "Typestring.h"
+#include "TypeString.h"
 
 
 namespace sz1
