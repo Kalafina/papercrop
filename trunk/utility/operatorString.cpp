@@ -25,7 +25,7 @@
 
 #include "stdafx.h"
 #include "TypeString.h"
-#include "operatorstring.h"
+#include "operatorString.h"
 #include <stdio.h>
 #include <string.h>
 

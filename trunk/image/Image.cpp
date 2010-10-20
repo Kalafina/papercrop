@@ -25,8 +25,8 @@
 
 #include "stdafx.h"
 #include "Image.h"
-#include <il/il.h>
-#include <il/ilu.h>
+#include <IL/il.h>
+#include <IL/ilu.h>
 
 #define CHECK_VALID ASSERT(!_dataPtr || (_dataPtr==ilGetData() && GetWidth()==ilGetInteger(IL_IMAGE_WIDTH) && GetHeight()==ilGetInteger(IL_IMAGE_HEIGHT)))
 
@@ -164,8 +164,8 @@ bool CImage::Load(const char* filename)
 	return true;
 }
 
-#include <il/il.h>
-#include <il/ilu.h>
+#include <IL/il.h>
+#include <IL/ilu.h>
 
 namespace Imp
 {
@@ -261,7 +261,11 @@ bool CImage::Save(const char* filename)
 	{
 		if(!Msg::confirm("Do you want to overwrite file %s?", filename))
 			return false;
+#ifdef linux
+		remove(filename);
+#else
 		DeleteFile(filename);
+#endif
 	}
 
 	TString ext=TString(filename).right(3).toUpper();
@@ -283,7 +287,11 @@ bool CImage::save(const char* filename, int BPP)
 	{
 		if(!Msg::confirm("Do you want to overwrite file %s?", filename))
 			return false;
+#ifdef linux
+		remove(filename);
+#else
 		DeleteFile(filename);
+#endif
 	}
 
 	CImage_SaveFreeImage(*this, filename, BPP);

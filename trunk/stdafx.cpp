@@ -34,7 +34,7 @@ Msg::Base* Msg::g_pMsgUtil=&g_cMsgUtil;
 
 void Msg::verify(bool bExpression, const char* pszFormat, ...)
 {
-	// release¿¡¼­µµ ¾ø¾îÁöÁö ¾Ê´Â verify¸¦ ÇÏ°í ½ÍÀº°æ¿ì »ç¿ë.
+	// releaseï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´ï¿½ verifyï¿½ï¿½ ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½.
 	if(!bExpression)
 	{
 		TString temp;
@@ -110,11 +110,58 @@ void Msg::Base::print2(const char* msg)	{ printf("                              
 void Msg::Base::flush()				{ fflush(stdout);}
 void Msg::Base::error(const char* msg) { msgBox(msg); ASSERT(0);throw(std::runtime_error(msg));}
 void Msg::Base::msgBox(const char* msg){ fl_message("%s\n", msg);}
-		// ¾ÆÁ÷ ±¸Çö¾ÈµÊ. »ç¿ëÀÚ¿¡°Ô yes or no¹°¾îº¸´Â ±â´É.
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Èµï¿½. ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ yes or noï¿½ï¿½ï¿½îº¸ï¿½ï¿½ ï¿½ï¿½ï¿½.
 bool Msg::Base::confirm(const char* msg) { return fl_ask("%s", msg);}
 void Msg::Base::output(const char* key, const char* msg){printf("%s: %s\n", key, msg); }
 
+#ifdef unix
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <glob.h>
 
+bool CreateDirectory(const char *PathToCreate){
+	return mkdir(PathToCreate,S_IRWXU | S_IRWXG | S_IRWXO);
+
+
+
+}
+
+bool DeleteAllFiles(const char* path, const char* mask, bool bConfirm)
+{
+  glob_t globbuf;
+  char szFileName[PATH_MAX];
+  sprintf(szFileName, "%s/%s", path, mask);
+
+  glob(szFileName, 0, NULL, &globbuf);
+
+  bConfirm = true;
+
+  if (bConfirm && globbuf.gl_pathc)
+    {
+      if (!Msg::confirm("Do you really want to delete all files in %s?", path))
+        {
+          globfree(&globbuf);
+          return false;
+        }
+    }
+
+  for (unsigned int i = 0; i < globbuf.gl_pathc; i++)
+    {
+      if (remove(globbuf.gl_pathv[i]) != 0)
+        {
+        break;
+        }
+    }
+
+  globfree(&globbuf);
+  return true;
+
+}
+
+
+
+#else
 bool CreateDirectory(const char *PathToCreate)
 {
 	static char Path[1000];
@@ -142,7 +189,7 @@ bool CreateDirectory(const char *PathToCreate)
 		ret=GetFileAttributes(Path);
 		if (ret==-1)
 		{
-			// ÆÄÀÏÀÌ ¾øÀ¸¸é
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if (GetLastError()==ERROR_FILE_NOT_FOUND)
 				AllOk = CreateDirectory(Path,NULL)==TRUE;
 			else
@@ -212,3 +259,4 @@ bool DeleteAllFiles(const char* path, const char* mask,bool bConfirm)
 	FindClose(hFindHandle);
 	return true;
 }
+#endif

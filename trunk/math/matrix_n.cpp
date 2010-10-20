@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "mathclass.h"
+#ifndef unix
 #include "Filter.h"
+#endif
 #include "Operator.h"
 #include "../utility/operatorString.h"
 
@@ -162,6 +164,9 @@ matrixn& matrixn::each1(void (*s1_func)(m_real&,m_real), matrixn const& a)
 	return c;
 }
 
+#ifdef _MSC_VER
+//Aaron. this code is not used and causes an compile error in GCC
+
 matrixn& matrixn::each0(const v0::_op& op)
 {
 	for(int i=0; i<rows(); i++)
@@ -182,7 +187,7 @@ matrixn& matrixn::each1(const v1::_op& op, matrixn const& a)
 		op.calc(row(i), a.row(i));
 	return *this;
 }
-
+#endif
 matrixn& matrixn::each0(vectorn& (vectorn::*func)())
 {
 	for(int i=0; i<rows(); i++)
@@ -310,7 +315,7 @@ matrixn& matrixn::fromVector(const vectorn& vec, int column)
 }
 
 
-m_real matrixn::distance(matrixn const& other) const	// matrix ?�개 ?�이??거리, ?�의??구현 참고
+m_real matrixn::distance(matrixn const& other) const	// matrix ?�개 ?�이??거리, ?�의??구현 참고
 {
 	m_real distance=0;
 	ASSERT(rows()==other.rows());
@@ -369,7 +374,7 @@ matrixn&  matrixn::derivativeQuater(matrixn const& rotations)	// ex) angularVelo
 
 matrixn&  matrixn::derivative(matrixn const& positions)	// ex) velocities.delta(positions);
 {
-	// this->op1(m1::derivative(), positions)�??�도 결과???�같??
+	// this->op1(m1::derivative(), positions)�??�도 결과???�같??
 
 	setSize(positions.rows(), positions.cols());
 
@@ -511,7 +516,7 @@ matrixn&  matrixn::distanceMat(matrixn const& a)
 
 matrixn&  matrixn::distance(matrixn const& a, matrixn const& b)
 {
-	// ??matrix??�??�소 벡터 모든 조합 ?�이??거리 구함.
+	// ??matrix??�??�소 벡터 모든 조합 ?�이??거리 구함.
 	ASSERT(a.cols()==b.cols());
 	setSize(a.rows(), b.rows());
 	for(int i=0; i<a.rows(); i++)
@@ -526,7 +531,7 @@ matrixn&  matrixn::distance(matrixn const& a, matrixn const& b)
 /*
 void matrixn::bubbles(int nrow, int nbubbles)
 {
-	// nrow?�하??nbubble만큼 ?�래�??�린?? �?matrix?�기가 nbubble만큼 ?�로�?커�?�? 빈칸???�긴??
+	// nrow?�하??nbubble만큼 ?�래�??�린?? �?matrix?�기가 nbubble만큼 ?�로�?커�?�? 빈칸???�긴??
 	int prev_row=rows();
 	resize(rows()+nbubbles, cols());
 
@@ -542,7 +547,7 @@ void matrixn::spectrum(const vectorn& input, int windowSize)
 }
 /*void matrixn::deleteRows(int start, int end)
 {
-	// end?�하??end-start만큼 ?�로 ?�라간다. �?matrix?�기가 end-start만큼 ?�로�??�아진다.
+	// end?�하??end-start만큼 ?�로 ?�라간다. �?matrix?�기가 end-start만큼 ?�로�??�아진다.
 	int numRows=end-start;
 
 	for(int i=end; i<rows(); i++)
