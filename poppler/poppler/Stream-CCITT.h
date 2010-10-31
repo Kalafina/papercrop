@@ -8,6 +8,20 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2008 Albert Astals Cid <aacid@kde.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 struct CCITTCode {
   short bits;
   short n;
@@ -30,7 +44,7 @@ struct CCITTCode {
 #define twoDimVertL3 8
 
 // 1-7 bit codes
-static CCITTCode twoDimTab1[128] = {
+static const CCITTCode twoDimTab1[128] = {
   {-1, -1}, {-1, -1},		        // 000000x
   {7, twoDimVertL3},		        // 0000010
   {7, twoDimVertR3},		        // 0000011
@@ -103,7 +117,7 @@ static CCITTCode twoDimTab1[128] = {
 //------------------------------------------------------------------------
 
 // 11-12 bit codes (upper 7 bits are 0)
-static CCITTCode whiteTab1[32] = {
+static const CCITTCode whiteTab1[32] = {
   {-1, -1},					// 00000
   {12, ccittEOL},				// 00001
   {-1, -1}, {-1, -1},				// 0001x
@@ -126,7 +140,7 @@ static CCITTCode whiteTab1[32] = {
 };
 
 // 1-9 bit codes
-static CCITTCode whiteTab2[512] = {
+static const CCITTCode whiteTab2[512] = {
   {-1, -1}, {-1, -1}, {-1, -1}, {-1, -1},	// 0000000xx
   {8, 29}, {8, 29},				// 00000010x
   {8, 30}, {8, 30},				// 00000011x
@@ -295,7 +309,7 @@ static CCITTCode whiteTab2[512] = {
 //------------------------------------------------------------------------
 
 // 10-13 bit codes (upper 6 bits are 0)
-static CCITTCode blackTab1[128] = {
+static const CCITTCode blackTab1[128] = {
   {-1, -1}, {-1, -1},					// 000000000000x
   {12, ccittEOL}, {12, ccittEOL},			// 000000000001x
   {-1, -1}, {-1, -1}, {-1, -1}, {-1, -1},		// 00000000001xx
@@ -357,7 +371,7 @@ static CCITTCode blackTab1[128] = {
 };
 
 // 7-12 bit codes (upper 4 bits are 0)
-static CCITTCode blackTab2[192] = {
+static const CCITTCode blackTab2[192] = {
   {8, 13}, {8, 13}, {8, 13}, {8, 13},			// 00000100xxxx
     {8, 13}, {8, 13}, {8, 13}, {8, 13},
     {8, 13}, {8, 13}, {8, 13}, {8, 13},
@@ -437,7 +451,7 @@ static CCITTCode blackTab2[192] = {
 };
 
 // 2-6 bit codes
-static CCITTCode blackTab3[64] = {
+static const CCITTCode blackTab3[64] = {
   {-1, -1}, {-1, -1}, {-1, -1}, {-1, -1},		// 0000xx
   {6, 9},						// 000100
   {6, 8},						// 000101

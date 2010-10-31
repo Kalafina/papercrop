@@ -6,6 +6,20 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2008 Albert Astals Cid <aacid@kde.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 #include <limits.h>
 
@@ -65,7 +79,7 @@
 // where subband = 0 for HL
 //               = 1 for LH and LL
 //               = 2 for HH
-static Guint sigPropContext[3][3][5][3] = {
+static const Guint sigPropContext[3][3][5][3] = {
   {{{ 0, 0, 0 },   // horiz=0, vert=0, diag=0
     { 1, 1, 3 },   // horiz=0, vert=0, diag=1
     { 2, 2, 6 },   // horiz=0, vert=0, diag=2
@@ -119,7 +133,7 @@ static Guint sigPropContext[3][3][5][3] = {
 // where horiz/vert are offset by 2 (i.e., range is -2 .. 2)
 // and k = 0 for the context
 //       = 1 for the xor bit
-static Guint signContext[5][5][2] = {
+static const Guint signContext[5][5][2] = {
   {{ 13, 1 },  // horiz=-2, vert=-2
    { 13, 1 },  // horiz=-2, vert=-1
    { 12, 1 },  // horiz=-2, vert= 0

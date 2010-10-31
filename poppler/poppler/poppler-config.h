@@ -17,7 +17,7 @@
 
 /* Enable multithreading support. */
 #ifndef MULTITHREADED
-#define MULTITHREADED 0
+#define MULTITHREADED 1
 #endif
 
 /* Enable exceptions. */
@@ -30,11 +30,6 @@
 /* #undef USE_FIXEDPOINT */
 #endif
 
-/* Full path for the system-wide xpdfrc file. */
-#ifndef SYSTEM_XPDFRC
-/* #undef SYSTEM_XPDFRC */
-#endif
-
 /* Include support for OPI comments. */
 #ifndef OPI_SUPPORT
 #define OPI_SUPPORT 1
@@ -45,6 +40,21 @@
 #define TEXTOUT_WORD_LIST 1
 #endif
 
+/* Use fontconfig font configuration backend */
+#ifndef WITH_FONTCONFIGURATION_FONTCONFIG
+#define WITH_FONTCONFIGURATION_FONTCONFIG 1
+#endif
+
+/* Use win32 font configuration backend */
+#ifndef WITH_FONTCONFIGURATION_WIN32
+/* #undef WITH_FONTCONFIGURATION_WIN32 */
+#endif
+
+/* Support for curl is compiled in. */
+#ifndef POPPLER_HAS_CURL_SUPPORT
+/* #undef POPPLER_HAS_CURL_SUPPORT */
+#endif
+
 // Also, there's a couple of preprocessor symbols in the header files
 // that are used but never defined: DISABLE_OUTLINE, DEBUG_MEM and
 
@@ -52,70 +62,9 @@
 // version
 //------------------------------------------------------------------------
 
-// xpdf version
-#define xpdfVersion         "3.00"
-#define xpdfVersionNum      3.00
-#define xpdfMajorVersion    3
-#define xpdfMinorVersion    0
-#define xpdfMajorVersionStr "3"
-#define xpdfMinorVersionStr "0"
-
-// supported PDF version
-#define supportedPDFVersionStr "1.5"
-#define supportedPDFVersionNum 1.5
-
 // copyright notice
+#define popplerCopyright "Copyright 2005-2010 The Poppler Developers - http://poppler.freedesktop.org"
 #define xpdfCopyright "Copyright 1996-2004 Glyph & Cog, LLC"
-
-// Windows resource file stuff
-#define winxpdfVersion "WinXpdf 3.00"
-#define xpdfCopyrightAmp "Copyright 1996-2004 Glyph && Cog, LLC"
-
-//------------------------------------------------------------------------
-// paper size
-//------------------------------------------------------------------------
-
-// default paper size (in points) for PostScript output
-#ifdef A4_PAPER
-#define defPaperWidth  595    // ISO A4 (210x297 mm)
-#define defPaperHeight 842
-#else
-#define defPaperWidth  612    // American letter (8.5x11")
-#define defPaperHeight 792
-#endif
-
-//------------------------------------------------------------------------
-// config file (xpdfrc) path
-//------------------------------------------------------------------------
-
-// user config file name, relative to the user's home directory
-#if defined(VMS) || (defined(WIN32) && !defined(__CYGWIN32__))
-#define xpdfUserConfigFile "xpdfrc"
-#else
-#define xpdfUserConfigFile ".xpdfrc"
-#endif
-
-// system config file name (set via the configure script)
-#ifdef SYSTEM_XPDFRC
-#define xpdfSysConfigFile SYSTEM_XPDFRC
-#else
-// under Windows, we get the directory with the executable and then
-// append this file name
-#define xpdfSysConfigFile "xpdfrc"
-#endif
-
-//------------------------------------------------------------------------
-// X-related constants
-//------------------------------------------------------------------------
-
-// default maximum size of color cube to allocate
-#define defaultRGBCube 5
-
-// number of fonts (combined t1lib, FreeType, X server) to cache
-#define xOutFontCacheSize 64
-
-// number of Type 3 fonts to cache
-#define xOutT3FontCacheSize 8
 
 //------------------------------------------------------------------------
 // popen
@@ -126,7 +75,7 @@
 #define pclose _pclose
 #endif
 
-#if defined(VMS) || defined(VMCMS) || defined(DOS) || defined(OS2) || defined(__EMX__) || defined(WIN32) || defined(__DJGPP__) || defined(MACOS)
+#if defined(VMS) || defined(VMCMS) || defined(DOS) || defined(OS2) || defined(__EMX__) || defined(_WIN32) || defined(__DJGPP__) || defined(MACOS)
 #define POPEN_READ_MODE "rb"
 #else
 #define POPEN_READ_MODE "r"
@@ -136,14 +85,18 @@
 // Win32 stuff
 //------------------------------------------------------------------------
 
-#ifdef CDECL
-/* #undef CDECL */
-#endif
-
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-#define CDECL __cdecl
+#if defined(_WIN32) && !defined(_MSC_VER)
+#include <windef.h>
 #else
 #define CDECL
+#endif
+
+#if defined(_WIN32)
+#ifdef _MSC_VER
+#define strtok_r strtok_s
+#elif __MINGW32__
+char * strtok_r (char *s, const char *delim, char **save_ptr);
+#endif
 #endif
 
 //------------------------------------------------------------------------
@@ -155,6 +108,11 @@
 	__attribute__((__format__(__printf__, fmt_index, va_index)))
 #else
 #define GCC_PRINTF_FORMAT(fmt_index, va_index)
+#endif
+
+#if defined(_MSC_VER)
+#define fmax(a, b) max(a, b)
+#define fmin(a, b) min(a, b)
 #endif
 
 

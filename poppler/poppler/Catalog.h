@@ -6,6 +6,26 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2005, 2007, 2009, 2010 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2005 Jonathan Blandford <jrb@redhat.com>
+// Copyright (C) 2005, 2006, 2008 Brad Hards <bradh@frogmouth.net>
+// Copyright (C) 2007 Julien Rebetez <julienr@svn.gnome.org>
+// Copyright (C) 2008 Pino Toscano <pino@kde.org>
+// Copyright (C) 2010 Hib Eris <hib@hiberis.nl>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef CATALOG_H
 #define CATALOG_H
 
@@ -30,10 +50,10 @@ class OCGs;
 class NameTree {
 public:
   NameTree();
+  ~NameTree();
   void init(XRef *xref, Object *tree);
   void parse(Object *tree);
   GBool lookup(GooString *name, Object *obj);
-  void free();
   int numEntries() { return length; };
   // iterator accessor
   Object getValue(int i);
@@ -77,6 +97,7 @@ public:
   {
     objStr.copy(&m_objStr);
   }
+  EmbFile(Object *efDict, GooString *description = 0);
 
   ~EmbFile()
   {
@@ -97,6 +118,7 @@ public:
   GooString *checksum() { return m_checksum; }
   GooString *mimeType() { return m_mimetype; }
   Object &streamObject() { return m_objStr; }
+  bool isOk() { return m_objStr.isStream(); }
 
 private:
   GooString *m_name;
@@ -142,7 +164,7 @@ public:
   GooString *readMetadata();
 
   // Return the structure tree root object.
-  Object *getStructTreeRoot() { return &structTreeRoot; }
+  Object *getStructTreeRoot();
 
   // Find a page, given its object ID.  Returns page number, or 0 if
   // not found.
@@ -152,25 +174,31 @@ public:
   // NULL if <name> is not a destination.
   LinkDest *findDest(GooString *name);
 
-  Object *getDests() { return &dests; }
+  Object *getDests();
 
   // Get the number of embedded files
-  int numEmbeddedFiles() { return embeddedFileNameTree.numEntries(); }
+  int numEmbeddedFiles() { return getEmbeddedFileNameTree()->numEntries(); }
 
   // Get the i'th file embedded (at the Document level) in the document
   EmbFile *embeddedFile(int i);
+
+  // Get the number of javascript scripts
+  int numJS() { return getJSNameTree()->numEntries(); }
+
+  // Get the i'th JavaScript script (at the Document level) in the document
+  GooString *getJS(int i);
 
   // Convert between page indices and page labels.
   GBool labelToIndex(GooString *label, int *index);
   GBool indexToLabel(int index, GooString *label);
 
-  Object *getOutline() { return &outline; }
+  Object *getOutline();
 
   Object *getAcroForm() { return &acroForm; }
 
   OCGs *getOptContentConfig() { return optContent; }
 
-  Form* getForm() { return form; }
+  Form* getForm();
 
   enum PageMode {
     pageModeNone,
@@ -178,7 +206,8 @@ public:
     pageModeThumbs,
     pageModeFullScreen,
     pageModeOC,
-    pageModeAttach
+    pageModeAttach,
+    pageModeNull
   };
   enum PageLayout {
     pageLayoutNone,
@@ -187,14 +216,18 @@ public:
     pageLayoutTwoColumnLeft,
     pageLayoutTwoColumnRight,
     pageLayoutTwoPageLeft,
-    pageLayoutTwoPageRight
+    pageLayoutTwoPageRight,
+    pageLayoutNull
   };
 
   // Returns the page mode.
-  PageMode getPageMode() { return pageMode; }
-  PageLayout getPageLayout() { return pageLayout; }
+  PageMode getPageMode();
+  PageLayout getPageLayout();
 
 private:
+
+  // Get page label info.
+  PageLabelInfo *getPageLabelInfo();
 
   XRef *xref;			// the xref table for this PDF file
   Page **pages;			// array of pages
@@ -203,8 +236,10 @@ private:
   int numPages;			// number of pages
   int pagesSize;		// size of pages array
   Object dests;			// named destination dictionary
-  NameTree destNameTree;	// named destination name-tree
-  NameTree embeddedFileNameTree;  // embedded file name-tree
+  Object names;			// named names dictionary
+  NameTree *destNameTree;	// named destination name-tree
+  NameTree *embeddedFileNameTree;  // embedded file name-tree
+  NameTree *jsNameTree;		// Java Script name-tree
   GooString *baseURI;		// base URI for URI-type links
   Object metadata;		// metadata stream
   Object structTreeRoot;	// structure tree root dictionary
@@ -219,6 +254,12 @@ private:
   int readPageTree(Dict *pages, PageAttrs *attrs, int start,
 		   char *alreadyRead);
   Object *findDestInTree(Object *tree, GooString *name, Object *obj);
+
+  Object *getNames();
+  NameTree *getDestNameTree();
+  NameTree *getEmbeddedFileNameTree();
+  NameTree *getJSNameTree();
+
 };
 
 #endif

@@ -6,6 +6,28 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005, 2007-2010 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2005 Jonathan Blandford <jrb@redhat.com>
+// Copyright (C) 2006 Takashi Iwai <tiwai@suse.de>
+// Copyright (C) 2006 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2007 Krzysztof Kowalczyk <kkowalczyk@gmail.com>
+// Copyright (C) 2009 Jonathan Kew <jonathan_kew@sil.org>
+// Copyright (C) 2009 Petr Gajdos <pgajdos@novell.com>
+// Copyright (C) 2009 William Bader <williambader@hotmail.com>
+// Copyright (C) 2010 Hib Eris <hib@hiberis.nl>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef GLOBALPARAMS_H
 #define GLOBALPARAMS_H
 
@@ -16,7 +38,7 @@
 #include <assert.h>
 #include "poppler-config.h"
 #include <stdio.h>
-#ifndef _MSC_VER
+#if WITH_FONTCONFIGURATION_FONTCONFIG
 #include <fontconfig/fontconfig.h>
 #endif
 #include "goo/gtypes.h"
@@ -39,7 +61,8 @@ class CMapCache;
 struct XpdfSecurityHandler;
 class GlobalParams;
 class GfxFont;
-#ifdef WIN32
+class Stream;
+#ifdef _WIN32
 class WinFontList;
 #endif
 
@@ -141,13 +164,13 @@ public:
 
   // Initialize the global parameters by attempting to read a config
   // file.
-  GlobalParams();
+  GlobalParams(const char *customPopplerDataDir = NULL);
 
   ~GlobalParams();
 
   void setBaseDir(char *dir);
 
-#ifdef _MSC_VER
+#if WITH_FONTCONFIGURATION_WIN32
   void setupBaseFonts(char *dir);
 #endif
 
@@ -172,6 +195,7 @@ public:
   GBool getPSEmbedTrueType();
   GBool getPSEmbedCIDPostScript();
   GBool getPSEmbedCIDTrueType();
+  GBool getPSSubstFonts();
   GBool getPSPreload();
   GBool getPSOPI();
   GBool getPSASCIIHex();
@@ -199,11 +223,13 @@ public:
   CharCodeToUnicode *getCIDToUnicode(GooString *collection);
   CharCodeToUnicode *getUnicodeToUnicode(GooString *fontName);
   UnicodeMap *getUnicodeMap(GooString *encodingName);
-  CMap *getCMap(GooString *collection, GooString *cMapName);
+  CMap *getCMap(GooString *collection, GooString *cMapName, Stream *stream = NULL);
   UnicodeMap *getTextEncoding();
 #ifdef ENABLE_PLUGINS
   GBool loadPlugin(char *type, char *name);
 #endif
+
+  GooList *getEncodingNames();
 
   //----- functions to set parameters
   void setPSExpandSmaller(GBool expand);
@@ -214,6 +240,7 @@ public:
   void setPSEmbedTrueType(GBool embed);
   void setPSEmbedCIDPostScript(GBool embed);
   void setPSEmbedCIDTrueType(GBool embed);
+  void setPSSubstFonts(GBool substFonts);
   void setPSPreload(GBool preload);
   void setPSOPI(GBool opi);
   void setPSASCIIHex(GBool hex);
@@ -277,7 +304,8 @@ private:
   GooList *toUnicodeDirs;		// list of ToUnicode CMap dirs [GooString]
   GooHash *displayFonts;		// display font info, indexed by font name
 				//   [DisplayFontParam]
-#ifdef WIN32
+#ifdef _WIN32
+  GBool baseFontsInitialized;
   WinFontList *winFontList;	// system TrueType fonts
 #endif
   GBool psExpandSmaller;	// expand smaller pages to fill paper
@@ -292,6 +320,7 @@ private:
   GBool psEmbedTrueType;	// embed TrueType fonts?
   GBool psEmbedCIDPostScript;	// embed CID PostScript fonts?
   GBool psEmbedCIDTrueType;	// embed CID TrueType fonts?
+  GBool psSubstFonts;		// substitute missing fonts?
   GBool psPreload;		// preload PostScript images and forms into
 				//   memory
   GBool psOPI;			// generate PostScript OPI comments?
@@ -324,10 +353,6 @@ private:
   UnicodeMapCache *unicodeMapCache;
   CMapCache *cMapCache;
   
-#ifndef _MSC_VER
-  FcConfig *FCcfg;
-#endif
-
 #ifdef ENABLE_PLUGINS
   GList *plugins;		// list of plugins [Plugin]
   GList *securityHandlers;	// list of loaded security handlers
@@ -339,6 +364,8 @@ private:
   GooMutex unicodeMapCacheMutex;
   GooMutex cMapCacheMutex;
 #endif
+
+  const char *popplerDataDir;
 };
 
 #endif

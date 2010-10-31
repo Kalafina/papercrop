@@ -6,6 +6,27 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005 Martin Kretzschmar <martink@gnome.org>
+// Copyright (C) 2005 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2006-2008 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2007 Brad Hards <bradh@kde.org>
+// Copyright (C) 2009 Thomas Freitag <Thomas.Freitag@alfa.de>
+// Copyright (C) 2009 Till Kamppeter <till.kamppeter@gmail.com>
+// Copyright (C) 2009 Carlos Garcia Campos <carlosgc@gnome.org>
+// Copyright (C) 2009 William Bader <williambader@hotmail.com>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef PSOUTPUTDEV_H
 #define PSOUTPUTDEV_H
 
@@ -13,9 +34,10 @@
 #pragma interface
 #endif
 
-#include <poppler-config.h>
+#include "poppler-config.h"
 #include <stddef.h>
 #include "Object.h"
+#include "GfxState.h"
 #include "GlobalParams.h"
 #include "OutputDev.h"
 
@@ -36,7 +58,8 @@ class Function;
 enum PSOutMode {
   psModePS,
   psModeEPS,
-  psModeForm
+  psModeForm,
+  psModePSOrigPageSizes
 };
 
 enum PSFileType {
@@ -107,6 +130,10 @@ public:
   // Does this device use beginType3Char/endType3Char?  Otherwise,
   // text in Type 3 fonts will be drawn with drawChar/drawString.
   virtual GBool interpretType3Chars() { return gFalse; }
+
+  // This device now supports text in pattern colorspace!
+  virtual GBool supportTextCSPattern(GfxState *state)
+  	{ return state->getFillColorSpace()->getMode() == csPattern; }
 
   //----- header/trailer (used only if manualCtrl is true)
 
@@ -182,15 +209,15 @@ public:
   virtual void stroke(GfxState *state);
   virtual void fill(GfxState *state);
   virtual void eoFill(GfxState *state);
-  virtual void tilingPatternFill(GfxState *state, Object *str,
-				 int paintType, Dict *resDict,
-				 double *mat, double *bbox,
-				 int x0, int y0, int x1, int y1,
-				 double xStep, double yStep);
+  virtual GBool tilingPatternFill(GfxState *state, Object *str,
+				  int paintType, Dict *resDict,
+				  double *mat, double *bbox,
+				  int x0, int y0, int x1, int y1,
+				  double xStep, double yStep);
   virtual GBool functionShadedFill(GfxState *state,
 				   GfxFunctionShading *shading);
-  virtual GBool axialShadedFill(GfxState *state, GfxAxialShading *shading);
-  virtual GBool radialShadedFill(GfxState *state, GfxRadialShading *shading);
+  virtual GBool axialShadedFill(GfxState *state, GfxAxialShading *shading, double /*tMin*/, double /*tMax*/);
+  virtual GBool radialShadedFill(GfxState *state, GfxRadialShading *shading, double /*sMin*/, double /*sMax*/);
 
   //----- path clipping
   virtual void clip(GfxState *state);
@@ -199,20 +226,29 @@ public:
 
   //----- text drawing
   virtual void drawString(GfxState *state, GooString *s);
+  virtual void beginTextObject(GfxState *state);
+  virtual GBool deviceHasTextClip(GfxState *state) { return haveTextClip && haveCSPattern; }
   virtual void endTextObject(GfxState *state);
 
   //----- image drawing
   virtual void drawImageMask(GfxState *state, Object *ref, Stream *str,
 			     int width, int height, GBool invert,
-			     GBool inlineImg);
+			     GBool interpolate, GBool inlineImg);
   virtual void drawImage(GfxState *state, Object *ref, Stream *str,
 			 int width, int height, GfxImageColorMap *colorMap,
-			 int *maskColors, GBool inlineImg);
+			 GBool interpolate, int *maskColors, GBool inlineImg);
   virtual void drawMaskedImage(GfxState *state, Object *ref, Stream *str,
 			       int width, int height,
 			       GfxImageColorMap *colorMap,
+			       GBool interpolate,
 			       Stream *maskStr, int maskWidth, int maskHeight,
-			       GBool maskInvert);
+			       GBool maskInvert, GBool maskInterpolate);
+  // If current colorspace ist pattern,
+  // need this device special handling for masks in pattern colorspace?
+  // Default is false
+  virtual GBool fillMaskCSPattern(GfxState * state)
+  	{ return state->getFillColorSpace()->getMode() == csPattern && (level != psLevel1 && level != psLevel1Sep); }
+  virtual void endMaskClip(GfxState * /*state*/);
 
 #if OPI_SUPPORT
   //----- OPI functions
@@ -278,6 +314,7 @@ private:
   void addProcessColor(double c, double m, double y, double k);
   void addCustomColor(GfxSeparationColorSpace *sepCS);
   void doPath(GfxPath *path);
+  void maskToClippingPath(Stream *maskStr, int maskWidth, int maskHeight, GBool maskInvert);
   void doImageL1(Object *ref, GfxImageColorMap *colorMap,
 		 GBool invert, GBool inlineImg,
 		 Stream *str, int width, int height, int len);
@@ -302,7 +339,6 @@ private:
   void opiBegin13(GfxState *state, Dict *dict);
   void opiTransform(GfxState *state, double x0, double y0,
 		    double *x1, double *y1);
-  GBool getFileSpec(Object *fileSpec, Object *fileName);
 #endif
   void cvtFunction(Function *func);
   void writePSChar(char c);
@@ -310,7 +346,6 @@ private:
   void writePSFmt(const char *fmt, ...);
   void writePSString(GooString *s);
   void writePSName(char *s);
-  GooString *filterPSName(GooString *name);
   GooString *filterPSLabel(GooString *label, GBool *needParens=0);
   void writePSTextLine(GooString *s);
 
@@ -318,8 +353,13 @@ private:
   PSOutMode mode;		// PostScript mode (PS, EPS, form)
   int paperWidth;		// width of paper, in pts
   int paperHeight;		// height of paper, in pts
+  int prevWidth;		// width of previous page
+                                // (only psModePSOrigPageSizes output mode)
+  int prevHeight;		// height of previous page
+                                // (only psModePSOrigPageSizes output mode)
   int imgLLX, imgLLY,		// imageable area, in pts
       imgURX, imgURY;
+  GBool substFonts;		// substitute missing fonts
   GBool preload;		// load all images into memory, and
 				//   predefine forms
 
@@ -385,6 +425,9 @@ private:
 
   GBool haveTextClip;		// set if text has been drawn with a
 				//   clipping render mode
+  GBool haveCSPattern;		// set if text has been drawn with a
+				//   clipping render mode because of pattern colorspace
+  int savedRender;		// use if pattern colorspace
 
   GBool inType3Char;		// inside a Type 3 CharProc
   GooString *t3String;		// Type 3 content string

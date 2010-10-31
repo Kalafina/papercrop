@@ -6,6 +6,25 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005, 2008 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2006 Takashi Iwai <tiwai@suse.de>
+// Copyright (C) 2006 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2007 Julien Rebetez <julienr@svn.gnome.org>
+// Copyright (C) 2007 Jeff Muizelaar <jeff@infidigm.net>
+// Copyright (C) 2007 Koji Otani <sho@bbr.jp>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef GFXFONT_H
 #define GFXFONT_H
 
@@ -116,8 +135,6 @@ public:
 
   GfxFont(char *tagA, Ref idA, GooString *nameA);
 
-  virtual ~GfxFont();
-
   GBool isOk() { return ok; }
 
   void incRefCnt();
@@ -200,7 +217,7 @@ public:
   // the number actually used.  Returns the number of bytes used by
   // the char code.
   virtual int getNextChar(char *s, int len, CharCode *code,
-			  Unicode *u, int uSize, int *uLen,
+			  Unicode **u, int *uLen,
 			  double *dx, double *dy, double *ox, double *oy) = 0;
 
   /* XXX: dfp shouldn't be public, however the font finding code is currently in
@@ -209,6 +226,8 @@ public:
   /* XXX: related to this is the fact that all of the extFontFile stuff is dead */
   DisplayFontParam *dfp;
 protected:
+
+  virtual ~GfxFont();
 
   void readFontDescriptor(XRef *xref, Dict *fontDict);
   CharCodeToUnicode *readToUnicodeCMap(Dict *fontDict, int nBits,
@@ -246,10 +265,8 @@ public:
   Gfx8BitFont(XRef *xref, char *tagA, Ref idA, GooString *nameA,
 	      GfxFontType typeA, Dict *fontDict);
 
-  virtual ~Gfx8BitFont();
-
   virtual int getNextChar(char *s, int len, CharCode *code,
-			  Unicode *u, int uSize, int *uLen,
+			  Unicode **u, int *uLen,
 			  double *dx, double *dy, double *ox, double *oy);
 
   // Return the encoding.
@@ -284,6 +301,7 @@ public:
   Dict *getResources();
 
 private:
+  virtual ~Gfx8BitFont();
 
   char *enc[256];		// char code --> char name
   char encFree[256];		// boolean for each char name: if set,
@@ -306,12 +324,10 @@ public:
   GfxCIDFont(XRef *xref, char *tagA, Ref idA, GooString *nameA,
 	     Dict *fontDict);
 
-  virtual ~GfxCIDFont();
-
   virtual GBool isCIDFont() { return gTrue; }
 
   virtual int getNextChar(char *s, int len, CharCode *code,
-			  Unicode *u, int uSize, int *uLen,
+			  Unicode **u, int *uLen,
 			  double *dx, double *dy, double *ox, double *oy);
 
   // Return the writing mode (0=horizontal, 1=vertical).
@@ -333,6 +349,8 @@ public:
   double getWidth(char* s, int len);
 
 private:
+  virtual ~GfxCIDFont();
+
   Gushort mapCodeToGID(FoFiTrueType *ff, int cmapi,
     Unicode unicode, GBool wmode);
 

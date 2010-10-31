@@ -4,6 +4,23 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006, 2010 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2008 Tomas Are Haavet <tomasare@gmail.com>
+// Copyright (C) 2009 Thomas Freitag <Thomas.Freitag@alfa.de>
+// Copyright (C) 2009 Stefan Thomas <thomas@eload24.com>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef SPLASHTYPES_H
 #define SPLASHTYPES_H
 
@@ -16,6 +33,8 @@
 #if USE_FIXEDPOINT
 #include "goo/FixedPoint.h"
 typedef FixedPoint SplashCoord;
+#elif USE_FLOAT
+typedef float SplashCoord;
 #else
 typedef double SplashCoord;
 #endif
@@ -38,7 +57,7 @@ enum SplashColorMode {
 				//   RGBRGB...
   splashModeBGR8,		// 1 byte per component, 3 bytes per pixel:
 				//   BGRBGR...
-  splashModeXBGR8,	// 1 byte per component, 4 bytes per pixel:
+  splashModeXBGR8		// 1 byte per component, 4 bytes per pixel:
 				//   XBGRXBGR...
 #if SPLASH_CMYK
   ,
@@ -74,6 +93,15 @@ static inline Guchar splashCMYK8M(SplashColorPtr cmyk8) { return cmyk8[1]; }
 static inline Guchar splashCMYK8Y(SplashColorPtr cmyk8) { return cmyk8[2]; }
 static inline Guchar splashCMYK8K(SplashColorPtr cmyk8) { return cmyk8[3]; }
 #endif
+
+static inline void splashClearColor(SplashColorPtr dest) {
+  dest[0] = 0;
+  dest[1] = 0;
+  dest[2] = 0;
+#if SPLASH_CMYK
+  dest[3] = 0;
+#endif
+}
 
 static inline void splashColorCopy(SplashColorPtr dest, SplashColorPtr src) {
   dest[0] = src[0];
@@ -124,5 +152,15 @@ struct SplashScreenParams {
 //------------------------------------------------------------------------
 
 typedef int SplashError;
+
+
+//------------------------------------------------------------------------
+// image file formats
+//------------------------------------------------------------------------
+
+enum SplashImageFileFormat {
+  splashFormatJpeg,
+  splashFormatPng
+};
 
 #endif

@@ -6,6 +6,23 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005 Brad Hards <bradh@frogmouth.net>
+// Copyright (C) 2006, 2008, 2010 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2007-2008 Julien Rebetez <julienr@svn.gnome.org>
+// Copyright (C) 2007 Carlos Garcia Campos <carlosgc@gnome.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef XREF_H
 #define XREF_H
 
@@ -14,12 +31,13 @@
 #endif
 
 #include "goo/gtypes.h"
+#include "goo/GooVector.h"
 #include "Object.h"
 
 class Dict;
 class Stream;
 class Parser;
-class ObjectStream;
+class PopplerCache;
 
 //------------------------------------------------------------------------
 // XRef
@@ -34,7 +52,6 @@ enum XRefEntryType {
 struct XRefEntry {
   Guint offset;
   int gen;
-  int num;
   XRefEntryType type;
   bool updated;
   Object obj; //if this entry was updated, obj will contains the updated object
@@ -112,7 +129,7 @@ public:
   void setModifiedObject(Object* o, Ref r);
   Ref addIndirectObject (Object* o);
   void add(int num, int gen,  Guint offs, GBool used);
-  void writeToFile(OutStream* outStr);
+  void writeToFile(OutStream* outStr, GBool writeAllEntries);
 
 private:
 
@@ -129,7 +146,7 @@ private:
   Guint *streamEnds;		// 'endstream' positions - only used in
 				//   damaged files
   int streamEndsLen;		// number of valid entries in streamEnds
-  ObjectStream *objStr;		// cached object stream
+  PopplerCache *objStrs;	// cached object streams
   GBool encrypted;		// true if file is encrypted
   int encRevision;		
   int encVersion;		// encryption algorithm
@@ -140,8 +157,8 @@ private:
   GBool ownerPasswordOk;	// true if owner password is correct
 
   Guint getStartXref();
-  GBool readXRef(Guint *pos);
-  GBool readXRefTable(Parser *parser, Guint *pos);
+  GBool readXRef(Guint *pos, GooVector<Guint> *followedXRefStm);
+  GBool readXRefTable(Parser *parser, Guint *pos, GooVector<Guint> *followedXRefStm);
   GBool readXRefStreamSection(Stream *xrefStr, int *w, int first, int n);
   GBool readXRefStream(Stream *xrefStr, Guint *pos);
   GBool constructXRef();

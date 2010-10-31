@@ -6,6 +6,22 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006, 2009 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2006 Krzysztof Kowalczyk <kkowalczyk@gmail.com>
+// Copyright (C) 2009 Ilya Gorenbein <igorenbein@finjan.com>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #ifdef USE_GCC_PRAGMAS
@@ -164,7 +180,7 @@ Stream *Parser::makeStream(Object *dict, Guchar *fileKey,
   } else {
     error(getPos(), "Bad 'Length' attribute in stream");
     obj.free();
-    return NULL;
+    length = 0;
   }
 
   // check for length in damaged file
@@ -194,9 +210,23 @@ Stream *Parser::makeStream(Object *dict, Guchar *fileKey,
     shift();
   } else {
     error(getPos(), "Missing 'endstream'");
-    // kludge for broken PDF files: just add 5k to the length, and
-    // hope its enough
-    length += 5000;
+    if (xref) {
+      // shift until we find the proper endstream or we change to another object or reach eof
+      while (!buf1.isCmd("endstream") && xref->getNumEntry(lexer->getPos()) == objNum && !buf1.isEOF()) {
+        shift();
+      }
+      length = lexer->getPos() - pos;
+      if (buf1.isCmd("endstream")) {
+        obj.initInt(length);
+        dict->dictSet("Length", &obj);
+        obj.free();
+      }
+    } else {
+      // When building the xref we can't use it so use this
+      // kludge for broken PDF files: just add 5k to the length, and
+      // hope its enough
+      length += 5000;
+    }
   }
 
   // make base stream

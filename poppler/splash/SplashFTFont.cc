@@ -4,6 +4,22 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005, 2007-2010 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2006 Kristian Høgsberg <krh@bitplanet.net>
+// Copyright (C) 2009 Petr Gajdos <pgajdos@novell.com>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #if HAVE_FREETYPE_FREETYPE_H || HAVE_FREETYPE_H
@@ -39,7 +55,8 @@ static int glyphPathCubicTo(const FT_Vector *ctrl1, const FT_Vector *ctrl2,
 
 SplashFTFont::SplashFTFont(SplashFTFontFile *fontFileA, SplashCoord *matA,
 			   SplashCoord *textMatA):
-  SplashFont(fontFileA, matA, textMatA, fontFileA->engine->aa)
+  SplashFont(fontFileA, matA, textMatA, fontFileA->engine->aa), 
+  enableFreeTypeHinting(fontFileA->engine->enableFreeTypeHinting)
 {
   FT_Face face;
   double div;
@@ -151,6 +168,14 @@ GBool SplashFTFont::getGlyph(int c, int xFrac, int yFrac,
   return SplashFont::getGlyph(c, xFrac, 0, bitmap, x0, y0, clip, clipRes);
 }
 
+static FT_Int32 getFTLoadFlags(GBool aa, GBool enableFreeTypeHinting)
+{
+  if (aa && enableFreeTypeHinting) return FT_LOAD_NO_BITMAP;
+  else if (aa && !enableFreeTypeHinting) return FT_LOAD_NO_HINTING | FT_LOAD_NO_BITMAP;
+  else if (!aa && enableFreeTypeHinting) return FT_LOAD_DEFAULT;
+  else return FT_LOAD_NO_HINTING;
+}
+
 GBool SplashFTFont::makeGlyph(int c, int xFrac, int yFrac,
 			      SplashGlyphBitmap *bitmap, int x0, int y0, SplashClip *clip, SplashClipResult *clipRes) {
   SplashFTFontFile *ff;
@@ -179,23 +204,9 @@ GBool SplashFTFont::makeGlyph(int c, int xFrac, int yFrac,
     return gFalse;
   }
 
-  // if we have the FT2 bytecode interpreter, autohinting won't be used
-#ifdef TT_CONFIG_OPTION_BYTECODE_INTERPRETER
-  if (FT_Load_Glyph(ff->face, gid,
-		    aa ? FT_LOAD_NO_BITMAP : FT_LOAD_DEFAULT)) {
+  if (FT_Load_Glyph(ff->face, gid, getFTLoadFlags(aa, enableFreeTypeHinting))) {
     return gFalse;
   }
-#else
-  // FT2's autohinting doesn't always work very well (especially with
-  // font subsets), so turn it off if anti-aliasing is enabled; if
-  // anti-aliasing is disabled, this seems to be a tossup - some fonts
-  // look better with hinting, some without, so leave hinting on
-  if (FT_Load_Glyph(ff->face, gid,
-		    aa ? FT_LOAD_NO_HINTING | FT_LOAD_NO_BITMAP
-                       : FT_LOAD_DEFAULT)) {
-    return gFalse;
-  }
-#endif
 
   FT_Glyph_Metrics *glyphMetrics = &(ff->face->glyph->metrics);
   // prelimirary values from FT_Glyph_Metrics
@@ -206,8 +217,8 @@ GBool SplashFTFont::makeGlyph(int c, int xFrac, int yFrac,
 
   *clipRes = clip->testRect(x0 - bitmap->x,
                             y0 - bitmap->y,
-                            x0 - bitmap->x + bitmap->w - 1,
-                            y0 - bitmap->y + bitmap->h - 1);
+                            x0 - bitmap->x + bitmap->w,
+                            y0 - bitmap->y + bitmap->h);
   if (*clipRes == splashClipAllOutside) {
     bitmap->freeData = gFalse;
     return gTrue;
@@ -228,7 +239,10 @@ GBool SplashFTFont::makeGlyph(int c, int xFrac, int yFrac,
   } else {
     rowSize = (bitmap->w + 7) >> 3;
   }
-  bitmap->data = (Guchar *)gmalloc(rowSize * bitmap->h);
+  bitmap->data = (Guchar *)gmallocn_checkoverflow(rowSize, bitmap->h);
+  if (!bitmap->data) {
+    return gFalse;
+  }
   bitmap->freeData = gTrue;
   for (i = 0, p = bitmap->data, q = slot->bitmap.buffer;
        i < bitmap->h;
@@ -258,6 +272,7 @@ double SplashFTFont::getGlyphAdvance(int c)
   offset.x = 0;
   offset.y = 0;
 
+  ff->face->size = sizeObj;
   FT_Set_Transform(ff->face, &identityMatrix, &offset);
 
   if (ff->codeToGID && c < ff->codeToGIDLen) {
@@ -270,23 +285,9 @@ double SplashFTFont::getGlyphAdvance(int c)
     return -1;
   }
 
-  // if we have the FT2 bytecode interpreter, autohinting won't be used
-#ifdef TT_CONFIG_OPTION_BYTECODE_INTERPRETER
-  if (FT_Load_Glyph(ff->face, gid,
-		    aa ? FT_LOAD_NO_BITMAP : FT_LOAD_DEFAULT)) {
+  if (FT_Load_Glyph(ff->face, gid, getFTLoadFlags(aa, enableFreeTypeHinting))) {
     return -1;
   }
-#else
-  // FT2's autohinting doesn't always work very well (especially with
-  // font subsets), so turn it off if anti-aliasing is enabled; if
-  // anti-aliasing is disabled, this seems to be a tossup - some fonts
-  // look better with hinting, some without, so leave hinting on
-  if (FT_Load_Glyph(ff->face, gid,
-		    aa ? FT_LOAD_NO_HINTING | FT_LOAD_NO_BITMAP
-                       : FT_LOAD_DEFAULT)) {
-    return -1;
-  }
-#endif
 
   // 64.0 is 1 in 26.6 format
   return ff->face->glyph->metrics.horiAdvance / 64.0 / size;
@@ -332,7 +333,7 @@ SplashPath *SplashFTFont::getGlyphPath(int c) {
     // skip the TrueType notdef glyph
     return NULL;
   }
-  if (FT_Load_Glyph(ff->face, gid, FT_LOAD_NO_BITMAP)) {
+  if (FT_Load_Glyph(ff->face, gid, getFTLoadFlags(aa, enableFreeTypeHinting))) {
     return NULL;
   }
   if (FT_Get_Glyph(slot, &glyph)) {

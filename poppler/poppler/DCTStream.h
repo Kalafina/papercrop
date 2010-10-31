@@ -2,7 +2,12 @@
 //
 // DCTStream.h
 //
-// Copyright 1996-2003 Glyph & Cog, LLC
+// This file is licensed under the GPLv2 or later
+//
+// Copyright 2005 Jeff Muizelaar <jeff@infidigm.net>
+// Copyright 2005 Martin Kretzschmar <martink@gnome.org>
+// Copyright 2005-2007, 2009, 2010 Albert Astals Cid <aacid@kde.org>
+// Copyright 2010 Carlos Garcia Campos <carlosgc@gnome.org>
 //
 //========================================================================
 
@@ -22,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <setjmp.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -44,7 +50,7 @@ struct str_src_mgr {
     JOCTET buffer;
     Stream *str;
     int index;
-    bool abort;
+    jmp_buf setjmp_buffer;
 };
 
 
@@ -64,7 +70,9 @@ public:
 private:
   void init();
 
-  unsigned int x;
+  int colorXform;
+  JSAMPLE *current;
+  JSAMPLE *limit;
   struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr jerr;
   struct str_src_mgr src;

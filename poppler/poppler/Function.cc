@@ -6,6 +6,21 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006, 2008-2010 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2006 Jeff Muizelaar <jeff@infidigm.net>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #ifdef USE_GCC_PRAGMAS
@@ -17,11 +32,13 @@
 #include <ctype.h>
 #include <math.h>
 #include "goo/gmem.h"
+#include "goo/gstrtod.h"
 #include "Object.h"
 #include "Dict.h"
 #include "Stream.h"
 #include "Error.h"
 #include "Function.h"
+#include "PopplerCache.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -405,7 +422,11 @@ void SampledFunction::transform(double *in, double *out) {
       for (k = 0, t = j; k < m; ++k, t >>= 1) {
 	idx += idxMul[k] * (e[k][t & 1]);
       }
-      sBuf[j] = samples[idx];
+      if (likely(idx >= 0 && idx < nSamples)) {
+        sBuf[j] = samples[idx];
+      } else {
+        sBuf[j] = 0; // TODO Investigate if this is what Adobe does
+      }
     }
 
     // do m sets of interpolations
@@ -650,6 +671,8 @@ StitchingFunction::StitchingFunction(Object *funcObj, Dict *dict) {
 StitchingFunction::StitchingFunction(StitchingFunction *func) {
   int i;
 
+  memcpy(this, func, sizeof(StitchingFunction));
+
   k = func->k;
   funcs = (Function **)gmallocn(k, sizeof(Function *));
   for (i = 0; i < k; ++i) {
@@ -753,7 +776,7 @@ enum PSOp {
 // Note: 'if' and 'ifelse' are parsed separately.
 // The rest are listed here in alphabetical order.
 // The index in this table is equivalent to the entry in PSOp.
-char *psOpNames[] = {
+static const char *psOpNames[] = {
   "abs",
   "add",
   "and",
@@ -844,13 +867,54 @@ struct PSObject {
 class PSStack {
 public:
 
-  PSStack() { sp = psStackSize; }
-  void pushBool(GBool booln);
-  void pushInt(int intg);
-  void pushReal(double real);
-  GBool popBool();
-  int popInt();
-  double popNum();
+  PSStack() {sp = psStackSize; }
+  void clear() { sp = psStackSize; }
+  void pushBool(GBool booln)
+  {
+    if (checkOverflow()) {
+      stack[--sp].type = psBool;
+      stack[sp].booln = booln;
+    }
+  }
+  void pushInt(int intg)
+  {
+    if (checkOverflow()) {
+      stack[--sp].type = psInt;
+      stack[sp].intg = intg;
+    }
+  }
+  void pushReal(double real)
+  {
+    if (checkOverflow()) {
+      stack[--sp].type = psReal;
+      stack[sp].real = real;
+    }
+  }
+  GBool popBool()
+  {
+    if (checkUnderflow() && checkType(psBool, psBool)) {
+      return stack[sp++].booln;
+    }
+    return gFalse;
+  }
+  int popInt()
+  {
+    if (checkUnderflow() && checkType(psInt, psInt)) {
+      return stack[sp++].intg;
+    }
+    return 0;
+  }
+  double popNum()
+  {
+    double ret;
+
+    if (checkUnderflow() && checkType(psInt, psReal)) {
+      ret = (stack[sp].type == psInt) ? (double)stack[sp].intg : stack[sp].real;
+      ++sp;
+      return ret;
+    }
+    return 0;
+  }
   GBool empty() { return sp == psStackSize; }
   GBool topIsInt() { return sp < psStackSize && stack[sp].type == psInt; }
   GBool topTwoAreInts()
@@ -864,88 +928,52 @@ public:
 	     (stack[sp+1].type == psInt || stack[sp+1].type == psReal); }
   void copy(int n);
   void roll(int n, int j);
-  void index(int i);
-  void pop();
+  void index(int i)
+  {
+    if (!checkOverflow()) {
+      return;
+    }
+    --sp;
+    stack[sp] = stack[sp + 1 + i];
+  }
+  void pop()
+  {
+    if (!checkUnderflow()) {
+      return;
+    }
+    ++sp;
+  }
 
 private:
 
-  GBool checkOverflow(int n = 1);
-  GBool checkUnderflow();
-  GBool checkType(PSObjectType t1, PSObjectType t2);
-
+  GBool checkOverflow(int n = 1)
+  {
+    if (sp - n < 0) {
+      error(-1, "Stack overflow in PostScript function");
+      return gFalse;
+    }
+    return gTrue;
+  }
+  GBool checkUnderflow()
+  {
+    if (sp == psStackSize) {
+      error(-1, "Stack underflow in PostScript function");
+      return gFalse;
+    }
+    return gTrue;
+  }
+  GBool checkType(PSObjectType t1, PSObjectType t2)
+  {
+    if (stack[sp].type != t1 && stack[sp].type != t2) {
+      error(-1, "Type mismatch in PostScript function");
+      return gFalse;
+    }
+    return gTrue;
+  }
   PSObject stack[psStackSize];
   int sp;
 };
 
-GBool PSStack::checkOverflow(int n) {
-  if (sp - n < 0) {
-    error(-1, "Stack overflow in PostScript function");
-    return gFalse;
-  }
-  return gTrue;
-}
-
-GBool PSStack::checkUnderflow() {
-  if (sp == psStackSize) {
-    error(-1, "Stack underflow in PostScript function");
-    return gFalse;
-  }
-  return gTrue;
-}
-
-GBool PSStack::checkType(PSObjectType t1, PSObjectType t2) {
-  if (stack[sp].type != t1 && stack[sp].type != t2) {
-    error(-1, "Type mismatch in PostScript function");
-    return gFalse;
-  }
-  return gTrue;
-}
-
-void PSStack::pushBool(GBool booln) {
-  if (checkOverflow()) {
-    stack[--sp].type = psBool;
-    stack[sp].booln = booln;
-  }
-}
-
-void PSStack::pushInt(int intg) {
-  if (checkOverflow()) {
-    stack[--sp].type = psInt;
-    stack[sp].intg = intg;
-  }
-}
-
-void PSStack::pushReal(double real) {
-  if (checkOverflow()) {
-    stack[--sp].type = psReal;
-    stack[sp].real = real;
-  }
-}
-
-GBool PSStack::popBool() {
-  if (checkUnderflow() && checkType(psBool, psBool)) {
-    return stack[sp++].booln;
-  }
-  return gFalse;
-}
-
-int PSStack::popInt() {
-  if (checkUnderflow() && checkType(psInt, psInt)) {
-    return stack[sp++].intg;
-  }
-  return 0;
-}
-
-double PSStack::popNum() {
-  double ret;
-
-  if (checkUnderflow() && checkType(psInt, psReal)) {
-    ret = (stack[sp].type == psInt) ? (double)stack[sp].intg : stack[sp].real;
-    ++sp;
-    return ret;
-  }
-  return 0;
-}
 
 void PSStack::copy(int n) {
   int i;
@@ -978,29 +1006,103 @@ void PSStack::roll(int n, int j) {
   if (n <= 0 || j == 0) {
     return;
   }
-  for (i = 0; i < j; ++i) {
-    obj = stack[sp];
-    for (k = sp; k < sp + n - 1; ++k) {
-      stack[k] = stack[k+1];
+  if (j <= n / 2) {
+    for (i = 0; i < j; ++i) {
+      obj = stack[sp];
+      for (k = sp; k < sp + n - 1; ++k) {
+        stack[k] = stack[k+1];
+      }
+      stack[sp + n - 1] = obj;
     }
-    stack[sp + n - 1] = obj;
+  } else {
+    j = n - j;
+    for (i = 0; i < j; ++i) {
+      obj = stack[sp + n - 1];
+      for (k = sp + n - 1; k > sp; --k) {
+        stack[k] = stack[k-1];
+      }
+      stack[sp] = obj;
+    }
   }
 }
 
-void PSStack::index(int i) {
-  if (!checkOverflow()) {
-    return;
-  }
-  --sp;
-  stack[sp] = stack[sp + 1 + i];
-}
+class PostScriptFunctionKey : public PopplerCacheKey
+{
+  public:
+    PostScriptFunctionKey(int sizeA, double *inA, bool copyA)
+    {
+      init(sizeA, inA, copyA);
+    }
+    
+    PostScriptFunctionKey(const PostScriptFunctionKey &key)
+    {
+      init(key.size, key.in, key.copied);
+    }
+    
+    void init(int sizeA, double *inA, bool copyA)
+    {
+      copied = copyA;
+      size = sizeA;
+      if (copied) {
+        in = new double[size];
+        for (int i = 0; i < size; ++i) in[i] = inA[i];
+      } else {
+        in = inA;
+      }
+    }
+    
+    ~PostScriptFunctionKey()
+    {
+      if (copied) delete[] in;
+    }
+       
+    bool operator==(const PopplerCacheKey &key) const
+    {
+      const PostScriptFunctionKey *k = static_cast<const PostScriptFunctionKey*>(&key);
+      if (size == k->size) {
+        bool equal = true;
+        for (int i = 0; equal && i < size; ++i) {
+          equal = in[i] == k->in[i];
+        }
+        return equal;
+      } else {
+        return false;
+      }
+    }
+  
+    bool copied;
+    int size;
+    double *in;
+};
 
-void PSStack::pop() {
-  if (!checkUnderflow()) {
-    return;
-  }
-  ++sp;
-}
+class PostScriptFunctionItem : public PopplerCacheItem
+{
+  public:
+    PostScriptFunctionItem(int sizeA, double *outA)
+    {
+      init(sizeA, outA);
+    }
+    
+    PostScriptFunctionItem(const PostScriptFunctionItem &item)
+    {
+      init(item.size, item.out);
+    }
+    
+    void init(int sizeA, double *outA)
+    {
+      size = sizeA;
+      out = new double[size];
+      for (int i = 0; i < size; ++i) out[i] = outA[i];
+    }
+    
+    ~PostScriptFunctionItem()
+    {
+      delete[] out;
+    }
+    
+    int size;
+    double *out;
+};
 
 PostScriptFunction::PostScriptFunction(Object *funcObj, Dict *dict) {
   Stream *str;
@@ -1010,7 +1112,9 @@ PostScriptFunction::PostScriptFunction(Object *funcObj, Dict *dict) {
   code = NULL;
   codeString = NULL;
   codeSize = 0;
+  stack = NULL;
   ok = gFalse;
+  cache = new PopplerCache(5);
 
   //----- initialize the generic stuff
   if (!init(dict)) {
@@ -1046,6 +1150,8 @@ PostScriptFunction::PostScriptFunction(Object *funcObj, Dict *dict) {
   str->close();
 
   ok = gTrue;
+  
+  stack = new PSStack();
 
  err2:
   str->close();
@@ -1058,18 +1164,39 @@ PostScriptFunction::PostScriptFunction(PostScriptFunction *func) {
   code = (PSObject *)gmallocn(codeSize, sizeof(PSObject));
   memcpy(code, func->code, codeSize * sizeof(PSObject));
   codeString = func->codeString->copy();
+  stack = new PSStack();
+  memcpy(stack, func->stack, sizeof(PSStack));
+  
+  cache = new PopplerCache(func->cache->size());
+  for (int i = 0; i < func->cache->numberOfItems(); ++i)
+  {
+    PostScriptFunctionKey *key = new PostScriptFunctionKey(*(PostScriptFunctionKey*)func->cache->key(i));
+    PostScriptFunctionItem *item = new PostScriptFunctionItem(*(PostScriptFunctionItem*)func->cache->item(i));
+    cache->put(key, item);
+  }
 }
 
 PostScriptFunction::~PostScriptFunction() {
   gfree(code);
   delete codeString;
+  delete stack;
+  delete cache;
 }
 
 void PostScriptFunction::transform(double *in, double *out) {
-  PSStack *stack;
   int i;
+  
+  PostScriptFunctionKey key(m, in, false);
+  PopplerCacheItem *item = cache->lookup(key);
+  if (item) {
+    PostScriptFunctionItem *it = static_cast<PostScriptFunctionItem *>(item);
+    for (int i = 0; i < n; ++i) {
+      out[i] = it->out[i];
+    }
+    return;
+  }
 
-  stack = new PSStack();
+  stack->clear();
   for (i = 0; i < m; ++i) {
     //~ may need to check for integers here
     stack->pushReal(in[i]);
@@ -1083,10 +1210,14 @@ void PostScriptFunction::transform(double *in, double *out) {
       out[i] = range[i][1];
     }
   }
+
+  PostScriptFunctionKey *newKey = new PostScriptFunctionKey(m, in, true);
+  PostScriptFunctionItem *newItem = new PostScriptFunctionItem(n, out);
+  cache->put(newKey, newItem);
+  
   // if (!stack->empty()) {
   //   error(-1, "Extra values on stack at end of PostScript function");
   // }
-  delete stack;
 }
 
 GBool PostScriptFunction::parseCode(Stream *str, int *codePtr) {
@@ -1113,7 +1244,7 @@ GBool PostScriptFunction::parseCode(Stream *str, int *codePtr) {
       resizeCode(*codePtr);
       if (isReal) {
 	code[*codePtr].type = psReal;
-          code[*codePtr].real = atof(tok->getCString());
+          code[*codePtr].real = gatof(tok->getCString());
       } else {
 	code[*codePtr].type = psInt;
 	code[*codePtr].intg = atoi(tok->getCString());

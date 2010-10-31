@@ -4,6 +4,25 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2007 Ilmari Heikkinen <ilmari.heikkinen@gmail.com>
+// Copyright (C) 2009 Shen Liang <shenzhuxi@gmail.com>
+// Copyright (C) 2009 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2009 Stefan Thomas <thomas@eload24.com>
+// Copyright (C) 2010 Adrian Johnson <ajohnson@redneon.com>
+// Copyright (C) 2010 Harry Roberts <harry.roberts@midnight-labs.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef SPLASHBITMAP_H
 #define SPLASHBITMAP_H
 
@@ -13,6 +32,8 @@
 
 #include "SplashTypes.h"
 #include <stdio.h>
+
+class ImgWriter;
 
 //------------------------------------------------------------------------
 // SplashBitmap
@@ -41,6 +62,10 @@ public:
 
   SplashError writePNMFile(char *fileName);
   SplashError writePNMFile(FILE *f);
+  
+  SplashError writeImgFile(SplashImageFileFormat format, char *fileName, int hDPI, int vDPI);
+  SplashError writeImgFile(SplashImageFileFormat format, FILE *f, int hDPI, int vDPI);
+  SplashError writeImgFile(ImgWriter *writer, FILE *f, int hDPI, int vDPI);
 
   void getPixel(int x, int y, SplashColorPtr pixel);
   Guchar getAlpha(int x, int y);

@@ -8,6 +8,22 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2006 Krzysztof Kowalczyk <kkowalczyk@gmail.com>
+// Copyright (C) 2008-2010 Albert Astals Cid <aacid@kde.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef GooString_H
 #define GooString_H
 
@@ -26,7 +42,7 @@ public:
   GooString();
 
   // Create a string from a C string.
-  GooString(const char *sA);
+  explicit GooString(const char *sA);
 
   // Create a string from <lengthA> chars at <sA>.  This string
   // can contain null characters.
@@ -42,8 +58,8 @@ public:
   GooString* Set(const char *s1, int s1Len=CALC_STRING_LEN, const char *s2=NULL, int s2Len=CALC_STRING_LEN);
 
   // Copy a string.
-  GooString(GooString *str);
-  GooString *copy() { return new GooString(this); }
+  explicit GooString(const GooString *str);
+  GooString *copy() const { return new GooString(this); }
 
   // Concatenate two strings.
   GooString(GooString *str1, GooString *str2);
@@ -82,7 +98,7 @@ public:
   int getLength() { return length; }
 
   // Get C string.
-  char *getCString() { return s; }
+  char *getCString() const { return s; }
 
   // Get <i>th character.
   char getChar(int i) { return s[i]; }
@@ -115,14 +131,23 @@ public:
   GooString *lowerCase();
 
   // Compare two strings:  -1:<  0:=  +1:>
-  int cmp(GooString *str);
-  int cmpN(GooString *str, int n);
-  int cmp(const char *sA);
-  int cmpN(const char *sA, int n);
+  int cmp(GooString *str) const;
+  int cmpN(GooString *str, int n) const;
+  int cmp(const char *sA) const;
+  int cmpN(const char *sA, int n) const;
 
   GBool hasUnicodeMarker(void);
 
+  // Sanitizes the string so that it does
+  // not contain any ( ) < > [ ] { } / %
+  // The postscript mode also has some more strict checks
+  // The caller owns the return value
+  GooString *sanitizedName(GBool psmode);
+
 private:
+  GooString(const GooString &other);
+  GooString& operator=(const GooString &other);
+
   // you can tweak this number for a different speed/memory usage tradeoffs.
   // In libc malloc() rounding is 16 so it's best to choose a value that
   // results in sizeof(GooString) be a multiple of 16.
@@ -147,6 +172,8 @@ private:
 			 char **p, int *len);
   static void formatDouble(double x, char *buf, int bufSize, int prec,
 			   GBool trim, char **p, int *len);
+  static void formatDoubleSmallAware(double x, char *buf, int bufSize, int prec,
+				     GBool trim, char **p, int *len);
 };
 
 #endif

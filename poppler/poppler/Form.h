@@ -2,7 +2,11 @@
 //
 // Form.h
 //
-// Copyright 2006 Julien Rebetez
+// This file is licensed under the GPLv2 or later
+//
+// Copyright 2006 Julien Rebetez <julienr@svn.gnome.org>
+// Copyright 2007, 2008 Carlos Garcia Campos <carlosgc@gnome.org>
+// Copyright 2007-2009 Albert Astals Cid <aacid@kde.org>
 //
 //========================================================================
 
@@ -27,7 +31,7 @@ enum FormFieldType {
   formText,
   formChoice,
   formSignature,
-  formUndef,
+  formUndef
 };
 
 enum FormButtonType {
@@ -90,7 +94,6 @@ public:
 
 protected:
   FormWidget(XRef *xrefA, Object *aobj, unsigned num, Ref aref, FormField *fieldA);
-  FormWidget(FormWidget *dest);
 
   void updateField (const char *key, Object *value);
 

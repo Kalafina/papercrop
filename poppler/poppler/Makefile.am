@@ -13,6 +13,8 @@ splash_libs =					\
 	$(SPLASH_LIBS)				\
 	$(top_builddir)/splash/libsplash.la
 
+endif
+
 if BUILD_POPPLER_QT4
 
 poppler_arthur = libpoppler-arthur.la
@@ -26,8 +28,6 @@ arthur_includes =				\
 
 arthur_libs =					\
 	$(POPPLER_QT4_LIBS)
-
-endif
 
 endif
 
@@ -47,7 +47,9 @@ libpoppler_cairo_la_SOURCES =			\
 	CairoFontEngine.cc			\
 	CairoFontEngine.h			\
 	CairoOutputDev.cc			\
-	CairoOutputDev.h
+	CairoOutputDev.h			\
+	CairoRescaleBox.cc			\
+	CairoRescaleBox.h
 
 endif
 
@@ -62,6 +64,33 @@ libjpeg_libs =					\
 
 endif
 
+if BUILD_LIBPNG
+
+libpng_libs =					\
+	$(LIBPNG_LIBS)
+libpng_includes =				\
+	$(LIBPNG_CFLAGS)
+
+endif
+
+if BUILD_LIBOPENJPEG
+
+libjpeg2000_sources =				\
+	JPEG2000Stream.h			\
+	JPEG2000Stream.cc
+
+libjpeg2000_libs =				\
+	$(LIBOPENJPEG_LIBS)
+
+else
+
+libjpeg2000_sources =				\
+	JPXStream.h			\
+	JPXStream.cc
+
+endif
+
+
 if BUILD_ZLIB
 
 zlib_sources =					\
@@ -70,6 +99,24 @@ zlib_sources =					\
 
 zlib_libs = 					\
 	$(ZLIB_LIBS)
+
+endif
+
+if BUILD_LIBCURL
+
+libcurl_libs =					\
+	$(LIBCURL_LIBS)
+
+libcurl_includes =				\
+	$(LIBCURL_CFLAGS)
+
+curl_headers =					\
+	CurlCachedFile.h			\
+	CurlPDFDocBuilder.h
+
+curl_sources =					\
+	CurlCachedFile.cc			\
+	CurlPDFDocBuilder.cc
 
 endif
 
@@ -87,13 +134,21 @@ abiword_libs =					\
 
 endif
 
+if USE_CMS
+cms_includes = $(LCMS_CFLAGS)
+cms_libs = $(LCMS_LIBS)
+endif
+
 INCLUDES =					\
 	-I$(top_srcdir)				\
 	-I$(top_srcdir)/goo			\
+	$(cms_includes)				\
 	$(splash_includes)			\
 	$(cairo_includes)			\
 	$(arthur_includes)			\
 	$(abiword_includes)			\
+	$(libpng_includes)			\
+	$(libcurl_includes)			\
 	$(FREETYPE_CFLAGS)			\
 	$(FONTCONFIG_CFLAGS)
 
@@ -102,49 +157,60 @@ lib_LTLIBRARIES = libpoppler.la
 noinst_LTLIBRARIES = $(poppler_cairo)		\
 	$(poppler_arthur)
 
+CFLAGS+=$(PTHREAD_CFLAGS)
+CXXFLAGS+=$(PTHREAD_CFLAGS)
+
 libpoppler_la_LIBADD =				\
 	$(top_builddir)/goo/libgoo.la		\
 	$(top_builddir)/fofi/libfofi.la		\
+	$(cms_libs)				\
 	$(splash_libs)				\
 	$(libjpeg_libs)				\
+	$(libpng_libs)				\
 	$(zlib_libs)				\
+	$(libcurl_libs)				\
+	$(libjpeg2000_libs)			\
 	$(abiword_libs)				\
 	$(FREETYPE_LIBS)			\
 	$(FONTCONFIG_LIBS)			\
+	$(PTHREAD_LIBS)				\
 	$(win32_libs)
 
-libpoppler_la_LDFLAGS = -version-info 3:0:0 @create_shared_lib@
+libpoppler_la_LDFLAGS = -version-info 7:0:0 @create_shared_lib@ @auto_import_flags@
 
 if ENABLE_XPDF_HEADERS
 
 poppler_includedir = $(includedir)/poppler
 poppler_include_HEADERS =	\
 	$(splash_headers)	\
+	$(curl_headers)		\
 	Annot.h			\
 	Array.h			\
-	BaseFile.h		\
 	BuiltinFont.h		\
 	BuiltinFontTables.h	\
+	CachedFile.h		\
 	Catalog.h		\
 	CharCodeToUnicode.h	\
 	CMap.h			\
+	DateInfo.h		\
 	Decrypt.h		\
 	Dict.h			\
 	Error.h			\
+	FileSpec.h		\
 	FontEncodingTables.h	\
 	FontInfo.h		\
 	Form.h 			\
-	Function.cc		\
 	Function.h		\
 	Gfx.h			\
 	GfxFont.h		\
 	GfxState.h		\
+	GfxState_helpers.h	\
 	GlobalParams.h		\
 	JArithmeticDecoder.h	\
 	JBIG2Stream.h		\
-	JPXStream.h		\
 	Lexer.h			\
 	Link.h			\
+	LocalPDFDocBuilder.h	\
 	Movie.h                 \
 	NameToCharCode.h	\
 	Object.h		\
@@ -155,10 +221,16 @@ poppler_include_HEADERS =	\
 	PageTransition.h	\
 	Parser.h		\
 	PDFDoc.h		\
+	PDFDocBuilder.h		\
 	PDFDocEncoding.h	\
+	PDFDocFactory.h		\
+	PopplerCache.h		\
 	ProfileData.h		\
 	PreScanOutputDev.h	\
 	PSTokenizer.h		\
+	Rendition.h		\
+	StdinCachedFile.h	\
+	StdinPDFDocBuilder.h	\
 	Stream-CCITT.h		\
 	Stream.h		\
 	UnicodeMap.h		\
@@ -177,8 +249,8 @@ poppler_include_HEADERS =	\
 	SecurityHandler.h	\
 	UTF8.h			\
 	XpdfPluginAPI.h		\
-	Sound.h			\
-	poppler-config.h
+	Sound.h
+nodist_poppler_include_HEADERS = poppler-config.h
 
 endif
 
@@ -188,17 +260,22 @@ libpoppler_la_SOURCES =		\
 	$(arthur_sources)	\
 	$(libjpeg_sources)	\
 	$(zlib_sources)		\
+	$(libjpeg2000_sources)	\
 	$(abiword_sources)	\
+	$(curl_sources)		\
 	Annot.cc		\
 	Array.cc 		\
 	BuiltinFont.cc		\
 	BuiltinFontTables.cc	\
+	CachedFile.cc		\
 	Catalog.cc 		\
 	CharCodeToUnicode.cc	\
 	CMap.cc			\
+	DateInfo.cc		\
 	Decrypt.cc		\
 	Dict.cc 		\
 	Error.cc 		\
+	FileSpec.cc		\
 	FontEncodingTables.cc	\
 	Form.cc 		\
 	FontInfo.cc		\
@@ -209,9 +286,9 @@ libpoppler_la_SOURCES =		\
 	GlobalParams.cc		\
 	JArithmeticDecoder.cc	\
 	JBIG2Stream.cc		\
-	JPXStream.cc		\
 	Lexer.cc 		\
 	Link.cc 		\
+	LocalPDFDocBuilder.cc	\
 	Movie.cc                \
 	NameToCharCode.cc	\
 	Object.cc 		\
@@ -223,10 +300,16 @@ libpoppler_la_SOURCES =		\
 	Parser.cc 		\
 	PDFDoc.cc 		\
 	PDFDocEncoding.cc	\
+	PDFDocFactory.cc	\
+	PopplerCache.cc		\
 	ProfileData.cc		\
 	PreScanOutputDev.cc \
 	PSTokenizer.cc		\
+	Rendition.cc		\
+	StdinCachedFile.cc	\
+	StdinPDFDocBuilder.cc	\
 	Stream.cc 		\
+	strtok_r.cpp		\
 	UnicodeMap.cc		\
 	UnicodeTypeTable.cc	\
 	XRef.cc			\

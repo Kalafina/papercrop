@@ -6,6 +6,22 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// Copyright (C) 2005-2007 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2006 Ed Catmur <ed@catmur.co.uk>
+// Copyright (C) 2007-2008 Carlos Garcia Campos <carlosgc@gnome.org>
+// Copyright (C) 2007 Adrian Johnson <ajohnson@redneon.com>
+// Copyright (C) 2008, 2010 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2010 Brian Ewins <brian.ewins@gmail.com>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef TEXTOUTPUTDEV_H
 #define TEXTOUTPUTDEV_H
 
@@ -339,13 +355,30 @@ public:
   // Get the next TextBlock on the linked list.
   TextBlock *getNext() { return next; }
 
+  void getBBox(double *xMinA, double *yMinA, double *xMaxA, double *yMaxA)
+    { *xMinA = xMin; *yMinA = yMin; *xMaxA = xMax; *yMaxA = yMax; }
+
+  int getLineCount() { return nLines; }
+
 private:
+
+  GBool isBeforeByRule1(TextBlock *blk1);
+  GBool isBeforeByRepeatedRule1(TextBlock *blkList, TextBlock *blk1);
+  GBool isBeforeByRule2(TextBlock *blk1);
+
+  int visitDepthFirst(TextBlock *blkList, int pos1,
+		      TextBlock **sorted, int sortPos,
+		      GBool* visited);
 
   TextPage *page;		// the parent page
   int rot;			// text rotation
   double xMin, xMax;		// bounding box x coordinates
   double yMin, yMax;		// bounding box y coordinates
   double priMin, priMax;	// whitespace bounding box along primary axis
+  double ExMin, ExMax;		// extended bounding box x coordinates
+  double EyMin, EyMax;		// extended bounding box y coordinates
+  int tableId;			// id of table to which this block belongs
+  GBool tableEnd;		// is this block at end of line of actual table
 
   TextPool *pool;		// pool of words (used only until lines
 				//   are built)
@@ -365,6 +398,7 @@ private:
   friend class TextWordList;
   friend class TextPage;
   friend class TextSelectionPainter;
+  friend class TextSelectionDumper;
 };
 
 //------------------------------------------------------------------------
@@ -446,8 +480,8 @@ public:
   // Constructor.
   TextPage(GBool rawOrderA);
 
-  // Destructor.
-  ~TextPage();
+  void incRefCnt();
+  void decRefCnt();
 
   // Start a new page.
   void startPage(GfxState *state);
@@ -540,9 +574,12 @@ public:
 #endif
 
 private:
-
+  
+  // Destructor.
+  ~TextPage();
+  
   void clear();
-  void assignColumns(TextLineFrag *frags, int nFrags, int rot);
+  void assignColumns(TextLineFrag *frags, int nFrags, GBool rot);
   int dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GooString *s);
 
   GBool rawOrder;		// keep text in content stream order
@@ -579,6 +616,8 @@ private:
   GooList *underlines;		// [TextUnderline]
   GooList *links;		// [TextLink]
 
+  int refCnt;
+
   friend class TextLine;
   friend class TextLineFrag;
   friend class TextBlock;
@@ -587,6 +626,33 @@ private:
   friend class TextSelectionPainter;
   friend class TextSelectionDumper;
 };
+
+//------------------------------------------------------------------------
+// ActualText
+//------------------------------------------------------------------------
+
+class ActualText {
+public:
+  // Create an ActualText
+  ActualText(TextPage *out);
+  ~ActualText();
+
+  void addChar(GfxState *state, double x, double y,
+	       double dx, double dy,
+	       CharCode c, int nBytes, Unicode *u, int uLen);
+  void beginMC(Dict *properties);
+  void endMC(GfxState *state);
+
+private:
+  TextPage *text;
+  int actualTextBMCLevel;       // > 0 when inside ActualText span. Incremented
+                                // for each nested BMC inside the span.
+  GooString *actualText;        // replacement text for the span
+  GBool newActualTextSpan;      // true at start of span. used to init the extent
+  double actualText_x, actualText_y; // extent of the text inside the span
+  double actualText_dx, actualText_dy;
+};
+  
 
 //------------------------------------------------------------------------
 // TextOutputDev
@@ -730,12 +796,7 @@ private:
   GBool doHTML;			// extra processing for HTML conversion
   GBool ok;			// set up ok?
 
-  int actualTextBMCLevel;       // > 0 when inside ActualText span. Incremented
-                                // for each nested BMC inside the span.
-  GooString *actualText;        // replacement text for the span
-  GBool newActualTextSpan;      // true at start of span. used to init the extent
-  double actualText_x, actualText_y; // extent of the text inside the span
-  double actualText_dx, actualText_dy;
+  ActualText *actualText;
 };
 
 #endif

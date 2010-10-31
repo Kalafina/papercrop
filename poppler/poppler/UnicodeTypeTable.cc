@@ -6,6 +6,19 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// Copyright (C) 2006, 2007 Ed Catmur <ed@catmur.co.uk>
+// Copyright (C) 2007 Jeff Muizelaar <jeff@infidigm.net>
+// Copyright (C) 2008 Albert Astals Cid <aacid@kde.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <stdlib.h>
 #include "CharTypes.h"
 #include "UnicodeTypeTable.h"
@@ -20,7 +33,7 @@ struct UnicodeCaseTableVector {
   Unicode codes[256];
 };
 
-static UnicodeMapTableEntry typeTable[256] = {
+static const UnicodeMapTableEntry typeTable[256] = {
   { "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNLLLLLLLLLLLLLLLLLLLLLLLLLLNNNNNNLLLLLLLLLLLLLLLLLLLLLLLLLLNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNLNNNNNNNNNNLNNNNLNNNNNLLLLLLLLLLLLLLLLLLLLLLLNLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLNLLLLLLLL", 'X' },
   { NULL, 'L' },
   { "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLNNLLLLLLLNNNNNNNNNNNNNNLLNNNNNNNNNNNNNNLLLLLNNNNNNNNNLNNNNNNNNNNNNNNNNN", 'X' },
@@ -1154,8 +1167,11 @@ Unicode *unicodeNormalizeNFKC(Unicode *in, int len,
 	    break;
 	  u = out[r]; out[r] = out[r - 1]; out[r - 1] = u;
 	  swap = classes[r]; classes[r] = classes[r - 1]; classes[r - 1] = swap;
-	  if (indices)
-	    swap = idx[r]; idx[r] = idx[r - 1]; idx[r - 1] = swap;
+	  if (indices) {
+	    swap = idx[r]; 
+	    idx[r] = idx[r - 1];
+	    idx[r - 1] = swap;
+	  }
 	}
       // canonical compose out[o, p)
       for (q = o + 1; q < p; ++q)

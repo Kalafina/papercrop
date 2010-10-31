@@ -6,6 +6,20 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2008 Koji Otani <sho@bbr.jp>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 static int mapUTF8(Unicode u, char *buf, int bufSize) {
   if        (u <= 0x0000007f) {
     if (bufSize < 1) {
@@ -50,6 +64,20 @@ static int mapUCS2(Unicode u, char *buf, int bufSize) {
     buf[0] = (char)((u >> 8) & 0xff);
     buf[1] = (char)(u & 0xff);
     return 2;
+  } else if (u < 0x110000) {
+    Unicode uu;
+
+    /* using surrogate pair */
+    if (bufSize < 4) {
+      return 0;
+    }
+    uu = ((u - 0x10000) >> 10) + 0xd800;
+    buf[0] = (char)((uu >> 8) & 0xff);
+    buf[1] = (char)(uu & 0xff);
+    uu = (u & 0x3ff)+0xdc00;
+    buf[2] = (char)((uu >> 8) & 0xff);
+    buf[3] = (char)(uu & 0xff);
+    return 4;
   } else {
     return 0;
   }

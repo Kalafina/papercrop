@@ -8,6 +8,22 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2009 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2009 Kovid Goyal <kovid@kovidgoyal.net>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef GFILE_H
 #define GFILE_H
 
@@ -15,7 +31,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 extern "C" {
-#if defined(WIN32)
+#if defined(_WIN32)
 #  include <sys/stat.h>
 #  ifdef FPTEX
 #    include <win32lib.h>
@@ -85,7 +101,7 @@ extern time_t getModTime(char *fileName);
 // should be done to the returned file pointer; the file may be
 // reopened later for reading, but not for writing.  The <mode> string
 // should be "w" or "wb".  Returns true on success.
-extern GBool openTempFile(GooString **name, FILE **f, char *mode, char *ext);
+extern GBool openTempFile(GooString **name, FILE **f, char *mode);
 
 // Execute <command>.  Returns true on success.
 extern GBool executeCommand(char *cmd);
@@ -126,7 +142,7 @@ private:
 
   GooString *path;		// directory path
   GBool doStat;			// call stat() for each entry?
-#if defined(WIN32)
+#if defined(_WIN32)
   WIN32_FIND_DATA ffd;
   HANDLE hnd;
 #elif defined(ACORN)
