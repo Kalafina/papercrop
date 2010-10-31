@@ -6,6 +6,26 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006, 2008, 2009 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2007 Julien Rebetez <julienr@svn.gnome.org>
+// Copyright (C) 2007 Koji Otani <sho@bbr.jp>
+// Copyright (C) 2008 Michael Vrable <mvrable@cs.ucsd.edu>
+// Copyright (C) 2008 Vasile Gaburici <gaburici@cs.umd.edu>
+// Copyright (C) 2010 William Bader <williambader@hotmail.com>
+// Copyright (C) 2010 Jakub Wilk <ubanus@users.sf.net>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #ifdef USE_GCC_PRAGMAS
@@ -24,11 +44,9 @@
 
 //------------------------------------------------------------------------
 
-#define maxUnicodeString 8
-
 struct CharCodeToUnicodeString {
   CharCode c;
-  Unicode u[maxUnicodeString];
+  Unicode *u;
   int len;
 };
 
@@ -104,11 +122,14 @@ CharCodeToUnicode *CharCodeToUnicode::parseUnicodeToUnicode(
   char buf[256];
   char *tok;
   Unicode u0;
-  Unicode uBuf[maxUnicodeString];
+  int uBufSize = 8;
+  Unicode *uBuf = (Unicode *)gmallocn(uBufSize, sizeof(Unicode));
   CharCodeToUnicode *ctu;
   int line, n, i;
+  char *tokptr;
 
   if (!(f = fopen(fileName->getCString(), "r"))) {
+    gfree(uBuf);
     error(-1, "Couldn't open unicodeToUnicode file '%s'",
 	  fileName->getCString());
     return NULL;
@@ -124,16 +145,18 @@ CharCodeToUnicode *CharCodeToUnicode::parseUnicodeToUnicode(
   line = 0;
   while (getLine(buf, sizeof(buf), f)) {
     ++line;
-    if (!(tok = strtok(buf, " \t\r\n")) ||
+    if (!(tok = strtok_r(buf, " \t\r\n", &tokptr)) ||
 	sscanf(tok, "%x", &u0) != 1) {
       error(-1, "Bad line (%d) in unicodeToUnicode file '%s'",
 	    line, fileName->getCString());
       continue;
     }
     n = 0;
-    while (n < maxUnicodeString) {
-      if (!(tok = strtok(NULL, " \t\r\n"))) {
-	break;
+    while ((tok = strtok_r(NULL, " \t\r\n", &tokptr))) {
+      if (n >= uBufSize)
+      {
+        uBufSize += 8;
+        uBuf = (Unicode *)greallocn(uBuf, uBufSize, sizeof(Unicode));
       }
       if (sscanf(tok, "%x", &uBuf[n]) != 1) {
 	error(-1, "Bad line (%d) in unicodeToUnicode file '%s'",
@@ -165,6 +188,7 @@ CharCodeToUnicode *CharCodeToUnicode::parseUnicodeToUnicode(
 	          greallocn(sMapA, sMapSizeA, sizeof(CharCodeToUnicodeString));
       }
       sMapA[sMapLenA].c = u0;
+      sMapA[sMapLenA].u = (Unicode*)gmallocn(n, sizeof(Unicode));
       for (i = 0; i < n; ++i) {
 	sMapA[sMapLenA].u[i] = uBuf[i];
       }
@@ -180,6 +204,7 @@ CharCodeToUnicode *CharCodeToUnicode::parseUnicodeToUnicode(
   ctu = new CharCodeToUnicode(fileName->copy(), mapA, len, gTrue,
 			      sMapA, sMapLenA, sMapSizeA);
   gfree(mapA);
+  gfree(uBuf);
   return ctu;
 }
 
@@ -259,8 +284,11 @@ void CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void *), void *data,
 	}
 	if (!(n1 == 2 + nDigits && tok1[0] == '<' && tok1[n1 - 1] == '>' &&
 	      tok2[0] == '<' && tok2[n2 - 1] == '>')) {
-	  error(-1, "Illegal entry in bfchar block in ToUnicode CMap");
-	  continue;
+	  if (!(n1 == 4 + nDigits && tok1[0] == '<' && tok1[n1 - 1] == '>' && tok1[1] == '0' && tok1[2] == '0' &&
+	        tok2[0] == '<' && tok2[n2 - 1] == '>')) {
+	    error(-1, "Illegal entry in bfchar block in ToUnicode CMap");
+	    continue;
+	  }
 	}
 	tok1[n1 - 1] = tok2[n2 - 1] = '\0';
 	if (sscanf(tok1 + 1, "%x", &code1) != 1) {
@@ -282,8 +310,10 @@ void CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void *), void *data,
 	  error(-1, "Illegal entry in bfrange block in ToUnicode CMap");
 	  break;
 	}
-	if (!(n1 == 2 + nDigits && tok1[0] == '<' && tok1[n1 - 1] == '>' &&
-	      n2 == 2 + nDigits && tok2[0] == '<' && tok2[n2 - 1] == '>')) {
+	if (!(((n1 == 2 + nDigits && tok1[0] == '<' && tok1[n1 - 1] == '>') ||
+	       (n1 == 4 + nDigits && tok1[0] == '<' && tok1[n1 - 1] == '>' && tok1[1] == '0' && tok1[2] == '0')) &&
+	      ((n2 == 2 + nDigits && tok2[0] == '<' && tok2[n2 - 1] == '>') ||
+	       (n2 == 4 + nDigits && tok2[0] == '<' && tok2[n2 - 1] == '>' && tok1[1] == '0' && tok1[2] == '0')))) {
 	  error(-1, "Illegal entry in bfrange block in ToUnicode CMap");
 	  continue;
 	}
@@ -356,7 +386,8 @@ void CharCodeToUnicode::addMapping(CharCode code, char *uStr, int n,
     map[code] = 0;
     sMap[sMapLen].c = code;
     sMap[sMapLen].len = n / 4;
-    for (j = 0; j < sMap[sMapLen].len && j < maxUnicodeString; ++j) {
+    sMap[sMapLen].u = (Unicode*)gmallocn(sMap[sMapLen].len, sizeof(Unicode));
+    for (j = 0; j < sMap[sMapLen].len; ++j) {
       strncpy(uHex, uStr + j*4, 4);
       uHex[4] = '\0';
       if (sscanf(uHex, "%x", &sMap[sMapLen].u[j]) != 1) {
@@ -412,6 +443,7 @@ CharCodeToUnicode::~CharCodeToUnicode() {
   }
   gfree(map);
   if (sMap) {
+    for (int i = 0; i < sMapLen; ++i) gfree(sMap[i].u);
     gfree(sMap);
   }
 #if MULTITHREADED
@@ -456,6 +488,7 @@ void CharCodeToUnicode::setMapping(CharCode c, Unicode *u, int len) {
   } else {
     for (i = 0; i < sMapLen; ++i) {
       if (sMap[i].c == c) {
+	gfree(sMap[i].u);
 	break;
       }
     }
@@ -470,28 +503,27 @@ void CharCodeToUnicode::setMapping(CharCode c, Unicode *u, int len) {
     map[c] = 0;
     sMap[i].c = c;
     sMap[i].len = len;
-    for (j = 0; j < len && j < maxUnicodeString; ++j) {
+    sMap[i].u = (Unicode*)gmallocn(len, sizeof(Unicode));
+    for (j = 0; j < len; ++j) {
       sMap[i].u[j] = u[j];
     }
   }
 }
 
-int CharCodeToUnicode::mapToUnicode(CharCode c, Unicode *u, int size) {
-  int i, j;
+int CharCodeToUnicode::mapToUnicode(CharCode c, Unicode **u) {
+  int i;
 
   if (c >= mapLen) {
     return 0;
   }
   if (map[c]) {
-    u[0] = map[c];
+    *u = &map[c];
     return 1;
   }
-  for (i = 0; i < sMapLen; ++i) {
+  for (i = sMapLen - 1; i >= 0; --i) { // in reverse so CMap takes precedence
     if (sMap[i].c == c) {
-      for (j = 0; j < sMap[i].len && j < size; ++j) {
-	u[j] = sMap[i].u[j];
-      }
-      return j;
+      *u = sMap[i].u;
+      return sMap[i].len;
     }
   }
   return 0;

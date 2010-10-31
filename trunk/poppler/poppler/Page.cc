@@ -6,6 +6,30 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2005 Jeff Muizelaar <jeff@infidigm.net>
+// Copyright (C) 2005-2009 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2006-2008 Pino Toscano <pino@kde.org>
+// Copyright (C) 2006 Nickolay V. Shmyrev <nshmyrev@yandex.ru>
+// Copyright (C) 2006 Scott Turner <scotty1024@mac.com>
+// Copyright (C) 2006-2009 Carlos Garcia Campos <carlosgc@gnome.org>
+// Copyright (C) 2007 Julien Rebetez <julienr@svn.gnome.org>
+// Copyright (C) 2008 Iñigo Martínez <inigomartinez@gmail.com>
+// Copyright (C) 2008 Brad Hards <bradh@kde.org>
+// Copyright (C) 2008 Ilya Gorenbein <igorenbein@finjan.com>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #ifdef USE_GCC_PRAGMAS
@@ -228,20 +252,24 @@ GBool PageAttrs::readBox(Dict *dict, char *key, PDFRectangle *box) {
 // Page
 //------------------------------------------------------------------------
 
-Page::Page(XRef *xrefA, int numA, Dict *pageDict, PageAttrs *attrsA, Form *form) {
+Page::Page(XRef *xrefA, int numA, Dict *pageDict, Ref pageRefA, PageAttrs *attrsA, Form *form) {
   Object tmp;
 	
   ok = gTrue;
   xref = xrefA;
   num = numA;
   duration = -1;
+  pageWidgets = NULL;
+
+  pageObj.initDict(pageDict);
+  pageRef = pageRefA;
 
   // get attributes
   attrs = attrsA;
 
   // transtion
   pageDict->lookupNF("Trans", &trans);
-  if (!(trans.isDict() || trans.isNull())) {
+  if (!(trans.isRef() || trans.isDict() || trans.isNull())) {
     error(-1, "Page transition object (page %d) is wrong type (%s)",
 	  num, trans.getTypeName());
     trans.free();
@@ -309,8 +337,12 @@ Page::Page(XRef *xrefA, int numA, Dict *pageDict, PageAttrs *attrsA, Form *form)
 Page::~Page() {
   delete pageWidgets;
   delete attrs;
+  pageObj.free();
   annots.free();
   contents.free();
+  trans.free();
+  thumb.free();
+  actions.free();
 }
 
 Annots *Page::getAnnots(Catalog *catalog) {
@@ -320,6 +352,34 @@ Annots *Page::getAnnots(Catalog *catalog) {
   annots = new Annots(xref, catalog, getAnnots(&obj));
   obj.free();
   return annots;
+}
+
+void Page::addAnnot(Annot *annot) {
+  Object obj1;
+  Object tmp;
+  Ref annotRef = annot->getRef ();
+
+  if (annots.isNull()) {
+    Ref annotsRef;
+    // page doesn't have annots array,
+    // we have to create it
+
+    obj1.initArray(xref);
+    obj1.arrayAdd(tmp.initRef (annotRef.num, annotRef.gen));
+    tmp.free();
+
+    annotsRef = xref->addIndirectObject (&obj1);
+    annots.initRef(annotsRef.num, annotsRef.gen);
+    pageObj.dictSet ("Annots", &annots);
+    xref->setModifiedObject (&pageObj, pageRef);
+  } else {
+    getAnnots(&obj1);
+    if (obj1.isArray()) {
+      obj1.arrayAdd (tmp.initRef (annotRef.num, annotRef.gen));
+      xref->setModifiedObject (&obj1, annots.getRef());
+    }
+    obj1.free();
+  }
 }
 
 Links *Page::getLinks(Catalog *catalog) {
@@ -455,12 +515,8 @@ GBool Page::loadThumb(unsigned char **data_out,
 		      int *width_out, int *height_out,
 		      int *rowstride_out)
 {
-  ImageStream *imgstr;
-  unsigned char *pixbufdata;
   unsigned int pixbufdatasize;
-  int row, col;
   int width, height, bits;
-  unsigned char *p;
   Object obj1, fetched_thumb;
   Dict *dict;
   GfxColorSpace *colorSpace;
@@ -470,7 +526,7 @@ GBool Page::loadThumb(unsigned char **data_out,
 
   /* Get stream dict */
   thumb.fetch(xref, &fetched_thumb);
-  if (fetched_thumb.isNull()) {
+  if (!fetched_thumb.isStream()) {
     fetched_thumb.free();
     return gFalse;
   }
@@ -498,7 +554,7 @@ GBool Page::loadThumb(unsigned char **data_out,
     obj1.free ();
     dict->lookup ("CS", &obj1);
   }
-  colorSpace = GfxColorSpace::parse(&obj1);
+  colorSpace = GfxColorSpace::parse(&obj1, NULL);
   obj1.free();
   if (!colorSpace) {
     fprintf (stderr, "Error: Cannot parse color space\n");
@@ -518,30 +574,33 @@ GBool Page::loadThumb(unsigned char **data_out,
     goto fail1;
   }
 
-  pixbufdata = (unsigned char *) gmalloc(pixbufdatasize);
-  p = pixbufdata;
-  imgstr = new ImageStream(str, width,
+  if (data_out) {
+    unsigned char *pixbufdata = (unsigned char *) gmalloc(pixbufdatasize);
+    unsigned char *p = pixbufdata;
+    ImageStream *imgstr = new ImageStream(str, width,
 			   colorMap->getNumPixelComps(),
 			   colorMap->getBits());
-  imgstr->reset();
-  for (row = 0; row < height; ++row) {
-    for (col = 0; col < width; ++col) {
-      Guchar pix[gfxColorMaxComps];
-      GfxRGB rgb;
+    imgstr->reset();
+    for (int row = 0; row < height; ++row) {
+      for (int col = 0; col < width; ++col) {
+        Guchar pix[gfxColorMaxComps];
+        GfxRGB rgb;
 
-      imgstr->getPixel(pix);
-      colorMap->getRGB(pix, &rgb);
+        imgstr->getPixel(pix);
+        colorMap->getRGB(pix, &rgb);
 
-      *p++ = colToByte(rgb.r);
-      *p++ = colToByte(rgb.g);
-      *p++ = colToByte(rgb.b);
+        *p++ = colToByte(rgb.r);
+        *p++ = colToByte(rgb.g);
+        *p++ = colToByte(rgb.b);
+      }
     }
+    *data_out = pixbufdata;
+    imgstr->close();
+    delete imgstr;
   }
 
   success = gTrue;
 
-  if (data_out)
-    *data_out = pixbufdata;
   if (width_out)
     *width_out = width;
   if (height_out)
@@ -549,7 +608,6 @@ GBool Page::loadThumb(unsigned char **data_out,
   if (rowstride_out)
     *rowstride_out = width * 3;
 
-  delete imgstr;
   delete colorMap;
  fail1:
   fetched_thumb.free();

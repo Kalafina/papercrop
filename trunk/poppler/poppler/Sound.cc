@@ -1,5 +1,6 @@
 /* Sound.cc - an object that holds the sound structure
  * Copyright (C) 2006-2007, Pino Toscano <pino@kde.org>
+ * Copyright (C) 2009, Albert Astals Cid <aacid@kde.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +21,7 @@
 #include "Object.h"
 #include "Sound.h"
 #include "Stream.h"
-#include "Link.h"
+#include "FileSpec.h"
 
 Sound *Sound::parseSound(Object *obj)
 {
@@ -65,9 +66,13 @@ Sound::Sound(Object *obj, bool readAttrs)
     Dict *dict = streamObj->getStream()->getDict();
     dict->lookup("F", &tmp);
     if (!tmp.isNull()) {
+      Object obj1;
       // valid 'F' key -> external file
       kind = soundExternal;
-      fileName = LinkAction::getFileSpecName(&tmp);
+      if (getFileSpecNameForPlatform (&tmp, &obj1)) {
+        fileName = obj1.getString()->copy();
+        obj1.free();
+      }
     } else {
       // no file specification, then the sound data have to be
       // extracted from the stream

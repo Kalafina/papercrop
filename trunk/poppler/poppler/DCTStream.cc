@@ -2,7 +2,12 @@
 //
 // DCTStream.cc
 //
-// Copyright 1996-2003 Glyph & Cog, LLC
+// This file is licensed under the GPLv2 or later
+//
+// Copyright 2005 Jeff Muizelaar <jeff@infidigm.net>
+// Copyright 2005-2010 Albert Astals Cid <aacid@kde.org>
+// Copyright 2009 Ryszard Trojnacki <rysiek@menel.com>
+// Copyright 2010 Carlos Garcia Campos <carlosgc@gnome.org>
 //
 //========================================================================
 
@@ -54,6 +59,7 @@ static void str_term_source(j_decompress_ptr cinfo)
 
 DCTStream::DCTStream(Stream *strA, int colorXformA) :
   FilterStream(strA) {
+  colorXform = colorXformA;
   init();
 }
 
@@ -62,15 +68,16 @@ DCTStream::~DCTStream() {
   delete str;
 }
 
-void exitErrorHandler(jpeg_common_struct *error) {
+static void exitErrorHandler(jpeg_common_struct *error) {
   j_decompress_ptr cinfo = (j_decompress_ptr)error;
   str_src_mgr * src = (struct str_src_mgr *)cinfo->src;
-  src->abort = true;
+  longjmp(src->setjmp_buffer, 1);
 }
 
 void DCTStream::init()
 {
-  jpeg_create_decompress(&cinfo);
+  jpeg_std_error(&jerr);
+  jerr.error_exit = &exitErrorHandler;
   src.pub.init_source = str_init_source;
   src.pub.fill_input_buffer = str_fill_input_buffer;
   src.pub.skip_input_data = str_skip_input_data;
@@ -80,12 +87,12 @@ void DCTStream::init()
   src.pub.next_input_byte = NULL;
   src.str = str;
   src.index = 0;
-  src.abort = false;
-  cinfo.src = (jpeg_source_mgr *)&src;
-  jpeg_std_error(&jerr);
-  jerr.error_exit = &exitErrorHandler;
+  current = NULL;
+  limit = NULL;
+  
   cinfo.err = &jerr;
-  x = 0;
+  jpeg_create_decompress(&cinfo);
+  cinfo.src = (jpeg_source_mgr *)&src;
   row_buffer = NULL;
 }
 
@@ -115,7 +122,6 @@ void DCTStream::reset() {
       if (c == -1)
       {
         error(-1, "Could not find start of jpeg data");
-        src.abort = true;
         return;
       }
       if (c != 0xFF) c = 0;
@@ -132,40 +138,67 @@ void DCTStream::reset() {
     }
   }
 
-  jpeg_read_header(&cinfo, TRUE);
-  if (src.abort) return;
+  if (!setjmp(src.setjmp_buffer)) {
+    jpeg_read_header(&cinfo, TRUE);
 
-  jpeg_start_decompress(&cinfo);
+    // figure out color transform
+    if (colorXform == -1 && !cinfo.saw_Adobe_marker) {
+      if (cinfo.num_components == 3) {
+        if (cinfo.saw_JFIF_marker) {
+	  colorXform = 1;
+        } else if (cinfo.cur_comp_info[0]->component_id == 82 &&
+		   cinfo.cur_comp_info[1]->component_id == 71 &&
+		   cinfo.cur_comp_info[2]->component_id == 66) { // ASCII "RGB"
+	  colorXform = 0;
+	} else {
+	  colorXform = 1;
+	}
+      } else {
+        colorXform = 0;
+      }
+    } else if (cinfo.saw_Adobe_marker) {
+      colorXform = cinfo.Adobe_transform;
+    }
 
-  row_stride = cinfo.output_width * cinfo.output_components;
-  row_buffer = cinfo.mem->alloc_sarray((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+    switch (cinfo.num_components) {
+    case 3:
+	    cinfo.jpeg_color_space = colorXform ? JCS_YCbCr : JCS_RGB;
+	    break;
+    case 4:
+	    cinfo.jpeg_color_space = colorXform ? JCS_YCCK : JCS_CMYK;
+	    break;
+    }
+
+    jpeg_start_decompress(&cinfo);
+
+    row_stride = cinfo.output_width * cinfo.output_components;
+    row_buffer = cinfo.mem->alloc_sarray((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+  }
 }
 
 int DCTStream::getChar() {
-  if (src.abort) return EOF;
-  
   int c;
 
-  if (x == 0) {
+  if (current == limit) {
     if (cinfo.output_scanline < cinfo.output_height)
     {
-      if (!jpeg_read_scanlines(&cinfo, row_buffer, 1)) return EOF;
+      if (!setjmp(src.setjmp_buffer))
+      {
+        if (!jpeg_read_scanlines(&cinfo, row_buffer, 1)) return EOF;
+        current = &row_buffer[0][0];
+        limit = &row_buffer[0][(cinfo.output_width - 1) * cinfo.output_components] + cinfo.output_components;
+      }
+      else return EOF;
     }
     else return EOF;
   }
-  c = row_buffer[0][x];
-  x++;
-  if (x == cinfo.output_width * cinfo.output_components)
-    x = 0;
+  c = *current;
+  ++current;
   return c;
 }
 
 int DCTStream::lookChar() {
-  if (src.abort) return EOF;
-  
-  int c;
-  c = row_buffer[0][x];
-  return c;
+  return *current;
 }
 
 GooString *DCTStream::getPSFilter(int psLevel, char *indent) {

@@ -1,3 +1,25 @@
+//========================================================================
+//
+// FontInfo.h
+//
+// Copyright (C) 2005 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2005-2008 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2005 Brad Hards <bradh@frogmouth.net>
+// Copyright (C) 2009 Pino Toscano <pino@kde.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
+//========================================================================
+//
+// Based on code from pdffonts.cc
+//
+// Copyright 2001-2007 Glyph & Cog, LLC
+//
+//========================================================================
+
 #ifndef FONT_INFO_H
 #define FONT_INFO_H
 
@@ -34,6 +56,8 @@ public:
   GBool      getEmbedded()  { return emb; };
   GBool      getSubset()    { return subset; };
   GBool      getToUnicode() { return hasToUnicode; };
+  Ref        getRef()       { return fontRef; };
+  Ref        getEmbRef()    { return embRef; };
 
 private:
   GooString *name;
@@ -43,13 +67,14 @@ private:
   GBool subset;
   GBool hasToUnicode;
   Ref fontRef;
+  Ref embRef;
 };
 
 class FontInfoScanner {
 public:
 
   // Constructor.
-  FontInfoScanner(PDFDoc *doc);
+  FontInfoScanner(PDFDoc *doc, int firstPage = 0);
   // Destructor.
   ~FontInfoScanner();
 
@@ -62,6 +87,10 @@ private:
   Ref *fonts;
   int fontsLen;
   int fontsSize;
+
+  Ref *visitedXObjects;
+  int visitedXObjectsLen;
+  int visitedXObjectsSize;
 
   void scanFonts(Dict *resDict, GooList *fontsList);
 };

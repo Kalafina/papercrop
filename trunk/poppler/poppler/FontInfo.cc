@@ -1,3 +1,26 @@
+//========================================================================
+//
+// FontInfo.cc
+//
+// Copyright (C) 2005, 2006 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2005-2008 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2005 Brad Hards <bradh@frogmouth.net>
+// Copyright (C) 2006 Kouhei Sutou <kou@cozmixng.org>
+// Copyright (C) 2009 Pino Toscano <pino@kde.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
+//========================================================================
+//
+// Based on code from pdffonts.cc
+//
+// Copyright 2001-2007 Glyph & Cog, LLC
+//
+//========================================================================
+
 #include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,15 +36,18 @@
 #include "PDFDoc.h"
 #include "FontInfo.h"
 
-FontInfoScanner::FontInfoScanner(PDFDoc *docA) {
+FontInfoScanner::FontInfoScanner(PDFDoc *docA, int firstPage) {
   doc = docA;
-  currentPage = 1;
+  currentPage = firstPage + 1;
   fonts = NULL;
   fontsLen = fontsSize = 0;
+  visitedXObjects = NULL;
+  visitedXObjectsLen = visitedXObjectsSize = 0;
 }
 
 FontInfoScanner::~FontInfoScanner() {
   gfree(fonts);
+  gfree(visitedXObjects);
 }
 
 GooList *FontInfoScanner::scan(int nPages) {
@@ -69,7 +95,7 @@ GooList *FontInfoScanner::scan(int nPages) {
 }
 
 void FontInfoScanner::scanFonts(Dict *resDict, GooList *fontsList) {
-  Object obj1, obj2, xObjDict, xObj, resObj;
+  Object obj1, obj2, xObjDict, xObj, xObj2, resObj;
   Ref r;
   GfxFontDict *gfxFontDict;
   GfxFont *font;
@@ -122,15 +148,40 @@ void FontInfoScanner::scanFonts(Dict *resDict, GooList *fontsList) {
   resDict->lookup("XObject", &xObjDict);
   if (xObjDict.isDict()) {
     for (i = 0; i < xObjDict.dictGetLength(); ++i) {
-      xObjDict.dictGetVal(i, &xObj);
-      if (xObj.isStream()) {
-	xObj.streamGetDict()->lookup("Resources", &resObj);
-	if (resObj.isDict() && resObj.getDict() != resDict) {
-	  scanFonts(resObj.getDict(), fontsList);
-	}
-	resObj.free();
+      xObjDict.dictGetValNF(i, &xObj);
+      if (xObj.isRef()) {
+        GBool alreadySeen = gFalse;
+        // check for an already-seen XObject
+        for (int k = 0; k < visitedXObjectsLen; ++k) {
+          if (xObj.getRef().num == visitedXObjects[k].num &&
+              xObj.getRef().gen == visitedXObjects[k].gen) {
+            alreadySeen = gTrue;
+          }
+        }
+
+        if (alreadySeen) {
+          xObj.free();
+          continue;
+        }
+
+        if (visitedXObjectsLen == visitedXObjectsSize) {
+          visitedXObjectsSize += 32;
+          visitedXObjects = (Ref *)grealloc(visitedXObjects, visitedXObjectsSize * sizeof(Ref));
+        }
+        visitedXObjects[visitedXObjectsLen++] = xObj.getRef();
+      }
+
+      xObj.fetch(doc->getXRef(), &xObj2);
+
+      if (xObj2.isStream()) {
+        xObj2.streamGetDict()->lookup("Resources", &resObj);
+        if (resObj.isDict() && resObj.getDict() != resDict) {
+          scanFonts(resObj.getDict(), fontsList);
+        }
+        resObj.free();
       }
       xObj.free();
+      xObj2.free();
     }
   }
   xObjDict.free();
@@ -138,7 +189,6 @@ void FontInfoScanner::scanFonts(Dict *resDict, GooList *fontsList) {
 
 FontInfo::FontInfo(GfxFont *font, PDFDoc *doc) {
   GooString *origName;
-  Ref embRef;
   Object fontObj, toUnicodeObj;
   int i;
 
@@ -203,6 +253,7 @@ FontInfo::FontInfo(FontInfo& f) {
   subset = f.subset;
   hasToUnicode = f.hasToUnicode;
   fontRef = f.fontRef;
+  embRef = f.embRef;
 }
 
 FontInfo::~FontInfo() {

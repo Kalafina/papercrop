@@ -6,6 +6,25 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006, 2008 Pino Toscano <pino@kde.org>
+// Copyright (C) 2007,2010 Carlos Garcia Campos <carlosgc@gnome.org>
+// Copyright (C) 2008 Hugo Mercier <hmercier31@gmail.com>
+// Copyright (C) 2008, 2009 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2009 Kovid Goyal <kovid@kovidgoyal.net>
+// Copyright (C) 2009 Ilya Gorenbein <igorenbein@finjan.com>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #ifdef USE_GCC_PRAGMAS
@@ -16,13 +35,15 @@
 #include <string.h>
 #include "goo/gmem.h"
 #include "goo/GooString.h"
+#include "goo/GooList.h"
 #include "Error.h"
 #include "Object.h"
 #include "Array.h"
 #include "Dict.h"
 #include "Link.h"
 #include "Sound.h"
-#include "Movie.h"
+#include "FileSpec.h"
+#include "Rendition.h"
 
 //------------------------------------------------------------------------
 // LinkAction
@@ -93,6 +114,16 @@ LinkAction *LinkAction::parseAction(Object *obj, GooString *baseURI) {
   } else if (obj2.isName("Sound")) {
     action = new LinkSound(obj);
 
+  // JavaScript action
+  } else if (obj2.isName("JavaScript")) {
+    obj->dictLookup("JS", &obj3);
+    action = new LinkJavaScript(&obj3);
+    obj3.free();
+
+  // Set-OCG-State action
+  } else if (obj2.isName("SetOCGState")) {
+    action = new LinkOCGState(obj);
+
   // unknown action
   } else if (obj2.isName()) {
     action = new LinkUnknown(obj2.getName());
@@ -113,90 +144,6 @@ LinkAction *LinkAction::parseAction(Object *obj, GooString *baseURI) {
   return action;
 }
 
-GooString *LinkAction::getFileSpecName(Object *fileSpecObj) {
-  GooString *name;
-  Object obj1;
-
-  name = NULL;
-
-  // string
-  if (fileSpecObj->isString()) {
-    name = fileSpecObj->getString()->copy();
-
-  // dictionary
-  } else if (fileSpecObj->isDict()) {
-#ifdef WIN32
-    if (!fileSpecObj->dictLookup("DOS", &obj1)->isString()) {
-#else
-    if (!fileSpecObj->dictLookup("Unix", &obj1)->isString()) {
-#endif
-      obj1.free();
-      fileSpecObj->dictLookup("F", &obj1);
-    }
-    if (obj1.isString()) {
-      name = obj1.getString()->copy();
-    } else {
-      error(-1, "Illegal file spec in link");
-    }
-    obj1.free();
-
-  // error
-  } else {
-    error(-1, "Illegal file spec in link");
-  }
-
-  // system-dependent path manipulation
-  if (name) {
-#ifdef WIN32
-    int i, j;
-
-    // "//...."             --> "\...."
-    // "/x/...."            --> "x:\...."
-    // "/server/share/...." --> "\\server\share\...."
-    // convert escaped slashes to slashes and unescaped slashes to backslashes
-    i = 0;
-    if (name->getChar(0) == '/') {
-      if (name->getLength() >= 2 && name->getChar(1) == '/') {
-	name->del(0);
-	i = 0;
-      } else if (name->getLength() >= 2 &&
-		 ((name->getChar(1) >= 'a' && name->getChar(1) <= 'z') ||
-		  (name->getChar(1) >= 'A' && name->getChar(1) <= 'Z')) &&
-		 (name->getLength() == 2 || name->getChar(2) == '/')) {
-	name->setChar(0, name->getChar(1));
-	name->setChar(1, ':');
-	i = 2;
-      } else {
-	for (j = 2; j < name->getLength(); ++j) {
-	  if (name->getChar(j-1) != '\\' &&
-	      name->getChar(j) == '/') {
-	    break;
-	  }
-	}
-	if (j < name->getLength()) {
-	  name->setChar(0, '\\');
-	  name->insert(0, '\\');
-	  i = 2;
-	}
-      }
-    }
-    for (; i < name->getLength(); ++i) {
-      if (name->getChar(i) == '/') {
-	name->setChar(i, '\\');
-      } else if (name->getChar(i) == '\\' &&
-		 i+1 < name->getLength() &&
-		 name->getChar(i+1) == '/') {
-	name->del(i);
-      }
-    }
-#else
-    // no manipulation needed for Unix
-#endif
-  }
-
-  return name;
-}
-
 //------------------------------------------------------------------------
 // LinkDest
 //------------------------------------------------------------------------
@@ -206,6 +153,7 @@ LinkDest::LinkDest(Array *a) {
 
   // initialize fields
   left = bottom = right = top = zoom = 0;
+  changeLeft = changeTop = changeZoom = gFalse;
   ok = gFalse;
 
   // get page
@@ -477,11 +425,16 @@ LinkGoTo::~LinkGoTo() {
 //------------------------------------------------------------------------
 
 LinkGoToR::LinkGoToR(Object *fileSpecObj, Object *destObj) {
+  fileName = NULL;
   dest = NULL;
   namedDest = NULL;
 
   // get file name
-  fileName = getFileSpecName(fileSpecObj);
+  Object obj1;
+  if (getFileSpecNameForPlatform (fileSpecObj, &obj1)) {
+    fileName = obj1.getString()->copy();
+    obj1.free();
+  }
 
   // named destination
   if (destObj->isName()) {
@@ -518,20 +471,26 @@ LinkGoToR::~LinkGoToR() {
 //------------------------------------------------------------------------
 
 LinkLaunch::LinkLaunch(Object *actionObj) {
-  Object obj1, obj2;
+  Object obj1, obj2, obj3;
 
   fileName = NULL;
   params = NULL;
 
   if (actionObj->isDict()) {
     if (!actionObj->dictLookup("F", &obj1)->isNull()) {
-      fileName = getFileSpecName(&obj1);
+      if (getFileSpecNameForPlatform (&obj1, &obj3)) {
+	fileName = obj3.getString()->copy();
+	obj3.free();
+      }
     } else {
       obj1.free();
-#ifdef WIN32
+#ifdef _WIN32
       if (actionObj->dictLookup("Win", &obj1)->isDict()) {
 	obj1.dictLookup("F", &obj2);
-	fileName = getFileSpecName(&obj2);
+	if (getFileSpecNameForPlatform (&obj2, &obj3)) {
+	  fileName = obj3.getString()->copy();
+	  obj3.free();
+	}
 	obj2.free();
 	if (obj1.dictLookup("P", &obj2)->isString()) {
 	  params = obj2.getString()->copy();
@@ -545,7 +504,10 @@ LinkLaunch::LinkLaunch(Object *actionObj) {
       //~ just like the Win dictionary until they say otherwise.
       if (actionObj->dictLookup("Unix", &obj1)->isDict()) {
 	obj1.dictLookup("F", &obj2);
-	fileName = getFileSpecName(&obj2);
+	if (getFileSpecNameForPlatform (&obj2, &obj3)) {
+	  fileName = obj3.getString()->copy();
+	  obj3.free();
+	}
 	obj2.free();
 	if (obj1.dictLookup("P", &obj2)->isString()) {
 	  params = obj2.getString()->copy();
@@ -728,54 +690,170 @@ LinkSound::~LinkSound() {
 // LinkRendition
 //------------------------------------------------------------------------
 
-LinkRendition::LinkRendition(Object *Obj) {
+LinkRendition::LinkRendition(Object *obj) {
   operation = -1;
-  movie = NULL;
-  screenRef.num = -1;
+  media = NULL;
+  js = NULL;
 
-  if (Obj->isDict())
-  {
+  if (obj->isDict()) {
     Object tmp;
 
-    if (Obj->dictLookup("OP", &tmp)->isNull()) {
-      error(-1, "Rendition action : no /OP field defined");
-      tmp.free();
-    } else {
-    
-      operation = tmp.getInt();
-      tmp.free();
-
-      // screen annotation reference
-      Obj->dictLookupNF("AN", &tmp);
-      if (tmp.isRef()) {
-	screenRef = tmp.getRef();
-      }
-      tmp.free();
-
-      // retrieve rendition object
-      Obj->dictLookup("R", &renditionObj);
-      if (renditionObj.isDict()) {
-
-	movie = new Movie();
-	movie->parseMediaRendition(&renditionObj);
-	
-	if (screenRef.num == -1) {
-	  error(-1, "Action Rendition : Rendition without Screen Annotation !");
+    if (!obj->dictLookup("JS", &tmp)->isNull()) {
+      if (tmp.isString()) {
+        js = new GooString(tmp.getString());
+      } else if (tmp.isStream()) {
+        Stream *stream = tmp.getStream();
+	js = new GooString();
+	stream->reset();
+	int i;
+	while ((i = stream->getChar()) != EOF) {
+	  js->append((char)i);
 	}
-      }      
-
+      } else {
+        error(-1, "Invalid Rendition Action: JS not string or stream");
+      }
     }
-  }
+    tmp.free();
 
+    if (obj->dictLookup("OP", &tmp)->isInt()) {
+      operation = tmp.getInt();
+      if (!js && (operation < 0 || operation > 4)) {
+        error (-1, "Invalid Rendition Action: unrecognized operation valued: %d", operation);
+      } else {
+        Object obj1;
+
+        // retrieve rendition object
+        if (obj->dictLookup("R", &renditionObj)->isDict()) {
+          media = new MediaRendition(&renditionObj);
+	} else if (operation == 0 || operation == 4) {
+          error (-1, "Invalid Rendition Action: no R field with op = %d", operation);
+	  renditionObj.free();
+	}
+
+	if (!obj->dictLookupNF("AN", &screenRef)->isRef() && operation >= 0 && operation <= 4) {
+	  error (-1, "Invalid Rendition Action: no AN field with op = %d", operation);
+	  screenRef.free();
+	}
+      }
+    } else if (!js) {
+      error(-1, "Invalid Rendition action: no OP or JS field defined");
+    }
+    tmp.free();
+  }
 }
 
 LinkRendition::~LinkRendition() {
   renditionObj.free();
+  screenRef.free();
 
-  if (movie)
-    delete movie;
+  if (js)
+    delete js;
+  if (media)
+    delete media;
 }
 
+
+//------------------------------------------------------------------------
+// LinkJavaScript
+//------------------------------------------------------------------------
+
+LinkJavaScript::LinkJavaScript(Object *jsObj) {
+  js = NULL;
+
+  if (jsObj->isString()) {
+    js = new GooString(jsObj->getString());
+  }
+  else if (jsObj->isStream()) {
+    Stream *stream = jsObj->getStream();
+    js = new GooString();
+    stream->reset();
+    int i;
+    while ((i = stream->getChar()) != EOF) {
+      js->append((char)i);
+    }
+  }
+}
+
+LinkJavaScript::~LinkJavaScript() {
+  if (js) {
+    delete js;
+  }
+}
+
+//------------------------------------------------------------------------
+// LinkOCGState
+//------------------------------------------------------------------------
+LinkOCGState::LinkOCGState(Object *obj) {
+  Object obj1;
+
+  stateList = new GooList();
+  preserveRB = gTrue;
+
+  if (obj->dictLookup("State", &obj1)->isArray()) {
+    StateList *stList = NULL;
+
+    for (int i = 0; i < obj1.arrayGetLength(); ++i) {
+      Object obj2;
+
+      obj1.arrayGetNF(i, &obj2);
+      if (obj2.isName()) {
+        if (stList)
+	  stateList->append(stList);
+
+	char *name = obj2.getName();
+	stList = new StateList();
+	stList->list = new GooList();
+	if (!strcmp (name, "ON")) {
+	  stList->st = On;
+	} else if (!strcmp (name, "OFF")) {
+	  stList->st = Off;
+	} else if (!strcmp (name, "Toggle")) {
+	  stList->st = Toggle;
+	} else {
+	  error (-1, "Invalid name '%s' in OCG Action state array", name);
+	  delete stList;
+	  stList = NULL;
+	}
+      } else if (obj2.isRef()) {
+        if (stList) {
+	  Ref ocgRef = obj2.getRef();
+	  Ref *item = new Ref();
+	  item->num = ocgRef.num;
+	  item->gen = ocgRef.gen;
+	  stList->list->append(item);
+	} else {
+	  error (-1, "Invalid OCG Action State array, expected name instead of ref");
+	}
+      } else {
+        error (-1, "Invalid item in OCG Action State array");
+      }
+      obj2.free();
+    }
+    // Add the last group
+    if (stList)
+      stateList->append(stList);
+  } else {
+    error (-1, "Invalid OCGState action");
+    delete stateList;
+    stateList = NULL;
+  }
+  obj1.free();
+
+  if (obj->dictLookup("PreserveRB", &obj1)->isBool()) {
+    preserveRB = obj1.getBool();
+  }
+  obj1.free();
+}
+
+LinkOCGState::~LinkOCGState() {
+  if (stateList)
+    deleteGooList(stateList, StateList);
+}
+
+LinkOCGState::StateList::~StateList() {
+  if (list)
+    deleteGooList(list, Ref);
+}
 
 //------------------------------------------------------------------------
 // LinkUnknown

@@ -6,6 +6,23 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2008 Julien Rebetez <julien@fhtagn.net>
+// Copyright (C) 2008, 2010 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2009 Matthias Franz <matthias@ktug.or.kr>
+// Copyright (C) 2009 David Benjamin <davidben@mit.edu>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #ifdef USE_GCC_PRAGMAS
@@ -15,6 +32,7 @@
 #include <string.h>
 #include "goo/gmem.h"
 #include "Decrypt.h"
+#include "Error.h"
 
 static void rc4InitKey(Guchar *key, int keyLen, Guchar *state);
 static Guchar rc4DecryptByte(Guchar *state, Guchar *x, Guchar *y, Guchar c);
@@ -22,7 +40,7 @@ static void aesKeyExpansion(DecryptAESState *s,
 			    Guchar *objKey, int objKeyLen);
 static void aesDecryptBlock(DecryptAESState *s, Guchar *in, GBool last);
 
-static Guchar passwordPad[32] = {
+static const Guchar passwordPad[32] = {
   0x28, 0xbf, 0x4e, 0x5e, 0x4e, 0x75, 0x8a, 0x41,
   0x64, 0x00, 0x4e, 0x56, 0xff, 0xfa, 0x01, 0x08, 
   0x2e, 0x2e, 0x00, 0xb6, 0xd0, 0x68, 0x3e, 0x80, 
@@ -59,7 +77,7 @@ GBool Decrypt::makeFileKey(int encVersion, int encRevision, int keyLength,
     md5(test, 32, test);
     if (encRevision == 3) {
       for (i = 0; i < 50; ++i) {
-	md5(test, 16, test);
+	md5(test, keyLength, test);
       }
     }
     if (encRevision == 2) {
@@ -211,6 +229,8 @@ DecryptStream::DecryptStream(Stream *strA, Guchar *fileKey,
   if ((objKeyLength = keyLength + 5) > 16) {
     objKeyLength = 16;
   }
+
+  charactersRead = 0;
 }
 
 DecryptStream::~DecryptStream() {
@@ -220,6 +240,7 @@ DecryptStream::~DecryptStream() {
 void DecryptStream::reset() {
   int i;
 
+  charactersRead = 0;
   str->reset();
   switch (algo) {
   case cryptRC4:
@@ -235,6 +256,10 @@ void DecryptStream::reset() {
     state.aes.bufIdx = 16;
     break;
   }
+}
+
+int DecryptStream::getPos() {
+  return charactersRead;
 }
 
 int DecryptStream::getChar() {
@@ -271,6 +296,8 @@ int DecryptStream::getChar() {
     }
     break;
   }
+  if (c != EOF)
+    charactersRead++;
   return c;
 }
 
@@ -351,7 +378,7 @@ static Guchar rc4DecryptByte(Guchar *state, Guchar *x, Guchar *y, Guchar c) {
 // AES decryption
 //------------------------------------------------------------------------
 
-static Guchar sbox[256] = {
+static const Guchar sbox[256] = {
   0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
   0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
   0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -370,7 +397,7 @@ static Guchar sbox[256] = {
   0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
-static Guchar invSbox[256] = {
+static const Guchar invSbox[256] = {
   0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
   0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
   0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
@@ -389,7 +416,7 @@ static Guchar invSbox[256] = {
   0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
 };
 
-static Guint rcon[11] = {
+static const Guint rcon[11] = {
   0x00000000, // unused
   0x01000000,
   0x02000000,
@@ -599,6 +626,11 @@ static void aesDecryptBlock(DecryptAESState *s, Guchar *in, GBool last) {
       s->buf[i] = s->buf[i-n];
     }
     s->bufIdx = n;
+    if (n > 16)
+    {
+      error(-1, "Reducing bufIdx from %d to 16 to not crash", n);
+      s->bufIdx = 16;
+    }
   }
 }
 

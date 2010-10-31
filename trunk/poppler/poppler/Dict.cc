@@ -6,6 +6,23 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2006 Krzysztof Kowalczyk <kkowalczyk@gmail.com>
+// Copyright (C) 2007-2008 Julien Rebetez <julienr@svn.gnome.org>
+// Copyright (C) 2008 Albert Astals Cid <aacid@kde.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #ifdef USE_GCC_PRAGMAS
@@ -69,7 +86,7 @@ void Dict::add(char *key, Object *val) {
 inline DictEntry *Dict::find(char *key) {
   int i;
 
-  for (i = 0; i < length; ++i) {
+  for (i = length - 1; i >=0; --i) {
     if (!strcmp(key, entries[i].key))
       return &entries[i];
   }

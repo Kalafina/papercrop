@@ -4,6 +4,22 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006 Takashi Iwai <tiwai@suse.de>
+// Copyright (C) 2009 Petr Gajdos <pgajdos@novell.com>
+// Copyright (C) 2009 Albert Astals Cid <aacid@kde.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef SPLASHFTFONTENGINE_H
 #define SPLASHFTFONTENGINE_H
 
@@ -28,7 +44,7 @@ class SplashFontSrc;
 class SplashFTFontEngine {
 public:
 
-  static SplashFTFontEngine *init(GBool aaA);
+  static SplashFTFontEngine *init(GBool aaA, GBool enableFreeTypeHintingA);
 
   ~SplashFTFontEngine();
 
@@ -43,9 +59,10 @@ public:
 
 private:
 
-  SplashFTFontEngine(GBool aaA, FT_Library libA);
+  SplashFTFontEngine(GBool aaA, GBool enableFreeTypeHintingA, FT_Library libA);
 
   GBool aa;
+  GBool enableFreeTypeHinting;
   FT_Library lib;
   GBool useCIDs;
 

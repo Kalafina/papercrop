@@ -2,8 +2,18 @@
 //
 // Form.cc
 //
-// Copyright 2006 Julien Rebetez
+// This file is licensed under the GPLv2 or later
 //
+// Copyright 2006-2008 Julien Rebetez <julienr@svn.gnome.org>
+// Copyright 2007-2010 Albert Astals Cid <aacid@kde.org>
+// Copyright 2007-2008 Carlos Garcia Campos <carlosgc@gnome.org>
+// Copyright 2007 Adrian Johnson <ajohnson@redneon.com>
+// Copyright 2007 Iñigo Martínez <inigomartinez@gmail.com>
+// Copyright 2008 Pino Toscano <pino@kde.org>
+// Copyright 2008 Michael Vrable <mvrable@cs.ucsd.edu>
+// Copyright 2009 Matthias Drochner <M.Drochner@fz-juelich.de>
+// Copyright 2009 KDAB via Guillermo Amaral <gamaral@amaral.com.mx>
+// 
 //========================================================================
 
 #include <config.h>
@@ -12,6 +22,7 @@
 #pragma implementation
 #endif
 
+#include <set>
 #include <stddef.h>
 #include <string.h>
 #include "goo/gmem.h"
@@ -110,17 +121,6 @@ FormWidget::FormWidget(XRef *xrefA, Object *aobj, unsigned num, Ref aref, FormFi
     obj1.free();
 }
 
-FormWidget::FormWidget(FormWidget *dest)
-{
-  x1 = dest->x1;
-  y1 = dest->y1;
-  x2 = dest->x2;
-  y2 = dest->x2;
-
-  type = dest->type;
-  field = dest->field;
-}
-
 FormWidget::~FormWidget()
 {
   obj.free ();
@@ -159,7 +159,7 @@ void FormWidget::updateField (const char *key, Object *value)
   }
   obj2.free ();
 
-  obj1->getDict ()->set ("V", value);
+  obj1->getDict ()->set (const_cast<char*>(key), value);
   //notify the xref about the update
   xref->setModifiedObject(obj1, ref1);
 }
@@ -250,11 +250,13 @@ void FormWidgetButton::loadDefaults ()
 	      break;
           }
         } else if (obj2.isStream()) {
+          // TODO do something with str and obj3
           Stream *str = obj2.getStream();
           Dict *tmpDict2 = str->getDict();
           Object obj3;
           tmpDict2->lookup("Length", &obj3);
           onStr = new GooString ("D");
+          obj3.free();
         }
         obj2.free();
 	if (onStr)
@@ -266,13 +268,18 @@ void FormWidgetButton::loadDefaults ()
     //We didn't found the "on" state for the button
     if (!onStr) {
       error(-1, "FormWidgetButton:: unable to find the on state for the button\n");
+      onStr = new GooString(""); // TODO is this the best solution?
     }
   }
 
   if (Form::fieldLookup(dict, "V", &obj1)->isName()) {
-    if (strcmp (obj1.getName(), "Off") != 0) {
-      setState(gTrue);
+    Object obj2;
+    if (dict->lookup("AS", &obj2)->isName(obj1.getName())) {
+      if (strcmp (obj1.getName(), "Off") != 0) {
+        setState(gTrue);
+      }
     }
+    obj2.free();
   } else if (obj1.isArray()) { //handle the case where we have multiple choices
     error(-1, "FormWidgetButton:: multiple choice isn't supported yet\n");
   }
@@ -440,13 +447,15 @@ void FormWidgetChoice::loadDefaults ()
           continue;
         }
         obj2.arrayGet(0, &obj3);
-        obj2.arrayGet(0, &obj4);
+        obj2.arrayGet(1, &obj4);
         parent->_setChoiceExportVal(i, obj3.getString()->copy());
         parent->_setChoiceOptionName(i, obj4.getString()->copy());
         obj3.free();
         obj4.free();
       } else {
-        error(-1, "FormWidgetChoice:: invalid Opt entry\n");
+        error(-1, "FormWidgetChoice:: invalid %d Opt entry\n", i);
+        parent->_setChoiceExportVal(i, new GooString(""));
+        parent->_setChoiceOptionName(i, new GooString(""));
       }
       obj2.free();
     }
@@ -530,7 +539,7 @@ void FormWidgetChoice::_updateV ()
     } else if (numSelected == 1) {
       for(int i=0; i<parent->getNumChoices(); i++) {
         if (parent->isSelected(i)) {
-          obj1.initString(new GooString(parent->getExportVal(i)));
+          obj1.initString(new GooString(parent->getChoice(i)));
           break;
         }
       }
@@ -539,7 +548,7 @@ void FormWidgetChoice::_updateV ()
       for(int i=0; i<parent->getNumChoices(); i++) {
         if (parent->isSelected(i)) {
           Object obj2;
-          obj2.initString(new GooString(parent->getExportVal(i)));
+          obj2.initString(new GooString(parent->getChoice(i)));
           obj1.arrayAdd(&obj2);
         }
       }
@@ -707,13 +716,14 @@ FormField::FormField(XRef* xrefA, Object *aobj, const Ref& aref, FormFieldType t
     // Load children
     for(int i=0; i<length; i++) { 
       Object obj2,obj3;
-      Object childRef;
       array->get(i, &obj2);
-      array->getNF(i, &childRef);
       if (!obj2.isDict ()) {
 	      error (-1, "Reference to an invalid or non existant object");
+	      obj2.free();
 	      continue;
       }
+      Object childRef;
+      array->getNF(i, &childRef);
       //field child
       if (dict->lookup ("FT", &obj3)->isName()) {
         // If I'm not a generic container field and my children
@@ -753,6 +763,9 @@ FormField::FormField(XRef* xrefA, Object *aobj, const Ref& aref, FormFieldType t
   //flags
   if (Form::fieldLookup(dict, "Ff", &obj1)->isInt()) {
     int flags = obj1.getInt();
+    if (flags & 0x1) { // 1 -> ReadOnly
+      readOnly = true;
+    }
     if (flags & 0x2) { // 2 -> Required
       //TODO
     }
@@ -796,7 +809,7 @@ void FormField::fillChildrenSiblingsID()
 {
   if(terminal) return;
   for (int i=0; i<numChildren; i++) {
-    children[i]->loadChildrenDefaults();
+    children[i]->fillChildrenSiblingsID();
   }
 }
 
@@ -979,7 +992,7 @@ FormFieldText::FormFieldText(XRef *xrefA, Object *aobj, const Ref& ref)
 GooString* FormFieldText::getContentCopy ()
 {
   if (!content) return NULL;
-  return new GooString(*content);
+  return new GooString(content);
 }
 
 void FormFieldText::setContentCopy (GooString* new_content)
@@ -1152,15 +1165,6 @@ Form::Form(XRef *xrefA, Object* acroFormA)
 
       rootFields[numFields++] = createFieldFromDict (&obj2, xrefA, oref.getRef());
 
-      //Mark readonly field
-      Object obj3;
-      if (Form::fieldLookup(obj2.getDict (), "Ff", &obj3)->isInt()) {
-        int flags = obj3.getInt();
-        if (flags & 0x1)
-          rootFields[numFields-1]->setReadOnly(true);
-      }
-      obj3.free();
-
       obj2.free();
       oref.free();
     }
@@ -1178,7 +1182,7 @@ Form::~Form() {
 }
 
 // Look up an inheritable field dictionary entry.
-Object *Form::fieldLookup(Dict *field, char *key, Object *obj) {
+static Object *fieldLookup(Dict *field, char *key, Object *obj, std::set<int> *usedParents) {
   Dict *dict;
   Object parent;
 
@@ -1187,13 +1191,33 @@ Object *Form::fieldLookup(Dict *field, char *key, Object *obj) {
     return obj;
   }
   obj->free();
-  if (dict->lookup("Parent", &parent)->isDict()) {
-    fieldLookup(parent.getDict(), key, obj);
+  dict->lookupNF("Parent", &parent);
+  if (parent.isRef()) {
+    const Ref ref = parent.getRef();
+    if (usedParents->find(ref.num) == usedParents->end()) {
+      usedParents->insert(ref.num);
+
+      Object obj2;
+      parent.fetch(dict->getXRef(), &obj2);
+      if (obj2.isDict()) {
+        fieldLookup(obj2.getDict(), key, obj, usedParents);
+      } else {
+        obj->initNull();
+      }
+      obj2.free();
+    }
+  } else if (parent.isDict()) {
+    fieldLookup(parent.getDict(), key, obj, usedParents);
   } else {
     obj->initNull();
   }
   parent.free();
   return obj;
+}
+
+Object *Form::fieldLookup(Dict *field, char *key, Object *obj) {
+  std::set<int> usedParents;
+  return ::fieldLookup(field, key, obj, &usedParents);
 }
 
 FormField *Form::createFieldFromDict (Object* obj, XRef *xrefA, const Ref& pref)

@@ -7,7 +7,6 @@
 // Copyright 2004 Glyph & Cog, LLC
 //
 //========================================================================
-
 #include <config.h>
 
 #if USE_FIXEDPOINT

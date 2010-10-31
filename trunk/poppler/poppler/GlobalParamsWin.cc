@@ -1,18 +1,25 @@
 /* Written by Krzysztof Kowalczyk (http://blog.kowalczyk.info)
    but mostly based on xpdf code.
+   
+   // Copyright (C) 2010 Hib Eris <hib@hiberis.nl>
 
 TODO: instead of a fixed mapping defined in displayFontTab, it could
 scan the whole fonts directory, parse TTF files and build font
 description for all fonts available in Windows. That's how MuPDF works.
 */
 
+#ifndef PACKAGE_NAME
 #include <config.h>
+#endif
 
 #ifdef USE_GCC_PRAGMAS
 #pragma implementation
 #endif
 
 #include <windows.h>
+#if !(_WIN32_IE >= 0x0500)
+#error "_WIN32_IE must be defined >= 0x0500 for SHGFP_TYPE_CURRENT from shlobj.h"
+#endif
 #include <shlobj.h>
 #include <string.h>
 #include <stdio.h>
@@ -220,7 +227,6 @@ static void AddFont(GooHash *displayFonts, char *fontName, GooString *fontPath, 
 
 void GlobalParams::setupBaseFonts(char * dir)
 {
-    static bool baseFontsInitialized = false;
     if (baseFontsInitialized)
         return;
     baseFontsInitialized = true;

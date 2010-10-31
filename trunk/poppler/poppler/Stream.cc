@@ -6,6 +6,28 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005 Jeff Muizelaar <jeff@infidigm.net>
+// Copyright (C) 2006-2009 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2007 Krzysztof Kowalczyk <kkowalczyk@gmail.com>
+// Copyright (C) 2008 Julien Rebetez <julien@fhtagn.net>
+// Copyright (C) 2009 Carlos Garcia Campos <carlosgc@gnome.org>
+// Copyright (C) 2009 Glenn Ganz <glenn.ganz@uptime.ch>
+// Copyright (C) 2009 Stefan Thomas <thomas@eload24.com>
+// Copyright (C) 2010 Hib Eris <hib@hiberis.nl>
+// Copyright (C) 2010 Tomas Hoger <thoger@redhat.com>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #ifdef USE_GCC_PRAGMAS
@@ -30,8 +52,8 @@
 #include "GfxState.h"
 #include "Stream.h"
 #include "JBIG2Stream.h"
-#include "JPXStream.h"
 #include "Stream-CCITT.h"
+#include "CachedFile.h"
 
 #ifdef ENABLE_LIBJPEG
 #include "DCTStream.h"
@@ -39,6 +61,12 @@
 
 #ifdef ENABLE_ZLIB
 #include "FlateStream.h"
+#endif
+
+#ifdef ENABLE_LIBOPENJPEG
+#include "JPEG2000Stream.h"
+#else
+#include "JPXStream.h"
 #endif
 
 #ifdef __DJGPP__
@@ -381,6 +409,10 @@ ImageStream::ImageStream(Stream *strA, int widthA, int nCompsA, int nBitsA) {
   } else {
     imgLineSize = nVals;
   }
+  if (width > INT_MAX / nComps) {
+    // force a call to gmallocn(-1,...), which will throw an exception
+    imgLineSize = -1;
+  }
   imgLine = (Guchar *)gmallocn(imgLineSize, sizeof(Guchar));
   imgIdx = nVals;
 }
@@ -391,6 +423,10 @@ ImageStream::~ImageStream() {
 
 void ImageStream::reset() {
   str->reset();
+}
+
+void ImageStream::close() {
+  str->close();
 }
 
 GBool ImageStream::getPixel(Guchar *pix) {
@@ -425,8 +461,18 @@ Guchar *ImageStream::getLine() {
       imgLine[i+7] = (Guchar)(c & 1);
     }
   } else if (nBits == 8) {
+    Guchar *line = imgLine;
+    for (i = 0; i < nVals; ++i) {
+      *line++ = str->getChar();
+    }
+  } else if (nBits == 16) {
+    // this is a hack to support 16 bits images, everywhere
+    // we assume a component fits in 8 bits, with this hack
+    // we treat 16 bit images as 8 bit ones until it's fixed correctly.
+    // The hack has another part on GfxImageColorMap::GfxImageColorMap
     for (i = 0; i < nVals; ++i) {
       imgLine[i] = str->getChar();
+      str->getChar();
     }
   } else {
     bitMask = (1 << nBits) - 1;
@@ -746,6 +792,105 @@ void FileStream::setPos(Guint pos, int dir) {
 }
 
 void FileStream::moveStart(int delta) {
+  start += delta;
+  bufPtr = bufEnd = buf;
+  bufPos = start;
+}
+
+//------------------------------------------------------------------------
+// CachedFileStream
+//------------------------------------------------------------------------
+
+CachedFileStream::CachedFileStream(CachedFile *ccA, Guint startA,
+        GBool limitedA, Guint lengthA, Object *dictA)
+  : BaseStream(dictA)
+{
+  cc = ccA;
+  start = startA;
+  limited = limitedA;
+  length = lengthA;
+  bufPtr = bufEnd = buf;
+  bufPos = start;
+  savePos = 0;
+  saved = gFalse;
+}
+
+CachedFileStream::~CachedFileStream()
+{
+  close();
+  cc->decRefCnt();
+}
+
+Stream *CachedFileStream::makeSubStream(Guint startA, GBool limitedA,
+        Guint lengthA, Object *dictA)
+{
+  cc->incRefCnt();
+  return new CachedFileStream(cc, startA, limitedA, lengthA, dictA);
+}
+
+void CachedFileStream::reset()
+{
+  savePos = (Guint)cc->tell();
+  cc->seek(start, SEEK_SET);
+
+  saved = gTrue;
+  bufPtr = bufEnd = buf;
+  bufPos = start;
+}
+
+void CachedFileStream::close()
+{
+  if (saved) {
+    cc->seek(savePos, SEEK_SET);
+    saved = gFalse;
+  }
+}
+
+GBool CachedFileStream::fillBuf()
+{
+  int n;
+
+  bufPos += bufEnd - buf;
+  bufPtr = bufEnd = buf;
+  if (limited && bufPos >= start + length) {
+    return gFalse;
+  }
+  if (limited && bufPos + cachedStreamBufSize > start + length) {
+    n = start + length - bufPos;
+  } else {
+    n = cachedStreamBufSize;
+  }
+  cc->read(buf, 1, n);
+  bufEnd = buf + n;
+  if (bufPtr >= bufEnd) {
+    return gFalse;
+  }
+  return gTrue;
+}
+
+void CachedFileStream::setPos(Guint pos, int dir)
+{
+  Guint size;
+
+  if (dir >= 0) {
+    cc->seek(pos, SEEK_SET);
+    bufPos = pos;
+  } else {
+    cc->seek(0, SEEK_END);
+    size = (Guint)cc->tell();
+
+    if (pos > size)
+      pos = (Guint)size;
+
+    cc->seek(-(int)pos, SEEK_END);
+    bufPos = (Guint)cc->tell();
+  }
+
+  bufPtr = bufEnd = buf;
+}
+
+void CachedFileStream::moveStart(int delta)
+{
   start += delta;
   bufPtr = bufEnd = buf;
   bufPos = start;
@@ -1726,7 +1871,7 @@ int CCITTFaxStream::lookChar() {
 
 short CCITTFaxStream::getTwoDimCode() {
   short code;
-  CCITTCode *p;
+  const CCITTCode *p;
   int n;
 
   code = 0; // make gcc happy
@@ -1756,7 +1901,7 @@ short CCITTFaxStream::getTwoDimCode() {
 
 short CCITTFaxStream::getWhiteCode() {
   short code;
-  CCITTCode *p;
+  const CCITTCode *p;
   int n;
 
   code = 0; // make gcc happy
@@ -1813,7 +1958,7 @@ short CCITTFaxStream::getWhiteCode() {
 
 short CCITTFaxStream::getBlackCode() {
   short code;
-  CCITTCode *p;
+  const CCITTCode *p;
   int n;
 
   code = 0; // make gcc happy
@@ -1975,7 +2120,7 @@ static Guchar dctClip[768];
 static int dctClipInit = 0;
 
 // zig zag decode map
-static int dctZigZag[64] = {
+static const int dctZigZag[64] = {
    0,
    1,  8,
   16,  9,  2,
@@ -1993,7 +2138,7 @@ static int dctZigZag[64] = {
   63
 };
 
-DCTStream::DCTStream(Stream *strA, GBool colorXformA):
+DCTStream::DCTStream(Stream *strA, int colorXformA):
     FilterStream(strA) {
   int i, j;
 
@@ -2036,7 +2181,6 @@ void DCTStream::unfilteredReset() {
   numQuantTables = 0;
   numDCHuffTables = 0;
   numACHuffTables = 0;
-  colorXform = 0;
   gotJFIFMarker = gFalse;
   gotAdobeMarker = gFalse;
   restartInterval = 0;
@@ -3141,6 +3285,8 @@ GBool DCTStream::readScanInfo() {
   interleaved = scanInfo.numComps == numComps;
   for (j = 0; j < numComps; ++j) {
     scanInfo.comp[j] = gFalse;
+    scanInfo.dcHuffTable[j] = 0;
+    scanInfo.acHuffTable[j] = 0;
   }
   for (i = 0; i < scanInfo.numComps; ++i) {
     id = str->getChar();
@@ -4549,7 +4695,7 @@ void ASCIIHexEncoder::reset() {
 }
 
 GBool ASCIIHexEncoder::fillBuf() {
-  static char *hex = "0123456789abcdef";
+  static const char *hex = "0123456789abcdef";
   int c;
 
   if (eof) {

@@ -2,7 +2,9 @@
 //
 // ABWOutputDev.cc
 //
-// Jauco Noordzij
+// Copyright 2006-2007 Jauco Noordzij <jauco@jauco.nl>
+// Copyright 2007 Dominic Lachowicz <cinamod@hotmail.com>
+// Copyright 2008 Hib Eris <hib@hiberis.nl>
 //
 // Based somewhat on HtmlOutputDev.cc
 //
@@ -253,6 +255,8 @@ float ABWOutputDev::getBiggestSeperator(xmlNodePtr N_set, unsigned int direction
       endV = end[inspect];
     }
   }
+  delete[] stt;
+  delete[] end;
   return gap;
 }
 
@@ -452,7 +456,7 @@ void ABWOutputDev::interpretXYTree(){
 }
 
 void ABWOutputDev::ATP_recursive(xmlNodePtr N_parent){
-  xmlNodePtr N_first, N_second, N_line, N_tempCol, N_tempColset;
+  xmlNodePtr N_first, N_second, N_line, N_tempCol, N_tempColset = NULL;
 
   N_first  = N_parent->children;
   if (!N_first)
@@ -731,7 +735,7 @@ void ABWOutputDev::cleanUpNode(xmlNodePtr N_parent, bool aggregateInfo){
   if (N_parent->children && xmlStrcasecmp(N_parent->children->name,BAD_CAST "line") == 0 && xmlGetProp(N_parent->children,BAD_CAST "alignment") != NULL)
     xmlSetProp(N_parent, BAD_CAST "alignment", xmlGetProp(N_parent->children,BAD_CAST "alignment"));
 
-   delete styles;
+   delete[] styles;
 }
 
 void ABWOutputDev::generateParagraphs() {

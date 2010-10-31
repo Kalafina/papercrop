@@ -6,6 +6,22 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006, 2008 Pino Toscano <pino@kde.org>
+// Copyright (C) 2008 Hugo Mercier <hmercier31@gmail.com>
+// Copyright (C) 2010 Carlos Garcia Campos <carlosgc@gnome.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef LINK_H
 #define LINK_H
 
@@ -16,10 +32,11 @@
 #include "Object.h"
 
 class GooString;
+class GooList;
 class Array;
 class Dict;
 class Sound;
-class Movie;
+class MediaRendition;
 
 //------------------------------------------------------------------------
 // LinkAction
@@ -34,6 +51,8 @@ enum LinkActionKind {
   actionMovie,			// movie action
   actionRendition,
   actionSound,			// sound action
+  actionJavaScript,		// JavaScript action
+  actionOCGState,               // Set-OCG-State action
   actionUnknown			// anything else
 };
 
@@ -54,10 +73,6 @@ public:
 
   // Parse an action dictionary.
   static LinkAction *parseAction(Object *obj, GooString *baseURI = NULL);
-
-  // Extract a file name from a file specification (string or
-  // dictionary).
-  static GooString *getFileSpecName(Object *fileSpecObj);
 };
 
 //------------------------------------------------------------------------
@@ -309,23 +324,27 @@ public:
 
   virtual LinkActionKind getKind() { return actionRendition; }
 
-  GBool hasRenditionObject() { return !renditionObj.isNull(); }
+  GBool hasRenditionObject() { return renditionObj.isDict(); }
   Object* getRenditionObject() { return &renditionObj; }
 
-  GBool hasScreenAnnot() { return screenRef.num > 0; }
-  Ref* getScreenAnnot() { return &screenRef; }
+  GBool hasScreenAnnot() { return screenRef.isRef(); }
+  Ref getScreenAnnot() { return screenRef.getRef(); }
 
   int getOperation() { return operation; }
 
-  Movie* getMovie() { return movie; }
+  MediaRendition* getMedia() { return media; }
+
+  GooString *getScript() { return js; }
 
 private:
 
-  Ref screenRef;
+  Object screenRef;
   Object renditionObj;
   int operation;
 
-  Movie* movie;
+  MediaRendition* media;
+
+  GooString *js;
 };
 
 //------------------------------------------------------------------------
@@ -356,6 +375,57 @@ private:
   GBool repeat;
   GBool mix;
   Sound *sound;
+};
+
+//------------------------------------------------------------------------
+// LinkJavaScript
+//------------------------------------------------------------------------
+
+class LinkJavaScript: public LinkAction {
+public:
+
+  // Build a LinkJavaScript given the action name.
+  LinkJavaScript(Object *jsObj);
+
+  virtual ~LinkJavaScript();
+
+  virtual GBool isOk() { return js != NULL; }
+
+  virtual LinkActionKind getKind() { return actionJavaScript; }
+  GooString *getScript() { return js; }
+
+private:
+
+  GooString *js;
+};
+
+//------------------------------------------------------------------------
+// LinkOCGState
+//------------------------------------------------------------------------
+class LinkOCGState: public LinkAction {
+public:
+  LinkOCGState(Object *obj);
+
+  virtual ~LinkOCGState();
+
+  virtual GBool isOk() { return stateList != NULL; }
+
+  virtual LinkActionKind getKind() { return actionOCGState; }
+
+  enum State { On, Off, Toggle};
+  struct StateList {
+    StateList() { list = NULL; }
+    ~StateList();
+    State st;
+    GooList *list;
+  };
+
+  GooList *getStateList() { return stateList; }
+  GBool getPreserveRB() { return preserveRB; }
+
+private:
+  GooList *stateList;
+  GBool preserveRB;
 };
 
 //------------------------------------------------------------------------

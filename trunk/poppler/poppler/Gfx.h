@@ -6,6 +6,26 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2005 Jonathan Blandford <jrb@redhat.com>
+// Copyright (C) 2007 Iñigo Martínez <inigomartinez@gmail.com>
+// Copyright (C) 2008 Brad Hards <bradh@kde.org>
+// Copyright (C) 2008, 2010 Carlos Garcia Campos <carlosgc@gnome.org>
+// Copyright (C) 2009 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2009, 2010 Thomas Freitag <Thomas.Freitag@alfa.de>
+// Copyright (C) 2010 David Benjamin <davidben@mit.edu>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #ifndef GFX_H
 #define GFX_H
 
@@ -15,7 +35,10 @@
 
 #include "goo/gtypes.h"
 #include "goo/GooList.h"
+#include "goo/GooVector.h"
+#include "GfxState.h"
 #include "Object.h"
+#include "PopplerCache.h"
 
 class GooString;
 class XRef;
@@ -45,6 +68,7 @@ class PDFRectangle;
 class AnnotBorder;
 class AnnotColor;
 class Catalog;
+struct MarkedContentStack;
 
 //------------------------------------------------------------------------
 
@@ -88,9 +112,10 @@ public:
   GBool lookupXObjectNF(char *name, Object *obj);
   GBool lookupMarkedContentNF(char *name, Object *obj);
   void lookupColorSpace(char *name, Object *obj);
-  GfxPattern *lookupPattern(char *name);
-  GfxShading *lookupShading(char *name);
+  GfxPattern *lookupPattern(char *name, Gfx *gfx);
+  GfxShading *lookupShading(char *name, Gfx *gfx);
   GBool lookupGState(char *name, Object *obj);
+  GBool lookupGStateNF(char *name, Object *obj);
 
   GfxResources *getNext() { return next; }
 
@@ -102,6 +127,7 @@ private:
   Object patternDict;
   Object shadingDict;
   Object gStateDict;
+  PopplerObjectCache gStateCache;
   Object propertiesDict;
   GfxResources *next;
 };
@@ -139,11 +165,24 @@ public:
   // Save graphics state.
   void saveState();
 
+  // Push a new state guard
+  void pushStateGuard();
+
   // Restore graphics state.
   void restoreState();
 
+  // Pop to state guard and pop guard
+  void popStateGuard();
+
   // Get the current graphics state object.
   GfxState *getState() { return state; }
+
+  void pushResources(Dict *resDict);
+  void popResources();
+  
+#ifdef USE_CMS
+  PopplerCache *getIccColorSpaceCache();
+#endif
 
 private:
 
@@ -153,11 +192,16 @@ private:
   GBool subPage;		// is this a sub-page object?
   GBool printCommands;		// print the drawing commands (for debugging)
   GBool profileCommands;	// profile the drawing commands (for debugging)
+  GBool textHaveCSPattern;	// in text drawing and text has pattern colorspace
+  GBool drawText;		// in text drawing
+  GBool maskHaveCSPattern;	// in mask drawing and mask has pattern colorspace
+  GBool commandAborted;         // did the previous command abort the drawing?
   GfxResources *res;		// resource stack
   int updateLevel;
-  GBool ocSuppressed;		// are we ignoring content based on OptionalContent?
 
   GfxState *state;		// current graphics state
+  int stackHeight;		// the height of the current graphics stack
+  GooVector<int> stateGuards;   // a stack of state limits; to guard against unmatched pops
   GBool fontChanged;		// set if font or text matrix has changed
   GfxClipType clip;		// do a clip?
   int ignoreUndef;		// current BX/EX nesting level
@@ -165,9 +209,13 @@ private:
 				//   page/form/pattern
   int formDepth;
 
-  GooList *markedContentStack;	// current BMC/EMC stack
+  MarkedContentStack *mcStack;	// current BMC/EMC stack
 
   Parser *parser;		// parser for page content stream(s)
+ 
+#ifdef USE_CMS
+  PopplerCache iccColorSpaceCache;
+#endif
 
   GBool				// callback to check for an abort
     (*abortCheckCbk)(void *data);
@@ -180,6 +228,8 @@ private:
   Operator *findOp(char *name);
   GBool checkArg(Object *arg, TchkType type);
   int getPos();
+
+  int bottomGuard();
 
   // graphics state operators
   void opSave(Object args[], int numArgs);
@@ -313,9 +363,9 @@ private:
   void opBeginMarkedContent(Object args[], int numArgs);
   void opEndMarkedContent(Object args[], int numArgs);
   void opMarkPoint(Object args[], int numArgs);
-
-  void pushResources(Dict *resDict);
-  void popResources();
+  GBool contentIsHidden();
+  void pushMarkedContent();
+  void popMarkedContent();
 };
 
 #endif

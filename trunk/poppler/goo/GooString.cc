@@ -8,6 +8,23 @@
 //
 //========================================================================
 
+//========================================================================
+//
+// Modified under the Poppler project - http://poppler.freedesktop.org
+//
+// All changes made under the Poppler project to this file are licensed
+// under GPL version 2 or later
+//
+// Copyright (C) 2006 Kristian Høgsberg <krh@redhat.com>
+// Copyright (C) 2006 Krzysztof Kowalczyk <kkowalczyk@gmail.com>
+// Copyright (C) 2007 Jeff Muizelaar <jeff@infidigm.net>
+// Copyright (C) 2008-2010 Albert Astals Cid <aacid@kde.org>
+//
+// To see a description of the changes please see the Changelog file that
+// came with your tarball or type make ChangeLog if you are building from git
+//
+//========================================================================
+
 #include <config.h>
 
 #ifdef USE_GCC_PRAGMAS
@@ -22,6 +39,8 @@
 #include <math.h>
 #include "gmem.h"
 #include "GooString.h"
+
+static const int MAXIMUM_DOUBLE_PREC = 16;
 
 //------------------------------------------------------------------------
 
@@ -54,6 +73,7 @@ enum GooStringFormatType {
   fmtULongOctal,
   fmtULongBinary,
   fmtDouble,
+  fmtDoubleTrimSmallAware,
   fmtDoubleTrim,
   fmtChar,
   fmtString,
@@ -64,7 +84,7 @@ enum GooStringFormatType {
 static char *formatStrings[] = {
   "d", "x", "o", "b", "ud", "ux", "uo", "ub",
   "ld", "lx", "lo", "lb", "uld", "ulx", "ulo", "ulb",
-  "f", "g",
+  "f", "gs", "g",
   "c",
   "s",
   "t",
@@ -177,7 +197,7 @@ GooString::GooString(GooString *str, int idx, int lengthA) {
   Set(str->getCString() + idx, lengthA);
 }
 
-GooString::GooString(GooString *str) {
+GooString::GooString(const GooString *str) {
   s = NULL;
   length = 0;
   Set(str->getCString(), str->length);
@@ -362,6 +382,7 @@ GooString *GooString::appendfv(char *fmt, va_list argList) {
 	    break;
 	  case fmtDouble:
 	  case fmtDoubleTrim:
+	  case fmtDoubleTrimSmallAware:
 	    args[argsLen].f = va_arg(argList, double);
 	    break;
 	  case fmtChar:
@@ -437,6 +458,9 @@ GooString *GooString::appendfv(char *fmt, va_list argList) {
 	  break;
 	case fmtDoubleTrim:
 	  formatDouble(arg.f, buf, sizeof(buf), prec, gTrue, &str, &len);
+	  break;
+	case fmtDoubleTrimSmallAware:
+	  formatDoubleSmallAware(arg.f, buf, sizeof(buf), prec, gTrue, &str, &len);
 	  break;
 	case fmtChar:
 	  buf[0] = arg.c;
@@ -588,6 +612,22 @@ void GooString::formatDouble(double x, char *buf, int bufSize, int prec,
   *len = bufSize - i;
 }
 
+void GooString::formatDoubleSmallAware(double x, char *buf, int bufSize, int prec,
+				      GBool trim, char **p, int *len)
+{
+  double absX = fabs(x);
+  if (absX >= 0.1) {
+    formatDouble(x, buf, bufSize, prec, trim, p, len);
+  } else {
+    while (absX < 0.1 && prec < MAXIMUM_DOUBLE_PREC)
+    {
+      absX = absX * 10;
+      prec++;
+    }
+    formatDouble(x, buf, bufSize, prec, trim, p, len);
+  }
+}
+
 GooString *GooString::insert(int i, char c) {
   return insert(i, (const char*)&c, 1);
 }
@@ -644,7 +684,7 @@ GooString *GooString::lowerCase() {
   return this;
 }
 
-int GooString::cmp(GooString *str) {
+int GooString::cmp(GooString *str) const {
   int n1, n2, i, x;
   char *p1, *p2;
 
@@ -659,7 +699,7 @@ int GooString::cmp(GooString *str) {
   return n1 - n2;
 }
 
-int GooString::cmpN(GooString *str, int n) {
+int GooString::cmpN(GooString *str, int n) const {
   int n1, n2, i, x;
   char *p1, *p2;
 
@@ -679,7 +719,7 @@ int GooString::cmpN(GooString *str, int n) {
   return n1 - n2;
 }
 
-int GooString::cmp(const char *sA) {
+int GooString::cmp(const char *sA) const {
   int n1, i, x;
   const char *p1, *p2;
 
@@ -699,7 +739,7 @@ int GooString::cmp(const char *sA) {
   return 0;
 }
 
-int GooString::cmpN(const char *sA, int n) {
+int GooString::cmpN(const char *sA, int n) const {
   int n1, i, x;
   const char *p1, *p2;
 
@@ -725,4 +765,40 @@ int GooString::cmpN(const char *sA, int n) {
 GBool GooString::hasUnicodeMarker(void)
 {
     return (s[0] & 0xff) == 0xfe && (s[1] & 0xff) == 0xff;
+}
+
+GooString *GooString::sanitizedName(GBool psmode)
+{
+  GooString *name;
+  char buf[8];
+  int i;
+  char c;
+
+  name = new GooString();
+
+  if (psmode)
+  {
+    // ghostscript chokes on names that begin with out-of-limits
+    // numbers, e.g., 1e4foo is handled correctly (as a name), but
+    // 1e999foo generates a limitcheck error
+    c = getChar(0);
+    if (c >= '0' && c <= '9') {
+      name->append('f');
+    }
+  }
+
+  for (i = 0; i < getLength(); ++i) {
+    c = getChar(i);
+    if (c <= (char)0x20 || c >= (char)0x7f ||
+	c == ' ' ||
+	c == '(' || c == ')' || c == '<' || c == '>' ||
+	c == '[' || c == ']' || c == '{' || c == '}' ||
+	c == '/' || c == '%' || c == '#') {
+      sprintf(buf, "#%02x", c & 0xff);
+      name->append(buf);
+    } else {
+      name->append(c);
+    }
+  }
+  return name;
 }
