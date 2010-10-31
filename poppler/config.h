@@ -1,0 +1,4 @@
+/*Aaron Keith changes for papercrop
+Empty config file because defines are set in the cmakelist.txt.  
+When I find out how to make the config file with cmake I will do so.
+*/
