@@ -1,17 +1,28 @@
 # -*- mode: cmake; -*-
+cmake_minimum_required(VERSION 2.6)
+
+set (CMAKE_VERBOSE_MAKEFILE  ON)
+
 project(LuaBind)
+
+set(LUA_INCLUDE ${LuaBind_SOURCE_DIR}/../../lua-5.1.4/src)
 
 # Make sure the compiler can find include files from our Hello library.
 include_directories (
 ${LuaBind_SOURCE_DIR}
-${LuaBind_SOURCE_DIR}/../../boost_1_34_1
+${LuaBind_SOURCE_DIR}/../../boost_1_44_0
 ${LUA_INCLUDE}
-${LuaBind_SOURCE_DIR}/../../gsl-1.6
+#${LuaBind_SOURCE_DIR}/../../gsl-1.6
 )
-#message("luainclude=${LUA_INCLUDE}")
+message("luainclude=${LUA_INCLUDE}")
 
 #-DLUABIND_NO_ERROR_CHECKING 
+
+if(UNIX)
+add_definitions(-DNO_GUI -DNDEBUG -Wall -ftemplate-depth-100)
+else()
 add_definitions(-DNO_GUI -DWIN32 -DNDEBUG -D_WINDOWS -Wall -ftemplate-depth-100)
+endif()
 
 set(src
 "src/class.cpp"
@@ -33,6 +44,8 @@ set(src
 "src/wrapper_base.cpp"
 )
 
+
+if (LUABIND_TEST)
 set(test_simple_class
 "test/test_simple_class.cpp"
 "test/main.cpp"
@@ -67,13 +80,14 @@ set(other_tests
 "test/test_scope.cpp"
 "test/test_separation.cpp"
 )
+endif(LUABIND_TEST)
 
-add_library(LuaBind
+add_library(luabind
 ${src}
 )
 
 if(UNIX)
-
+if(LUABIND_TEST)
 add_executable(test_simple_class
 ${test_simple_class}
 )
@@ -103,4 +117,6 @@ readline
 history 
 ncurses
 )
+
+endif(LUABIND_TEST)
 endif(UNIX)
