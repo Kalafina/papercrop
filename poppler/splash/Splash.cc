@@ -1692,6 +1692,9 @@ SplashError Splash::xorFill(SplashPath *path, GBool eo) {
   return splashOk;
 }
 
+// Taesoo modified
+void notifyDraw(int c, int x, int y, int w, int h, int fx, int fy);
+
 SplashError Splash::fillChar(SplashCoord x, SplashCoord y,
 			     int c, SplashFont *font) {
   SplashGlyphBitmap glyph;
@@ -1712,6 +1715,10 @@ SplashError Splash::fillChar(SplashCoord x, SplashCoord y,
     return splashErrNoGlyph;
   }
   if (clipRes != splashClipAllOutside) {
+
+	  // Taesoo modified
+	  notifyDraw(c, x0, y0, glyph.w, glyph.h, glyph.x, glyph.y);
+
     fillGlyph2(x0, y0, &glyph, clipRes == splashClipAllInside);
   }
   opClipRes = clipRes;

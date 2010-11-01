@@ -2,7 +2,7 @@ project(poppler)
 
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 
-set (CMAKE_VERBOSE_MAKEFILE  ON)
+#set (CMAKE_VERBOSE_MAKEFILE  ON)
 
 project (poppler)
 
