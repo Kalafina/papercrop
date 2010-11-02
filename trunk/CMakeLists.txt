@@ -211,7 +211,7 @@ if(UNIX)
 	freeimage
 	z
 	jpeg
-	
+	lua	
 	luabind
 	)
 
