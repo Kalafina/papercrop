@@ -164,7 +164,7 @@ RightPanel::~RightPanel(void)
 bool CreateDirectory(const char *PathToCreate);
 bool DeleteAllFiles(const char* path, const char* mask,bool bConfirm);
 
-#include "fltk/Fl_Native_File_Chooser-0.84/FL/Fl_Native_File_Chooser.H"
+#include <FL/Fl_Native_File_Chooser.H>
 void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int userData)
 {
 	if(w.mId=="update")

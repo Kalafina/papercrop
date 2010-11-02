@@ -5,7 +5,7 @@ set (CMAKE_VERBOSE_MAKEFILE  ON)
 
 project(LuaBind)
 
-set(LUA_INCLUDE ${LuaBind_SOURCE_DIR}/../../lua-5.1.4/src)
+# LUA_INCLUDE is defined in papercrop/CMakeList. 
 
 # Make sure the compiler can find include files from our Hello library.
 include_directories (
