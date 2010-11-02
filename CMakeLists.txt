@@ -9,7 +9,6 @@ project (paperCrop)
 
 include(${paperCrop_SOURCE_DIR}/modules.cmake)
 
-
 if(UNIX)
 	if(CMAKE_BUILD_TYPE MATCHES Release)
 		add_definitions(-DNDEBUG)
@@ -27,8 +26,8 @@ endif()
 
 
 if(UNIX)
-	set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
-	set(LUA_LIB "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include/liblua.a")
+	set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
+	set(LUA_LIB "${paperCrop_SOURCE_DIR}/../Lua5.1.4/src" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
 	set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_44_0")
 	set(image_INCLUDE) # all in /usr/include 
 else()
@@ -48,12 +47,11 @@ add_subdirectory(poppler)
 
 if(UNIX)
 	include_directories(
-	#${LUA_INCLUDE}
+	${LUA_INCLUDE}
 	${boost_INCLUDE}
-	${paperCrop_SOURCE_DIR}/../lua-5.1.4/src
 	${paperCrop_SOURCE_DIR}
-	${paperCrop_SOURCE_DIR}/../FLTK
-	${paperCrop_SOURCE_DIR}/../FLTK/Fl_Native_File_Chooser-0.84
+	#${paperCrop_SOURCE_DIR}/../FLTK
+	${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
 	${paperCrop_SOURCE_DIR}/luabind-0.9
 	${paperCrop_SOURCE_DIR}/poppler/goo
@@ -69,11 +67,11 @@ else()
 
 	${LUA_INCLUDE}
 	${boost_INCLUDE}
-	${paperCrop_SOURCE_DIR}/../lua-5.1.4/src
 	#${paperCrop_SOURCE_DIR}/../Boost_1_44_0
 	${paperCrop_SOURCE_DIR}
-	${paperCrop_SOURCE_DIR}/../FLTK
-	${paperCrop_SOURCE_DIR}/../FLTK/Fl_Native_File_Chooser-0.84
+	#${paperCrop_SOURCE_DIR}/../FLTK # fltk might be in /usr/include
+	#${paperCrop_SOURCE_DIR}/../fltk
+	${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
 	${paperCrop_SOURCE_DIR}/luabind-0.9
 	${paperCrop_SOURCE_DIR}/../poppler-0.14.4/poppler
@@ -83,7 +81,6 @@ else()
 	${paperCrop_SOURCE_DIR}/ext/freetype231/include
 	${paperCrop_SOURCE_DIR}/../poppler-0.14.4/poppler
 	${paperCrop_SOURCE_DIR}/../poppler-0.14.4/splash
-	${paperCrop_SOURCE_DIR}/../fltk
 
 	)
 endif()
@@ -91,14 +88,14 @@ endif()
 if(UNIX)
 link_directories(
 
-	${paperCrop_SOURCE_DIR}/../FLTK/lib
+	#${paperCrop_SOURCE_DIR}/../FLTK/lib
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8
 	${paperCrop_SOURCE_DIR}/devil/lib
 	${paperCrop_SOURCE_DIR}/../FreeImage/Dist
 	${paperCrop_SOURCE_DIR}/poppler/
 	${paperCrop_SOURCE_DIR}/../Freetype/objs/.libs 
 	${paperCrop_SOURCE_DIR}/luabind-0.9/Debug
-	${paperCrop_SOURCE_DIR}/../lua-5.1.4/src
+	${LUA_LIB}
 )
 endif()
 
@@ -214,10 +211,8 @@ if(UNIX)
 	freeimage
 	z
 	jpeg
-	freetype
+	
 	luabind
-	lua
-	fontconfig
 	)
 
 endif()
