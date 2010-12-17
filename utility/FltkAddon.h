@@ -83,8 +83,8 @@ public:
 	bool operator==(Fl_Widget* pWidget) const	{ return (Fl_Widget* )m_pMenu==pWidget;}
 
 	// get user data of the current choice.
-	int userData()		{ return (int)(m_aMenuItem[m_pMenu->value()].user_data()); }
-	int userData(int n)	{ return (int)(m_aMenuItem[n].user_data()); }
+	void* userData()		{ return (m_aMenuItem[m_pMenu->value()].user_data()); }
+	void* userData(int n)	{ return (m_aMenuItem[n].user_data()); }
 	void value(int n)	{ m_pMenu->value(n);}
 	int value()	const	{ return m_pMenu->value(); }
 	void redraw()		{ m_pMenu->redraw(); }
