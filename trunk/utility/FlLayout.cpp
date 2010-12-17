@@ -765,7 +765,7 @@ void FlLayout::cbFunc(Fl_Widget * pWidget, void *data)
 		return;
 	}
 
-	pLayout->onCallback(pLayout->_findWidget(pWidget), pWidget, (int)data);
+	pLayout->onCallback(pLayout->_findWidget(pWidget), pWidget, (int)(reinterpret_cast<long long>(data)));
 #endif
 }
 

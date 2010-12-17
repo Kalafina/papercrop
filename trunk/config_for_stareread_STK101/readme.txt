@@ -1,7 +1,7 @@
 Installation:
 You have to have STKMaker6.0 and AutoIt3 installed. (Both freeware)
 Find "desktop_folder=c:..." in config.lua and correct it (according to your windows version and username). 
-This really have to the desktop folder of your MS operating system.
+This really have to be the desktop folder of your MS operating system.
 Also, find "screenWidth" and "screenHeight" in stkmaker.au3 and correct it (according to your monitor's resolution).
 
 Usage 1 (using PaperCrop):
@@ -14,7 +14,7 @@ When you press the "convert all pages" button on the papercrop program, the stkm
 6. delete the temporary images and folder
 7. close the STKMaker
 all automatically. (Make sure not moving the mouse while the stkmaker.au3 script is working.)
-So all you have to do is to copy the resulting STK file into your ebook. 
+So all you need to do is to copy the resulting STK file into your ebook. 
 (Even this can be automated by editing config.lua move_to_folder variable.)
 
 Usage 2: console mode conversion from jpeg sequence to STK format without using PaperCrop

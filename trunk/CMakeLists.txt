@@ -24,6 +24,9 @@ else()
 	message("Windows OS")
 endif()
 
+if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+	add_definitions(-DAMD64)
+endif()
 
 if(UNIX)
 	set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
@@ -211,7 +214,7 @@ if(UNIX)
 	freeimage
 	z
 	jpeg
-	lua	
+	lua5.1
 	luabind
 	)
 
