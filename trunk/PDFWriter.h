@@ -35,14 +35,14 @@ class PDFWriter
     HPDF_Doc  pdf;
 	HPDF_Font font;
 	std::vector<HPDF_BYTE > im;
-	
+	std::vector<HPDF_BYTE > im4;
 public:
 	PDFWriter(){pdf=NULL; }
 	~PDFWriter(){ HPDF_Free (pdf);}
 
 	bool init();
 	bool isValid() { return pdf!=NULL;}
-	void addPage(CImage const& pageImage);
+	void addPage(CImage const& pageImage, int bpp); // currently only 4 and 8 is supported
 	void addPageColor(CImage const& pageImage);
 	void save(const char* fname);
 };
