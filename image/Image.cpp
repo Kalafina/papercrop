@@ -150,6 +150,18 @@ void CImage::GetVertLine(int i, CPixels& out)
 	}
 }
 
+static void CImage_flipY(CImage& inout)
+{
+	CPixelRGB8 * line_swap=new CPixelRGB8[inout.GetWidth()];
+	for(int i=0; i<inout.GetHeight()/2; i++)
+	{
+		CPixelRGB8* line1=inout.GetPixel(0,i);
+		CPixelRGB8* line2=inout.GetPixel(0,inout.GetHeight()-i-1);
+		memcpy(line_swap, line1, sizeof(CPixelRGB8)*inout.GetWidth());
+		memcpy(line1, line2, sizeof(CPixelRGB8)*inout.GetWidth());
+		memcpy(line2, line_swap, sizeof(CPixelRGB8)*inout.GetWidth());
+	}
+}
 bool CImage::Load(const char* filename)
 {
 	ilBindImage(_id);
@@ -159,7 +171,13 @@ bool CImage::Load(const char* filename)
 	_size.y= ilGetInteger(IL_IMAGE_HEIGHT);
 	_dataPtr=ilGetData();
 	_stride=GetWidth()*3;
-	CHECK_VALID;
+	if (TString(filename).right(3).toUpper()=="JPG")
+	{
+		CImage_flipY(*this);
+		_flipped=true;
+	}
+	else
+		_flipped=false;
 
 	return true;
 }
@@ -205,6 +223,9 @@ bool GenericWriter(FIBITMAP* dib, const char* lpszPathName, int flag=0) {
 
 static void CImage_SaveFreeImage(CImage & image, const char* filename, int BPP=-1)
 {
+#ifdef _MSC_VER
+	CImage_flipY(image); // somehow MS windwows and linux shows different behavior.
+#endif
 //	applyFloydSteinberg(image, 4);
 
 	BYTE* bits=image._dataPtr;
@@ -212,10 +233,38 @@ static void CImage_SaveFreeImage(CImage & image, const char* filename, int BPP=-
 	int height=image.GetHeight();
 	int scan_width=image._stride;
 
+	{
+		BYTE* pixels=bits;
+		int w=width;
+		int h=height;
+		unsigned char temp;
+		int pos;
+		//---------------------------- swap RGB to BGR
+		for (int i = 0; i < w*h; i++){
+			pos=i*3;
+			temp = pixels[pos];
+			pixels[pos  ] = pixels[pos+2];
+			pixels[pos+2] = temp;
+		}
+	}
 	// convert a 32-bit raw buffer (top-left pixel first) to a FIBITMAP
 	// ----------------------------------------------------------------
 	FIBITMAP *dst = FreeImage_ConvertFromRawBits(bits, width, height, scan_width,
-		24, FI_RGBA_BLUE_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_RED_MASK, FALSE);
+			24, 0, 0, 0, FALSE);
+	{
+		BYTE* pixels=bits;
+		int w=width;
+		int h=height;
+		unsigned char temp;
+		int pos;
+		//---------------------------- back to RGB
+		for (int i = 0; i < w*h; i++){
+			pos=i*3;
+			temp = pixels[pos];
+			pixels[pos  ] = pixels[pos+2];
+			pixels[pos+2] = temp;
+		}
+	}
 
 	
 	TString ext=TString(filename).right(3).toUpper();
@@ -253,6 +302,9 @@ static void CImage_SaveFreeImage(CImage & image, const char* filename, int BPP=-
 
 	//FIBITMAP *dst2 = FreeImage_Dither(dst, FID_FS);
 	FreeImage_Unload(dst);
+#ifdef _MSC_VER
+	CImage_flipY(image);
+#endif
 }
 
 bool CImage::Save(const char* filename)
@@ -267,6 +319,7 @@ bool CImage::Save(const char* filename)
 		DeleteFile(filename);
 #endif
 	}
+	/*
 
 	TString ext=TString(filename).right(3).toUpper();
 	if(ext=="BMP" || ext=="GIF")
@@ -275,9 +328,21 @@ bool CImage::Save(const char* filename)
 	}
 	else
 	{
+		if (TString(filename).right(3).toUpper()=="JPG")
+		{
+			printf("flipping..\n");
+
+		//if (_flipped)
+			CImage_flipY(*this);
+		}
 		ilBindImage(_id);
 		ilSaveImage(filename);
+		if (TString(filename).right(3).toUpper()=="JPG")
+		//if (_flipped)
+			CImage_flipY(*this);
 	}
+	*/
+	save(filename, 24);
 	return 1;
 }
 
@@ -335,7 +400,7 @@ void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 	int hlNorm2=lNorm2/2;
 	CImagePixel bitmapData(&_bitmapData);
 
-#define USE_DEC_DYNRANGE
+//#define USE_DEC_DYNRANGE
 #ifdef USE_DEC_DYNRANGE
 #define DEC_DYN(x)	(x)*lNorm2/lNorm+hlNorm2;
 	for(y=0; y<bitmapData.Height();y++)

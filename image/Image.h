@@ -137,7 +137,7 @@ private:
 
 	int _id;
 	static int __uniqueID;
-	friend class CImage;
+	bool _flipped;// undoing devil's dirty trick
 public:
 	// only for use in Imp
 	int _getILid()	const	{return _id;}

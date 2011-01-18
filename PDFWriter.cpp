@@ -76,7 +76,7 @@ bool PDFWriter::init()
 	return true;
 }
 
-void PDFWriter::addPage(CImage const& pageImage)
+void PDFWriter::addPage(CImage const& pageImage, int bpp)
 {
 	/* add a new page object. */
     HPDF_Page page = HPDF_AddPage (pdf);
@@ -103,9 +103,37 @@ void PDFWriter::addPage(CImage const& pageImage)
 
 	ASSERT(k==w*h);
 
+	HPDF_BYTE* ptr=&im[0];
+	if (bpp==4 || bpp==2 || bpp==1)
+	{
+		im4.resize(w*h/2+1);
+		int c=0;
+		int k=0;
+		for(int i=0; i<h; i++)
+			for(int j=0; j<w; j++)
+			{
+				if (k%2==0)
+				{
+					im4[c]=((im[k]>>4)&0xFF)<<4;
+				}
+				else
+				{
+					im4[c]=(im[k]>>4)&0xFF | im4[c];
+					c++;
+				}
+				k++;
+			}
+		ptr=&im4[0];
+		bpp=4;
+	}
+	else
+		assert(bpp==8);
+
     /* load GrayScale raw-image (1bit) file from memory. */
-    HPDF_Image image = HPDF_LoadRawImageFromMem (pdf, &im[0], w, h,
-                HPDF_CS_DEVICE_GRAY, 8);
+    HPDF_Image image = HPDF_LoadRawImageFromMem (pdf, ptr, w, h,
+//                HPDF_CS_DEVICE_GRAY, 8);
+//                HPDF_CS_DEVICE_RGB, 2);
+                HPDF_CS_DEVICE_GRAY, bpp);
 
     
     /* Draw image to the canvas. (normal-mode with actual size.)*/

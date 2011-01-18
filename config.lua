@@ -1,27 +1,42 @@
+-- list of known configurations just for reference. 
+-- Auto-configuration similar to calibre won't be implemented.
+-- please send me e-mail if you know your device's correct configuration.
+--
+kobo_wireless={582,740} -- huge waste of screen real estate. 
+cybook = {600, 800} -- if title bar is hidden
+-- kindle, sony reader, etc -- please let me know if you know...I've got too many e-mails asking about this these days 
+--
 ---------------------------------------------------------------------
 -- user settings
 ---------------------------------------------------------------------
 
-device_width=600
-device_height=800
+
+
+device={600,800} -- {device_width, device_height}
+--uncomment if your device is listed below
+--device=kobo_wireless  
+
 scroll_overlap_pixels=40
 output_format=".jpg"
 output_to_pdf=true -- output to a pdf file, instead of multiple image files when possible.
-color_depth=8 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. Use only for devices without built-in dithering.
+color_depth=4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. Use only for devices without built-in dithering.
 force_resolution=true
 nr_of_pages_per_pdf_book = 100;
 max_vspace=16 -- pixels
---move_to_folder="h:\\ebooks" -- uncomment if needed
+--move_to_folder="h:\\ebooks" -- uncomment and edit if needed
 landscapeRotate="rotateLeft"
 
 ---------------------------------------------------------------------
 -- utility functions
 ---------------------------------------------------------------------
 
+-- Do not edit below unless you know what you are doing. 
+device_width=device[1]
+device_height=device[2]
 if landscapeRotate=="rotateLeft" then
-   landscapeRotate=function (img) img:rotateLeft() end
+	landscapeRotate=function (img) img:rotateLeft() end
 else
-   landscapeRotate=function (img) img:rotateRight() end
+	landscapeRotate=function (img) img:rotateRight() end
 end
 
 
@@ -31,45 +46,51 @@ end
 
 
 book_pages = {
-  book_part_nr,
-  nr_of_pages
+	book_part_nr,
+	nr_of_pages
 };
 
 function book_pages:init(part_nr)
-  self.book_part_nr = part_nr;
-  self.nr_of_pages = 0;
-  self.outpdf=PDFWriter()
-  self.outpdf:init()
+	self.book_part_nr = part_nr;
+	self.nr_of_pages = 0;
+	self.outpdf=PDFWriter()
+	self.outpdf:init()
 end
 
 function book_pages:init_for_next_part()
-  self:init(self.book_part_nr + 1);
+	self:init(self.book_part_nr + 1);
 end
 
 function book_pages:add_page (image, outdir)
-self.nr_of_pages = self.nr_of_pages + 1;
+	self.nr_of_pages = self.nr_of_pages + 1;
 	if color_depth>8 then
 		self.outpdf:addPageColor(image)
 	else
-		self.outpdf:addPage(image)
+		self.outpdf:addPage(image, color_depth)
 	end
 	collectgarbage();
 end
 
 function book_pages:writeToFile(outdir)
-  if self.nr_of_pages > 0 then
-    local outpdf = PDFWriter();
-    local fn=outdir .. "_" .. self.book_part_nr .. ".pdf"
-    self.outpdf:save(fn);
+	if self.nr_of_pages > 0 then
+		local outpdf = PDFWriter();
+		local fn=outdir .. "_" .. self.book_part_nr .. ".pdf"
+		self.outpdf:save(fn);
 
-    if move_to_folder then
-       local fn2=string.gsub(fn,"/", "\\")
-       local cmd='move /Y "'..fn2..'" '..move_to_folder
-	print(cmd)
-       os.execute(cmd)
-    end
-    collectgarbage();
-  end;
+		if move_to_folder then
+			if os.isLinux() then
+				local cmd='mv "'..fn..'" "'..move_to_folder..'/"'
+				print(cmd)
+				os.execute(cmd)
+			else
+				local fn2=string.gsub(fn,"/", "\\")
+				local cmd='move /Y "'..fn2..'" '..move_to_folder
+				print(cmd)
+				os.execute(cmd)
+			end
+		end
+		collectgarbage();
+	end;
 end
 ---------------------------------------------------------------------
 
@@ -79,9 +100,9 @@ end
 function initializeOutput(outdir)
 	if output_to_pdf then
 		--vv--outpdf:init();
-    book_pages:init(1);
-    --^^--
-  else
+		book_pages:init(1);
+		--^^--
+	else
 		win:deleteAllFiles()
 	end
 end
@@ -101,16 +122,16 @@ function outputImage(image, outdir, pageNo, rectNo)
 		end
 	end
 
-  if output_to_pdf then ----if output_to_pdf and outpdf:isValid() then
-    if (book_pages.nr_of_pages < nr_of_pages_per_pdf_book) then
-      book_pages:add_page(image, outdir);
-    else
-      book_pages:writeToFile(outdir);
-      book_pages:init_for_next_part();
-    end
+	if output_to_pdf then ----if output_to_pdf and outpdf:isValid() then
+		if (book_pages.nr_of_pages < nr_of_pages_per_pdf_book) then
+			book_pages:add_page(image, outdir);
+		else
+			book_pages:writeToFile(outdir);
+			book_pages:init_for_next_part();
+		end
 
 	else
---		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
+		--		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
 		if color_depth<=8 then
 			image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),8)
 		else
@@ -120,25 +141,25 @@ function outputImage(image, outdir, pageNo, rectNo)
 end
 
 function finalizeOutput(outdir)
---vv--if output_to_pdf and outpdf:isValid() then
---vv--  outpdf:save(outdir.."_output.pdf")
-  if output_to_pdf then
-    book_pages:writeToFile(outdir);
-    book_pages:init(0);
+	--vv--if output_to_pdf and outpdf:isValid() then
+	--vv--  outpdf:save(outdir.."_output.pdf")
+	if output_to_pdf then
+		book_pages:writeToFile(outdir);
+		book_pages:init(0);
 	end
---^^--
+	--^^--
 end
 
 function postprocessImage(image)
-    -- sharpen(amount in [1, 2.5], iterations), see ilu manual for more details.
+	-- sharpen(amount in [1, 2.5], iterations), see ilu manual for more details.
 	--image:sharpen(1.5, 1)
 	--image:contrast(1.5)
---    image:gamma(0.5) -- uncomment if you want thicker fonts.
+	--    image:gamma(0.5) -- uncomment if you want thicker fonts.
 	if color_depth<8 then
-	    image:gamma(0.5) -- e-ink devices tends to have low contrast.
+		image:gamma(0.5) -- e-ink devices tends to have low contrast.
 	end
 
-if color_depth==2 then
+	if color_depth==2 then
 		image:dither(4)
 	elseif color_depth==4 then
 		image:dither(16)
@@ -148,33 +169,33 @@ if color_depth==2 then
 end
 
 function processPageSubRoutine(imageM, pageNo, width, numRects)
-   
-
-   for rectNo=0, numRects-1 do
-      win:setStatus("processing"..pageNo.."_"..rectNo)
-      local image=CImage()
-      win:getRectImage_width(pageNo, rectNo, width, image)
 
 
-      if image:GetWidth()~=width then
-	 -- rectify.
-	 local imageOld=image
-	 image=CImage()
-	 image:create(width, imageOld:GetHeight())
-	 image:drawBox(TRect(0,0, image:GetWidth(), image:GetHeight()), 255,255,255)
-	 image:blit(imageOld, TRect(0,0,math.min(imageOld:GetWidth(), width),imageOld:GetHeight()),0,0)	 
-      end
+	for rectNo=0, numRects-1 do
+		win:setStatus("processing"..pageNo.."_"..rectNo)
+		local image=CImage()
+		win:getRectImage_width(pageNo, rectNo, width, image)
 
-      print(width, image:GetWidth())
 
-      if imageM:GetHeight()==0 then
-	 imageM:CopyFrom(image)
-      else
-	 imageM:concatVertical(imageM, image)
+		if image:GetWidth()~=width then
+			-- rectify.
+			local imageOld=image
+			image=CImage()
+			image:create(width, imageOld:GetHeight())
+			image:drawBox(TRect(0,0, image:GetWidth(), image:GetHeight()), 255,255,255)
+			image:blit(imageOld, TRect(0,0,math.min(imageOld:GetWidth(), width),imageOld:GetHeight()),0,0)	 
+		end
 
-      end
-   end
-   trimVertSpaces(imageM, 2, max_vspace, 255)
+		--print(width, image:GetWidth())
+
+		if imageM:GetHeight()==0 then
+			imageM:CopyFrom(image)
+		else
+			imageM:concatVertical(imageM, image)
+
+		end
+	end
+	trimVertSpaces(imageM, 2, max_vspace, 255)
 end
 
 function splitImage_old(imageM, height, outdir, pageNo, rotateRight)
@@ -194,58 +215,58 @@ function splitImage_old(imageM, height, outdir, pageNo, rotateRight)
 			win:setStatus("saving "..pageNo.."_"..subPage)
 		end
 	else
-	    local imageS=CImage()
-        imageS:crop(imageM, 0, 0, imageM:GetWidth(), imageM:GetHeight())
+		local imageS=CImage()
+		imageS:crop(imageM, 0, 0, imageM:GetWidth(), imageM:GetHeight())
 		if rotateRight then imageS:rotateRight() end
 		outputImage(imageS,outdir,pageNo,0)
 	end
 end
 
 function splitImage(imageM, height, outdir, pageNo, rotateRight)
-   -- split into multiple subpages 
-   local imageS=CImage()
-   local subPage=0
-   
-   while true 
-   do
-      curY=math.floor(subPage*(height-scroll_overlap_pixels))
---      print(curY, height)
-      if curY+height <= imageM:GetHeight() then
-	 imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
-	 if rotateRight then imageS:rotateRight() end
-	 outputImage(imageS,outdir,pageNo,subPage)
-	 win:setStatus("saving "..pageNo.."_"..subPage)
-      else
-	 imageS:crop(imageM, 0, curY, imageM:GetWidth(), imageM:GetHeight())
-	 if rotateRight then imageS:rotateRight() end
-	 outputImage(imageS,outdir,pageNo,subPage)
-	 win:setStatus("saving "..pageNo.."_"..subPage)
-	 break
-      end
-      subPage=subPage+1
-   end
-end
+	-- split into multiple subpages 
+	local imageS=CImage()
+	local subPage=0
 
-function splitImagePart(imageM, height, outdir, pageNo, rotateRight)
-   -- split into multiple subpages 
-   local imageS=CImage()
-   local subPage=0
-   
-   while true 
-   do
-      curY=math.floor(subPage*(height-scroll_overlap_pixels))
---      print(curY, height)
-      if curY+height <= imageM:GetHeight() then
-	 imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
-	 if rotateRight then imageS:rotateRight() end
-	 postprocessImage(imageS)
-	 outputImage(imageS,outdir,pageNo,subPage)
-	 win:setStatus("saving "..pageNo.."_"..subPage)
-      else
-	 imageM:crop(imageM, 0, curY, imageM:GetWidth(), imageM:GetHeight())
-	 break
-      end
-      subPage=subPage+1
-   end
-end
+	while true 
+		do
+			curY=math.floor(subPage*(height-scroll_overlap_pixels))
+			--      print(curY, height)
+			if curY+height <= imageM:GetHeight() then
+				imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
+				if rotateRight then imageS:rotateRight() end
+				outputImage(imageS,outdir,pageNo,subPage)
+				win:setStatus("saving "..pageNo.."_"..subPage)
+			else
+				imageS:crop(imageM, 0, curY, imageM:GetWidth(), imageM:GetHeight())
+				if rotateRight then imageS:rotateRight() end
+				outputImage(imageS,outdir,pageNo,subPage)
+				win:setStatus("saving "..pageNo.."_"..subPage)
+				break
+			end
+			subPage=subPage+1
+		end
+	end
+
+	function splitImagePart(imageM, height, outdir, pageNo, rotateRight)
+		-- split into multiple subpages 
+		local imageS=CImage()
+		local subPage=0
+
+		while true 
+			do
+				curY=math.floor(subPage*(height-scroll_overlap_pixels))
+				--      print(curY, height)
+				if curY+height <= imageM:GetHeight() then
+					imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
+					if rotateRight then imageS:rotateRight() end
+					postprocessImage(imageS)
+					outputImage(imageS,outdir,pageNo,subPage)
+					win:setStatus("saving "..pageNo.."_"..subPage)
+				else
+					imageM:crop(imageM, 0, curY, imageM:GetWidth(), imageM:GetHeight())
+					break
+				end
+				subPage=subPage+1
+			end
+		end
 
