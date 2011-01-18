@@ -29,7 +29,7 @@ if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 endif()
 
 if(UNIX)
-	set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
+	set(LUA_INCLUDE "/usr/include/lua5.1" "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
 	set(LUA_LIB "${paperCrop_SOURCE_DIR}/../Lua5.1.4/src" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
 	set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_44_0")
 	set(image_INCLUDE) # all in /usr/include 
