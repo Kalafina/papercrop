@@ -122,7 +122,7 @@ function outputImage(image, outdir, pageNo, rectNo)
 		end
 	end
 
-	if output_to_pdf then ----if output_to_pdf and outpdf:isValid() then
+	if output_to_pdf and book_pages.nr_of_pages~=nil then ----if output_to_pdf and outpdf:isValid() then
 		if (book_pages.nr_of_pages < nr_of_pages_per_pdf_book) then
 			book_pages:add_page(image, outdir);
 		else
@@ -131,6 +131,9 @@ function outputImage(image, outdir, pageNo, rectNo)
 		end
 
 	else
+		if output_to_pdf then
+			print('Warning! output to a jpg file instead of a pdf file. (Process current page?)')
+		end
 		--		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
 		if color_depth<=8 then
 			image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),8)

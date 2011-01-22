@@ -110,6 +110,13 @@ void CImagePixel::DrawHorizLine(int x, int y, int width, CPixelRGB8 color)
 	{
 		std::vector<CPixelRGB8 *> & inputptr=m_pCPP;
 	
+		if(x<0) return;
+		if(x>=m_pInput->GetWidth()) return;
+		if(y<0) return;
+		if(y>=m_pInput->GetHeight()) return;
+		if (x+width>=m_pInput->GetWidth())
+			width=m_pInput->GetWidth()-x-1;
+
 		for(int i=x; i<x+width; i++)
 		{
 			inputptr[y][i]=color;
