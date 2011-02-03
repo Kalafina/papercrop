@@ -2,11 +2,15 @@
 
 = Linux (Ubuntu or some debian distributions) =
 * How to install.
+{{{
 sh ./ubuntu_installer.sh
+}}}
 
 This will install paperCrop at the current folder where ubuntu_installer.sh is.
 
 * How to update to the latest version.
 Just re-run the script
+{{{
 sh ./ubuntu_installer.sh
+}}}
 Update is usually much faster than first-install.
