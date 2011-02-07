@@ -137,11 +137,21 @@ void Imp::contrast(CImage& out, double factor)
 	CHECK_OUT_VALID ;
 }
 
+void gammaCorrection(CImage& _bitmapData, double fGamma);
 void Imp::gammaCorrect(CImage& out, double factor)
 {
-	ilBindImage(out._getILid());
-	iluGammaCorrect(factor);
-	CHECK_OUT_VALID ;
+
+	if (1)
+	{
+		// my implementation
+		gammaCorrection(out, 1.0/factor);
+	}
+	else
+	{
+		ilBindImage(out._getILid());
+		iluGammaCorrect(factor);
+		CHECK_OUT_VALID ;
+	}
 }
 
 void applyFloydSteinberg(CImage& _bitmapData, int _levels);

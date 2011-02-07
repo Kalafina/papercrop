@@ -381,6 +381,32 @@ bool CImage::save(const char* filename, int BPP)
 * R.W. Floyd, L. Steinberg, "An adaptive algorithm for spatial grey scale". Proceedings of the Society of Information Display 17, 75??7 (1976).
 */
 #include "ImagePixel.h"
+void gammaCorrection(CImage& _bitmapData, double fGamma)
+{
+	unsigned char gammaTable[256];
+
+	int lr;
+	for(int i=0; i<256; i++)
+	{
+		int lr=int( pow( ((double)i)/255.0, fGamma)*255.0+0.5);
+		lr=	lr < 0 ? lr = 0: lr > 255 ? lr = 255 : lr;
+		gammaTable[i]= (unsigned char)lr;
+	}
+	CImagePixel bitmapData(&_bitmapData);
+
+	for(int y=0; y<bitmapData.Height();y++)
+	{
+		CPixelRGB8* line=bitmapData[y];
+
+		for(int x=0; x<bitmapData.Width();x++)
+		{
+			line[x].R=gammaTable[line[x].R];
+			line[x].G=gammaTable[line[x].G];
+			line[x].B=gammaTable[line[x].B];
+		}		
+	}
+}
+
 void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 {
 	double levels=(double)_levels;
