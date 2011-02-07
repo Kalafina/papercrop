@@ -257,9 +257,6 @@ function os.isFileExist(fn)
 end
 
 
-
--- LUAclass method is for avoiding so many bugs in luabind's "class" method (especially garbage collection).
-
 -- usage: MotionLoader=LUAclass()
 --   ...  MotionLoader:__init(a,b,c)
 
