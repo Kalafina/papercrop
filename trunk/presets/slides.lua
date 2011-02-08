@@ -1,4 +1,4 @@
-MIN_gap=7.72
+MIN_gap=10
 margin=1.45
 N_columns=1
 white_point=255
