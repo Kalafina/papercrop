@@ -29,7 +29,7 @@ if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 endif()
 
 if(UNIX)
-	set(LUA_INCLUDE "/usr/include/lua5.1" "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
+	set(LUA_INCLUDE "/usr/include/lua5.1" )
 	set(LUA_LIB "${paperCrop_SOURCE_DIR}/../Lua5.1.4/src" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
 	set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_44_0")
 	set(image_INCLUDE) # all in /usr/include 
@@ -45,7 +45,23 @@ else()
 endif()
 
 add_subdirectory(luabind-0.9)
+
+if(UNIX)
 add_subdirectory(poppler)
+else()
+set(CMAKE_SOURCE_DIR "${paperCrop_SOURCE_DIR}/poppler-0.16.2")
+set(FREETYPE_INCLUDE_DIRS "${paperCrop_SOURCE_DIR}/ext/freetype231/include")
+set(FREETYPE_LIBRARY "${paperCrop_SOURCE_DIR}/ext/freetype231/freetype231mt.lib")
+set(JPEG_INCLUDE_DIR "${paperCrop_SOURCE_DIR}/ext/jpeg")
+set(JPEG_LIBRARY "${paperCrop_SOURCE_DIR}/ext/jpeg/jpeg_s.lib")
+set(ZLIB_INCLUDE_DIRS "${paperCrop_SOURCE_DIR}/ext/zlib")
+set(ZLIB_LIBRARIES "${paperCrop_SOURCE_DIR}/ext/zlib/zlib_s.lib")
+set(ICONV_INCLUDE_DIR "c:/Program Files/GnuWin32/include")
+set(ICONV_LIBRARIES "c:/Program Files/GnuWin32/lib")
+set(ICONV_SECOND_ARGUMENT_IS_CONST on)
+include_directories(${ICONV_INCLUDE_DIR} ${paperCrop_SOURCE_DIR}/poppler-0.16.2)
+add_subdirectory(poppler-0.16.2)
+endif()
 
 
 if(UNIX)
@@ -53,7 +69,7 @@ if(UNIX)
 	${LUA_INCLUDE}
 	${boost_INCLUDE}
 	${paperCrop_SOURCE_DIR}
-	#${paperCrop_SOURCE_DIR}/../FLTK
+	#${paperCrop_SOURCE_DIR}/../FLTK  # fltk would be in /usr/include
 	${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
 	${paperCrop_SOURCE_DIR}/luabind-0.9
@@ -70,21 +86,20 @@ else()
 
 	${LUA_INCLUDE}
 	${boost_INCLUDE}
-	#${paperCrop_SOURCE_DIR}/../Boost_1_44_0
-	${paperCrop_SOURCE_DIR}
-	#${paperCrop_SOURCE_DIR}/../FLTK # fltk might be in /usr/include
-	#${paperCrop_SOURCE_DIR}/../fltk
+	${paperCrop_SOURCE_DIR}	
+	${image_INCLUDE}
+	${paperCrop_SOURCE_DIR}/../fltk
 	${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
 	${paperCrop_SOURCE_DIR}/luabind-0.9
-	${paperCrop_SOURCE_DIR}/../poppler-0.14.4/poppler
-	${paperCrop_SOURCE_DIR}/../poppler-0.14.4/goo
+	${paperCrop_SOURCE_DIR}/poppler-0.16.2/poppler
+	${paperCrop_SOURCE_DIR}/poppler-0.16.2/goo
 	${paperCrop_SOURCE_DIR}/ext/jpeg
 	${paperCrop_SOURCE_DIR}/ext/zlib
 	${paperCrop_SOURCE_DIR}/ext/freetype231/include
-	${paperCrop_SOURCE_DIR}/../poppler-0.14.4/poppler
-	${paperCrop_SOURCE_DIR}/../poppler-0.14.4/splash
-
+	${paperCrop_SOURCE_DIR}/poppler-0.16.2/poppler
+	${paperCrop_SOURCE_DIR}/poppler-0.16.2/splash
+	${ICONV_INCLUDE_DIR}
 	)
 endif()
 
@@ -97,9 +112,12 @@ link_directories(
 	${paperCrop_SOURCE_DIR}/../FreeImage/Dist
 	${paperCrop_SOURCE_DIR}/poppler/
 	${paperCrop_SOURCE_DIR}/../Freetype/objs/.libs 
-	${paperCrop_SOURCE_DIR}/luabind-0.9/Debug
+	${paperCrop_SOURCE_DIR}/luabind-0.9/Release
 	${LUA_LIB}
 )
+else()
+link_directories(${paperCrop_SOURCE_DIR}/build/luabind-0.9/release)
+link_directories(${paperCrop_SOURCE_DIR}/build/poppler-0.16.2/release)
 endif()
 
 if(UNIX)
@@ -224,8 +242,8 @@ endif()
 IF(MSVC)
 	target_link_libraries(paperCrop
 		${LUA_LIB}
-		LuaBind
-		PopplerLib
+		luabind
+		poppler
 		debug ${paperCrop_SOURCE_DIR}/ext/freetype231/freetype231mt_d.lib 
 		debug ${paperCrop_SOURCE_DIR}/ext/zlib/zlib_ds.lib 
 		debug ${paperCrop_SOURCE_DIR}/ext/jpeg/jpeg_ds.lib 
@@ -250,5 +268,8 @@ IF(MSVC)
 		winspool.lib 
 		Msimg32.lib 
 		wininet.lib
+		${ICONV_LIBRARIES}/libiconv.lib
+		${ICONV_LIBRARIES}/libcharset.lib
+		
 		)
 endif()

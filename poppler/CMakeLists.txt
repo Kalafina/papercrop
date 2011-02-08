@@ -60,9 +60,9 @@ include_directories(
 -DWITH_FONTCONFIGURATION_FONTCONFIG=1
 -D_FILE_OFFSET_BITS=64
 )
-
+if(UNIX)
  add_definitions(-Wno-write-strings -Woverloaded-virtual -Wnon-virtual-dtor)
-
+endif()
 set(poppler_SRCS
 
 

@@ -494,7 +494,7 @@ void FlLayout::updateLayout()
 		{
 			FlLayoutGroup* o=(FlLayoutGroup*)mWidgets[i].mWidget;
 
-			_curHeight(i)=o->minimumHeight()+25;
+			_curHeight(i)=o->minimumHeight()+30;
 			if(o)
 				o->resize(_left(i), cury+15, _currWidth(i), _curHeight(i)-15);
 
@@ -523,6 +523,11 @@ void FlLayout::updateLayout()
 	{
 		mScrollbar->show();
 		mScrollbar->value(0, h(), 0, m_minimumHeight);
+	}
+	else
+	{
+		mScrollbar->value(0, h(), 0, m_minimumHeight);
+		mScrollbar->hide();
 	}
 	// connect
 	for(int i=0; i<mWidgets.size()-1; i++)

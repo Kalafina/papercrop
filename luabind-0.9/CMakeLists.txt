@@ -10,7 +10,7 @@ project(LuaBind)
 # Make sure the compiler can find include files from our Hello library.
 include_directories (
 ${LuaBind_SOURCE_DIR}
-${LuaBind_SOURCE_DIR}/../../boost_1_44_0
+${boost_INCLUDE}
 ${LUA_INCLUDE}
 #${LuaBind_SOURCE_DIR}/../../gsl-1.6
 )
