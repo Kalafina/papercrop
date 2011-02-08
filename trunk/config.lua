@@ -1,36 +1,37 @@
--- list of known configurations just for reference. 
--- Auto-configuration similar to calibre won't be implemented.
+---------------------------------------------------------------------
+-- list of known configurations for reference. You still have to manually edit the user setting below. 
 -- please send me e-mail if you know your device's correct configuration.
---
-kobo_wireless={582,740} -- huge waste of screen real estate. 
-cybook = {600, 800} -- if title bar is hidden
--- kindle, sony reader, etc -- please let me know if you know...I've got too many e-mails asking about this these days 
---
+---------------------------------------------------------------------
+
+kobo_wireless={582,740} -- Huge waste of screen real estate. 
+cybook = {600, 800} -- when title bar is hidden!
+-- kindle, sony reader, etc -- Please let me know if you know. I've got many e-mails asking about this.
+
 ---------------------------------------------------------------------
 -- user settings
 ---------------------------------------------------------------------
 
-
-
 device={600,800} -- {device_width, device_height}
 --uncomment if your device is listed below
 --device=kobo_wireless  
+--device=cybook
 
 scroll_overlap_pixels=40
 output_format=".jpg"
 output_to_pdf=true -- output to a pdf file, instead of multiple image files when possible.
-color_depth=4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. Use only for devices without built-in dithering.
+color_depth=4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. 
 force_resolution=true
 nr_of_pages_per_pdf_book = 100;
 max_vspace=16 -- pixels
---move_to_folder="h:\\ebooks" -- uncomment and edit if needed
+
+--move_to_folder="h:\\ebooks" -- uncomment and edit if you want to automatically move the output file to the ebook device
 landscapeRotate="rotateLeft"
 
 ---------------------------------------------------------------------
 -- utility functions
 ---------------------------------------------------------------------
 
--- Do not edit below unless you know what you are doing. 
+-- Do not edit below unless you know what you are doing. Edit line 14 instead.
 device_width=device[1]
 device_height=device[2]
 if landscapeRotate=="rotateLeft" then
