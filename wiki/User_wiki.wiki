@@ -9,8 +9,23 @@ sh ./ubuntu_installer.sh
 This will install paperCrop at the current folder where ubuntu_installer.sh is.
 
 * How to update to the latest version.
+
 Just re-run the script
 {{{
 sh ./ubuntu_installer.sh
 }}}
 Update is usually much faster than first-install.
+
+* Update doesn't seem to work. What should I do?
+
+Reverting your modification of config.lua might be needed.
+{{{
+cd paperCrop_source
+svn revert config.lua
+}}}
+
+Rebuilding the entire source code might be helpful.
+{{{
+cd paperCrop_source
+sh clean_build.sh
+}}}
