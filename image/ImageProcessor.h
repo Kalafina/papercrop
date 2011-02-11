@@ -32,6 +32,7 @@ namespace Imp
 	void gammaCorrect(CImage& inout, double factor);
 	void dither(CImage& inout, int levels);
 	void resize(CImage& inout, int width, int height);
+	void downsample4(CImage& out, CImage const& in);
 	void blit(CImage& out, CImage const& in, TRect const& rect_in, int x, int y);
 	void concatVertical(CImage& out, CImage const& a, CImage const& b);
 	void crop(CImage& out, CImage const& in, int left, int top, int right, int bottom);

@@ -26,7 +26,7 @@
 #include "Resource.h"
 
 
-enum { WIDTH=644+180, HEIGHT=700, RENDERER_WIDTH=644 };
+enum { WIDTH=644+200, HEIGHT=700, RENDERER_WIDTH=644 };
 
 class PDFwin;
 class RightPanel;

@@ -20,6 +20,8 @@
 //
 
 
+#ifndef RIGHT_PANEL_H_
+#define RIGHT_PANEL_H_
 #pragma once
 #include "utility/FlLayout.h"
 
@@ -27,8 +29,8 @@ class PDFwin;
 class RightPanel :
 	public FlLayout
 {
-	PDFwin* mPDFwin;
 public:
+	PDFwin* mPDFwin;
 	RightPanel(int x, int y, int w, int h,PDFwin* );
 	virtual ~RightPanel(void);
 
@@ -38,3 +40,4 @@ public:
 	void onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int userData);
 
 };
+#endif

@@ -84,7 +84,6 @@ public:
 	{
 		delete _pdfDoc;
 		delete _outputDev;
-
 		_bmpCache.resize(0);
 		_textCache.resize(0);
 
@@ -439,10 +438,12 @@ PDFwin::PDFwin(int x, int y, int w, int h)
 	// use zero index.
 	mCurrPage=0;
 	mSelectedRect=mRects.end();
+	_filename=" ";
 }
 
 void PDFwin::load(const char* filename)
 {
+	_filename=" ";
 	delete mModel;
 	mModel=new PDFmodel();
 	if(!mModel->load(filename))
@@ -451,6 +452,7 @@ void PDFwin::load(const char* filename)
 		delete mModel;
 		mModel=NULL;
 	}
+	_filename=filename;
 	mOutDir=TString(filename).left(-4);
 	mCurrPage=0;
 	pageChanged();

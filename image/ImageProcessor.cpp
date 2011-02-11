@@ -66,6 +66,32 @@ void Imp::blit(CImage& out, CImage const& in, TRect const& rect_in, int x, int y
 #endif
 }
 
+void Imp::downsample4(CImage& out, CImage const& in)
+{
+	int newWidth=in.GetWidth()/2;
+	int newHeight=in.GetHeight()/2;
+	out.Create(newWidth, newHeight);
+	CImagePixel op(&out);
+	CImagePixel ip((CImage*)&in);
+	
+	for(int i=0; i<newHeight; i++)
+	{
+		CPixelRGB8* lineo=out.GetPixel(0,i);
+		CPixelRGB8* line1=in.GetPixel(0,i*2);
+		CPixelRGB8* line2=in.GetPixel(0,i*2+1);
+		for(int j=0; j<newWidth; j++)
+		{
+			CPixelRGB8& p1=line1[j*2];
+			CPixelRGB8& p2=line1[j*2+1];
+			CPixelRGB8& p3=line2[j*2];
+			CPixelRGB8& p4=line2[j*2+1];
+			
+			lineo[j].R=(unsigned char)(((int)p1.R+(int)p2.R+(int)p3.R+(int)p4.R+2)/4);
+			lineo[j].G=(unsigned char)(((int)p1.G+(int)p2.G+(int)p3.G+(int)p4.G+2)/4);
+			lineo[j].B=(unsigned char)(((int)p1.B+(int)p2.B+(int)p3.B+(int)p4.B+2)/4);
+		}
+	}
+}
 void Imp::drawBox(CImage& inout, TRect const& t, int R, int G, int B)
 {
 	CImagePixel p(&inout);

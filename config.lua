@@ -1,4 +1,4 @@
----------------------------------------------------------------------
+-----------------------------------------------------------------
 -- list of known configurations for reference. You still have to manually edit the user setting below. 
 -- please send me e-mail if you know your device's correct configuration.
 ---------------------------------------------------------------------
@@ -21,6 +21,7 @@ output_format=".jpg"
 output_to_pdf=true -- output to a pdf file, instead of multiple image files when possible.
 color_depth=4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. 
 force_resolution=true
+use_4xsupersampling=false -- better quality output for scanned documents, but slower.
 nr_of_pages_per_pdf_book = 100;
 max_vspace=16 -- pixels
 
@@ -34,6 +35,11 @@ landscapeRotate="rotateLeft"
 -- Do not edit below unless you know what you are doing. Edit line 14 instead.
 device_width=device[1]
 device_height=device[2]
+if use_4xsupersampling then
+	device_width=device_width*2
+	device_height=device_height*2
+end
+
 if landscapeRotate=="rotateLeft" then
 	landscapeRotate=function (img) img:rotateLeft() end
 else
@@ -79,7 +85,7 @@ function book_pages:writeToFile(outdir)
 		self.outpdf:save(fn);
 
 		if move_to_folder then
-			if os.isLinux() then
+			if os.isUnix() then
 				local cmd='mv "'..fn..'" "'..move_to_folder..'/"'
 				print(cmd)
 				os.execute(cmd)
@@ -109,37 +115,51 @@ function initializeOutput(outdir)
 end
 
 function outputImage(image, outdir, pageNo, rectNo)
-	if force_resolution then
-		if image:GetWidth()<device_width or image:GetHeight()<device_height then
-			local img=CImage()
-			img:CopyFrom(image)
-			local new_width=math.max(image:GetWidth(), device_width)
-			local new_height=math.max(image:GetHeight(), device_height)
-			image:create(new_width, new_height)
-			image:drawBox(TRect(0,0,image:GetWidth(), image:GetHeight()), 255,255,255)
-			local y=math.max(device_height-img:GetHeight(),0)
-			local x=math.max(device_width-img:GetWidth(),0)
-			image:blit(img, TRect(0,0,img:GetWidth(), img:GetHeight()), x,y)
-		end
-	end
 
-	if output_to_pdf and book_pages.nr_of_pages~=nil then ----if output_to_pdf and outpdf:isValid() then
-		if (book_pages.nr_of_pages < nr_of_pages_per_pdf_book) then
-			book_pages:add_page(image, outdir);
-		else
-			book_pages:writeToFile(outdir);
-			book_pages:init_for_next_part();
+	local device_width=device_width
+	local device_height=device_height
+	do
+		local image=image
+		if use_4xsupersampling then
+			device_width=device_width/2
+			device_height=device_height/2
+			local image_4x=image
+			image=CImage()
+			image:downsample4(image_4x)
+		end
+		if force_resolution then
+			if image:GetWidth()<device_width or image:GetHeight()<device_height then
+				local img=CImage()
+				img:CopyFrom(image)
+				local new_width=math.max(image:GetWidth(), device_width)
+				local new_height=math.max(image:GetHeight(), device_height)
+				image:create(new_width, new_height)
+				image:drawBox(TRect(0,0,image:GetWidth(), image:GetHeight()), 255,255,255)
+				local y=math.max(device_height-img:GetHeight(),0)
+				local x=math.max(device_width-img:GetWidth(),0)
+				image:blit(img, TRect(0,0,img:GetWidth(), img:GetHeight()), x,y)
+			end
 		end
 
-	else
-		if output_to_pdf then
-			print('Warning! output to a jpg file instead of a pdf file. (Process current page?)')
-		end
-		--		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
-		if color_depth<=8 then
-			image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),8)
+		if output_to_pdf and book_pages.nr_of_pages~=nil then ----if output_to_pdf and outpdf:isValid() then
+			if (book_pages.nr_of_pages < nr_of_pages_per_pdf_book) then
+				book_pages:add_page(image, outdir);
+			else
+				book_pages:writeToFile(outdir);
+				book_pages:init_for_next_part();
+				book_pages:add_page(image, outdir);
+			end
+
 		else
-			image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
+			if output_to_pdf then
+				print('Warning! output to a jpg file instead of a pdf file. (Process current page?)')
+			end
+			--		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
+			if color_depth<=8 then
+				image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),8)
+			else
+				image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
+			end
 		end
 	end
 end
