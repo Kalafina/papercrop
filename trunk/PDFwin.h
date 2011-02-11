@@ -50,6 +50,7 @@ public:
 
 	void load(const char* filename);
 
+	std::string _filename;
 	void pageChanged();
 
 	int getNumPages();

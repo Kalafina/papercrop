@@ -112,6 +112,9 @@ void addMainlibModule(lua_State* L)
 				  .def("widget", &FlLayout::widgetRaw)
 				  .def("widgetIndex", &FlLayout::widgetIndex)
 				  .def("findWidget", &FlLayout::findWidget)
+				  .def("resetToDefault", &FlLayout::resetToDefault)
+				  .def("layout", &FlLayout::layout)
+				  .def("findLayout", &FlLayout::findLayout)
 				  .def("callCallbackFunction", &FlLayout::callCallbackFunction)
 				  .def("__call", &FlLayout::__call)
 			  
@@ -198,6 +201,30 @@ void addMainlibModule(lua_State* L)
 				w.button()->tooltip(s);
 #endif
 			}
+			static void buttonTooltip(FlLayout::Widget& w, const char* s)
+			{
+#ifndef NO_GUI				
+				w.button()->tooltip(s);
+#endif
+			}
+			static void buttonSetLabel(FlLayout::Widget& w, const char* s)
+			{
+#ifndef NO_GUI				
+				w.button()->copy_label(s);
+#endif
+			}
+			static void deactivate(FlLayout::Widget& w)
+			{
+#ifndef NO_GUI				
+				w.widget<Fl_Widget>()->deactivate();
+#endif
+			}
+			static void activate(FlLayout::Widget& w)
+			{
+#ifndef NO_GUI				
+				w.widget<Fl_Widget>()->activate();
+#endif
+			}
 			static const char* id(FlLayout::Widget& w)
 			{
 				return w.mId;
@@ -209,6 +236,16 @@ void addMainlibModule(lua_State* L)
 				return browser->size();
 #else
 				return 0;
+#endif
+			}
+			static void inputType(FlLayout::Widget& w, const char* str)
+			{
+#ifndef NO_GUI
+				if (TString(str)=="FL_MULTILINE_OUTPUT")
+				{
+					Fl_Input* ip=w.widget<Fl_Input>();
+					ip->type(FL_MULTILINE_OUTPUT);
+				}
 #endif
 			}
 			static bool browserSelected(FlLayout::Widget& w, int i)
@@ -275,6 +312,10 @@ void addMainlibModule(lua_State* L)
 				  .def("checkButtonValue", FlLayoutWidget_::checkButtonValue2)
 				  .def("checkButtonValue", FlLayoutWidget_::checkButtonValue3)
 				  .def("buttonShortcut", FlLayoutWidget_::buttonShortcut)
+				  .def("deactivate", FlLayoutWidget_::deactivate)
+				  .def("activate", FlLayoutWidget_::activate)
+				  .def("buttonSetLabel", FlLayoutWidget_::buttonSetLabel)
+				  .def("buttonTooltip", FlLayoutWidget_::buttonTooltip)
 				  .def("menuSize", FlLayoutWidget_::menuSize)
 				  .def("menuItem", FlLayoutWidget_::menuItem)
 				  .def("menuItem", FlLayoutWidget_::menuItem2)
@@ -292,6 +333,7 @@ void addMainlibModule(lua_State* L)
 				  .def("browserAdd", FlLayoutWidget_::browserAdd)
 				  .def("inputValue", FlLayoutWidget_::inputValue1)
 				  .def("inputValue", FlLayoutWidget_::inputValue2)
+				  .def("inputType", FlLayoutWidget_::inputType)
 				  .def("menuText", FlLayoutWidget_::menuText)
 .def("menuText", FlLayoutWidget_::menuText2)	
 				  ];
