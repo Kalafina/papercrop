@@ -181,6 +181,9 @@ function onCallback(w, userData)
 		local outdir=string.sub(win.filename, 1, -5)
 
 		if bAll then
+			if not output_to_pdf then
+				CreateDirectory(outdir);
+			end
 			processAllPages(outdir)
 		else
 			CreateDirectory(outdir);
