@@ -1,11 +1,13 @@
 -----------------------------------------------------------------
--- list of known configurations for reference. You still have to manually edit the user setting below. 
+-- list of known configurations for reference. You still have to manually
+-- edit the user setting below. (search for user settings)
 -- please send me e-mail if you know your device's correct configuration.
 ---------------------------------------------------------------------
 
-kobo_wireless={582,740} -- Huge waste of screen real estate. 
-cybook = {600, 800} -- when title bar is hidden!
--- kindle, sony reader, etc -- Please let me know if you know. I've got many e-mails asking about this.
+cybook = {600, 800} -- when title bar is hidden
+kobo_wireless = {582,740} -- Huge waste of screen real estate. 
+kindle3 = {552,736} -- even more...
+-- other kindles, sony readers, etc -- Please let me know if you know. I've got many e-mails asking about this.
 
 ---------------------------------------------------------------------
 -- user settings
@@ -15,9 +17,10 @@ device={600,800} -- {device_width, device_height}
 --uncomment if your device is listed below
 --device=kobo_wireless  
 --device=cybook
+--device=kindle3
 
 scroll_overlap_pixels=40
-output_format=".jpg"
+output_format=".png" -- ".jpg", ".png", ".gif" are supported
 output_to_pdf=true -- output to a pdf file, instead of multiple image files when possible.
 color_depth=4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. 
 force_resolution=true
@@ -156,7 +159,11 @@ function outputImage(image, outdir, pageNo, rectNo)
 			end
 			--		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
 			if color_depth<=8 then
-				image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),8)
+				if output_format==".jpg" then
+					image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),8)
+				else -- png support all bit depths
+					image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format), color_depth)
+				end
 			else
 				image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
 			end
