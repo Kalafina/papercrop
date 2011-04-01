@@ -210,6 +210,7 @@ bool GenericWriter(FIBITMAP* dib, const char* lpszPathName, int flag=0) {
 		if(fif != FIF_UNKNOWN ) {
 			// check that the plugin has sufficient writing and export capabilities ...
 			WORD bpp = FreeImage_GetBPP(dib);
+			//printf("%d \n", bpp);
 			if(FreeImage_FIFSupportsWriting(fif) && FreeImage_FIFSupportsExportBPP(fif, bpp)) {
 				// ok, we can save the file
 				bSuccess = FreeImage_Save(fif, dib, lpszPathName, flag);
@@ -223,8 +224,10 @@ bool GenericWriter(FIBITMAP* dib, const char* lpszPathName, int flag=0) {
 
 static void CImage_SaveFreeImage(CImage & image, const char* filename, int BPP=-1)
 {
-#ifdef _MSC_VER
-	CImage_flipY(image); // somehow MS windwows and linux shows different behavior.
+//#define DEVIL_FLIP_Y
+#if (defined (_MSC_VER)) && (defined (DEVIL_FLIP_Y))
+	printf("here\n");
+   	CImage_flipY(image); // somehow some versions of ms windwows devil shows different behavior.
 #endif
 //	applyFloydSteinberg(image, 4);
 
@@ -302,7 +305,7 @@ static void CImage_SaveFreeImage(CImage & image, const char* filename, int BPP=-
 
 	//FIBITMAP *dst2 = FreeImage_Dither(dst, FID_FS);
 	FreeImage_Unload(dst);
-#ifdef _MSC_VER
+#if (defined (_MSC_VER)) && (defined (DEVIL_FLIP_Y))
 	CImage_flipY(image);
 #endif
 }
@@ -445,6 +448,25 @@ void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 
 #define QUANTIZE2(x) (x)/lNorm*lNorm+hlNorm;
 
+#ifndef COLOR_QUANTIZE
+	for(y=0; y<bitmapData.Height();y++)
+	{
+		CPixelRGB8* line=bitmapData[y];
+		for(x=0; x<bitmapData.Width();x++)
+		{
+			//Retrieve current RGB value.
+			CPixelRGB8& c = line[x];
+			r = c.R;
+			g = c.G;
+			b = c.B;
+			lr =(((int)r + int(g)*2+ int(b))/4);
+			lr < 0 ? lr = 0: lr > 255 ? lr = 255 : lr;
+			c.R=lr;
+			c.G=lr;
+			c.B=lr;
+		}
+	}
+#endif
 	for(y=0; y<bitmapData.Height()-1;y++)
 	{
 		CPixelRGB8* line=bitmapData[y];
@@ -458,6 +480,7 @@ void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 			g = c.G;
 			b = c.B;
 
+#ifdef COLOR_QUANTIZE
 			//Normalize and scale to the number of levels.
 			nr = QUANTIZE2(r);
 			ng = QUANTIZE2(g);
@@ -541,6 +564,71 @@ void applyFloydSteinberg(CImage& _bitmapData, int _levels)
 				lc.G=lg;
 				lc.B=lb;
 			}
+#else
+			//Normalize and scale to the number of levels.
+			nr = QUANTIZE2(r);
+
+			//Set the current pixel.
+			c.R=nr;
+			c.G=nr;
+			c.B=nr;
+
+			//Quantization error.
+			er = (r)-nr;
+
+			//Apply the kernel.
+			//+1,0
+			{
+				CPixelRGB8& lc = line[x+1];
+				lr = (int)lc.R + (d1*er);
+
+				//Clip & Set
+				lr < 0 ? lr = 0: lr > 255 ? lr = 255 : lr;
+
+				lc.R=lr;
+				lc.G=lr;
+				lc.B=lr;
+			}
+
+			//-1,+1
+			{
+				CPixelRGB8& lc = nline[x-1];
+				lr = (int)lc.R + (d2*er);
+
+				//Clip & Set
+				lr < 0 ? lr = 0: lr > 255 ? lr = 255 : lr;
+				
+				lc.R=lr;
+				lc.G=lr;
+				lc.B=lr;
+			}
+
+			//0,+1
+			{
+				CPixelRGB8& lc = nline[x];
+				lr = (int)lc.R + (d3*er);
+
+				//Clip & Set
+				lr < 0 ? lr = 0: lr > 255 ? lr = 255 : lr;
+
+				lc.R=lr;
+				lc.G=lr;
+				lc.B=lr;
+			}
+
+			//+1,+1
+			{
+				CPixelRGB8& lc = nline[x+1];
+				lr = (int)lc.R + (d4*er);
+
+				//Clip & Set
+				lr < 0 ? lr = 0: lr > 255 ? lr = 255 : lr;
+
+				lc.R=lr;
+				lc.G=lr;
+				lc.B=lr;
+			}
+#endif
 		}
 	}
 
