@@ -1,6 +1,7 @@
 require('mylib')
 require('config')
 
+
 function processOption(option)
 	option=string.gsub(option,"%) ", ")\n");
 	option=string.gsub(option," %(", " \n(");
@@ -136,7 +137,7 @@ function onCallback(w, userData)
 	if w:id()=="Convert processed pages to PDF" then
 		local outdir=string.sub(win.filename, 1, -5)
 
-		local files=os.glob(outdir.."/*.jpg")
+		local files=os.glob(outdir.."/*"..output_format)
 		table.sort(files)
 
 		local outpdf=PDFWriter()

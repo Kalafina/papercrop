@@ -78,7 +78,7 @@ static void _initLuaEnvironment(RightPanel* win)
 	module(L->L)[
 		def("reflow", &reflow),
 		def("trimVertSpaces", &trimVertSpaces),			
-		def("CreateDirectory", &CreateDirectory),
+		def("CreateDirectory", (bool (*)(const char*))&CreateDirectory),
 		def("DeleteAllFiles", &DeleteAllFiles),
 		class_<PDFwin>("PDFwin")
 			.def_readonly("filename", &PDFwin::_filename)
