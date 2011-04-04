@@ -3,11 +3,17 @@ require('mylib')
 
 CBZwriter=LUAclass()
 
+
 function CBZwriter:__init(fn)
 	self.filename=fn
 	self.numPages=0
-	os.deleteFiles(fn)
-	os.deleteFiles("temp.zip")
+
+	if os.isFileExist(fn) then
+		os.deleteFiles(fn)
+	end
+	if os.isFileExist("temp.zip") then
+		os.deleteFiles("temp.zip")
+	end
 end
 function CBZwriter:addPage(image, color_depth)
 	local fn=string.format("page%06d.png",self.numPages+1)
@@ -17,7 +23,6 @@ function CBZwriter:addPage(image, color_depth)
 end
 function CBZwriter:save()
 	-- compatibility function. does nothing
-	os.deleteFiles("page*.png")
 	os.copyFile('temp.zip "'..self.filename..'"')
 	os.deleteFiles("temp.zip")
 end
