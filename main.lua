@@ -108,7 +108,11 @@ function ctor()
 	panel:widget(0):deactivate();
 
 	if output_to_pdf then
-		panel:create("Button", "Convert processed pages to PDF", "Convert processed pages to PDF")
+		if device and device.output_format==".cbz" then
+			panel:create("Button", "Convert processed pages to PDF", "Convert processed pages to CBZ")
+		else
+			panel:create("Button", "Convert processed pages to PDF", "Convert processed pages to PDF")
+		end
 		panel:widget(0):deactivate();
 	end
 
@@ -140,7 +144,14 @@ function onCallback(w, userData)
 		local files=os.glob(outdir.."/*"..output_format)
 		table.sort(files)
 
-		local outpdf=PDFWriter()
+		local outpdf, fn
+		if device and device.output_format==".cbz" then
+			fn=outdir.."_1.cbz"
+			outpdf=CBZwriter:new(fn)
+		else
+			outpdf=PDFWriter()
+			fn=outdir.."_1.pdf"
+		end
 		outpdf:init()
 
 		for i=1,#files do
@@ -154,7 +165,7 @@ function onCallback(w, userData)
 			end
 			collectgarbage();
 		end
-		outpdf:save(outdir.."_1.pdf");
+		outpdf:save(fn)
 		collectgarbage();
 	elseif w:id()=="presets" then
 		local fn=presets[w:menuValue()+1]
