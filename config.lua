@@ -4,9 +4,10 @@
 -- please send me e-mail if you know your device's correct configuration.
 ---------------------------------------------------------------------
 
+kindle3 = {552,736} 
 cybook = {600, 800} -- when title bar is hidden
-kobo_wireless = {582,740} -- Huge waste of screen real estate. 
-kindle3 = {552,736} -- even more...
+kobo_wireless_old_firmware = {582,740} -- Up to firmware version 1.7.4. Huge waste of screen real estate. 
+kobo_wireless= {600,800, output_format=".cbz"} -- Kobo wireless firmware 1.9 started to support CBZ. This format has faster page turning speed and fullscreen!
 -- other kindles, sony readers, etc -- Please let me know if you know. I've got many e-mails asking about this.
 
 ---------------------------------------------------------------------
@@ -15,13 +16,14 @@ kindle3 = {552,736} -- even more...
 
 device={600,800} -- {device_width, device_height}
 --uncomment if your device is listed below
---device=kobo_wireless  
---device=cybook
 --device=kindle3
+--device=kobo_wireless_old_firmware
+--device=kobo_wireless
+--device=cybook
 
 scroll_overlap_pixels=40
 output_format=".png" -- ".jpg", ".png", ".gif" are supported
-output_to_pdf=true -- output to a pdf file, instead of multiple image files when possible.
+output_to_pdf=true -- output to a pdf or cbz file, instead of multiple image files when possible. (to use cbz search for kobo_wireless)
 color_depth=4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. 
 force_resolution=true
 use_4xsupersampling=false -- better quality output for scanned documents, but slower.
@@ -60,15 +62,23 @@ book_pages = {
 	nr_of_pages
 };
 
-function book_pages:init(part_nr)
+require('CBZwriter')
+function book_pages:init(part_nr,outdir)
 	self.book_part_nr = part_nr;
 	self.nr_of_pages = 0;
-	self.outpdf=PDFWriter()
+	self.outdir=outdir
+	if device and device.output_format==".cbz" then
+		self.filename=outdir.."_"..tostring(part_nr)..".cbz"
+		self.outpdf=CBZwriter:new(self.filename)
+	else
+		self.filename=outdir.."_"..tostring(part_nr)..".pdf"
+		self.outpdf=PDFWriter()
+	end
 	self.outpdf:init()
 end
 
 function book_pages:init_for_next_part()
-	self:init(self.book_part_nr + 1);
+	self:init(self.book_part_nr + 1, self.outdir);
 end
 
 function book_pages:add_page (image, outdir)
@@ -83,8 +93,7 @@ end
 
 function book_pages:writeToFile(outdir)
 	if self.nr_of_pages > 0 then
-		local outpdf = PDFWriter();
-		local fn=outdir .. "_" .. self.book_part_nr .. ".pdf"
+		local fn=self.filename
 		self.outpdf:save(fn);
 
 		if move_to_folder then
@@ -110,7 +119,7 @@ end
 function initializeOutput(outdir)
 	if output_to_pdf then
 		--vv--outpdf:init();
-		book_pages:init(1);
+		book_pages:init(1,outdir);
 		--^^--
 	else
 		win:deleteAllFiles()
@@ -176,7 +185,7 @@ function finalizeOutput(outdir)
 	--vv--  outpdf:save(outdir.."_output.pdf")
 	if output_to_pdf then
 		book_pages:writeToFile(outdir);
-		book_pages:init(0);
+		book_pages:init(0,outdir);
 	end
 	--^^--
 end
