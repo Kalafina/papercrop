@@ -171,7 +171,8 @@ bool CImage::Load(const char* filename)
 	_size.y= ilGetInteger(IL_IMAGE_HEIGHT);
 	_dataPtr=ilGetData();
 	_stride=GetWidth()*3;
-	if (TString(filename).right(3).toUpper()=="JPG")
+	TString ext=TString(filename).right(3).toUpper();
+	if (ext=="JPG" || ext=="PNG")
 	{
 		CImage_flipY(*this);
 		_flipped=true;
