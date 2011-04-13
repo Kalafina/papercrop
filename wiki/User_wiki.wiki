@@ -1,8 +1,15 @@
+== How to install ==
+
 = Windows =
+* How to install.
+Just unpack the zip file to any folder (preferably a folder with full permission such as My Documents/papercrop). 
 
 = Linux (Ubuntu or some debian distributions) =
 * How to install.
+
+Copy the downloaded ubuntu_installer.sh to an empty folder (in my case, ~/bin/papercrop) and execute in the terminal.
 {{{
+cd ~/bin/papercrop
 sh ./ubuntu_installer.sh
 }}}
 
@@ -12,6 +19,7 @@ This will install paperCrop at the current folder where ubuntu_installer.sh is.
 
 Just re-run the script
 {{{
+cd ~/bin/papercrop
 sh ./ubuntu_installer.sh
 }}}
 Update is usually much faster than first-install.
@@ -42,3 +50,6 @@ Rebuilding the entire source code might be helpful.
 cd paperCrop_source
 sh clean_build.sh
 }}}
+
+== How to uninstall ==
+Just delete the install folder.
