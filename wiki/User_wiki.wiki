@@ -16,6 +16,19 @@ sh ./ubuntu_installer.sh
 }}}
 Update is usually much faster than first-install.
 
+* The following error message appeared while updating:
+{{{
+Conflict discovered in 'paperCrop_source/config.lua'.
+Select: (p) postpone, (df) diff-full, (e) edit,
+        (mc) mine-conflict, (tc) theirs-conflict,
+        (s) show all options: 
+}}}
+Type 
+{{{
+tf
+}}}.
+This will discard your local modifications on config.lua, and get the latest version.
+
 * Update doesn't seem to work. What should I do?
 
 Reverting your modification of config.lua might be needed.
