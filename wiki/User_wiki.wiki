@@ -18,11 +18,12 @@ This will install paperCrop at the current folder where ubuntu_installer.sh is.
 
 * How to execute.
 
-Run the papercrop executable in the "~/bin/papercrop/paperCrop_source"
-Or in the terminal:
+Run "papercrop" in the "~/bin/papercrop/paperCrop_source".
+
+Alternatively, in the terminal:
 {{{
 cd ~/bin/papercrop
-sh paperCropLauncher
+./paperCropLauncher
 }}}
 
 
