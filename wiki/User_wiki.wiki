@@ -37,6 +37,14 @@ tf
 }}}
 This option (theirs-full) will discard your local modifications on config.lua, and get the latest version.
 
+* How can I know what version is installed?
+{{{
+cd ~/bin/papercrop
+cd paperCrop_source
+svn info
+}}}
+will show the revision number. 
+
 * Update doesn't seem to work. What should I do?
 
 Reverting your modification of config.lua might be needed.
