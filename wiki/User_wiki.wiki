@@ -2,6 +2,7 @@
 
 = Windows =
 * How to install.
+
 Just unpack the zip file to any folder (preferably a folder with full permission such as My Documents/papercrop). 
 
 = Linux (Ubuntu or some debian distributions) =
