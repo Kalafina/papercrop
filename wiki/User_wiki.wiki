@@ -23,11 +23,11 @@ Select: (p) postpone, (df) diff-full, (e) edit,
         (mc) mine-conflict, (tc) theirs-conflict,
         (s) show all options: 
 }}}
-Type 
+Type in
 {{{
 tf
-}}}.
-This will discard your local modifications on config.lua, and get the latest version.
+}}}
+This option (theirs-full) will discard your local modifications on config.lua, and get the latest version.
 
 * Update doesn't seem to work. What should I do?
 
