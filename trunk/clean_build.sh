@@ -10,3 +10,6 @@ cmake ..
 make clean
 make
 cp paperCrop ..
+mkdir -p ~/.referencer
+mkdir -p ~/.referencer/plugins
+cp ../referencer_plugins/papercrop* ~/.referencer/plugins/
