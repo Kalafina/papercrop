@@ -18,7 +18,7 @@ device={600,800} -- {device_width, device_height}
 --uncomment if your device is listed below
 --device=kindle3
 --device=kobo_wireless_old_firmware
---device=kobo_wireless
+device=kobo_wireless
 --device=cybook
 
 scroll_overlap_pixels=40

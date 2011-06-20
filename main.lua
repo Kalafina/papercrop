@@ -127,6 +127,12 @@ function ctor()
 	panel:updateLayout();
 
 	loadPreset("presets/default preset.lua")
+
+	if filename then
+		print(filename)
+		win:load(filename)
+		filename=nil
+	end
 end
 function dtor()
 end

@@ -48,6 +48,7 @@ void MainWin::onIdle()
 #include <IL/il.h>
 #include <IL/ilu.h>
 
+TString g_arg;
 #ifdef _MSC_VER
 //#ifdef _DEBUG	// console·Î ºôµåÇÏµµ·Ï ÇØ³ùÀ½.
 int _tmain(int argc, _TCHAR* argv[])
@@ -69,7 +70,11 @@ int main(int argc, char* argv[])
 	ilInit();
 	iluInit();
 
+	if (argc==2)
+		g_arg=argv[1];
 
+	for (int i=0; i<argc; i++)
+		printf("%s\n", argv[i]);
 
 	MainWin win("PaperCrop");
 
