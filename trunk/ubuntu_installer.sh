@@ -1,5 +1,8 @@
 sudo apt-get install subversion
 echo 'svn checking out....(wait)'
+mkdir -p ~/bin
+mkdir -p ~/bin/papercrop
+cd ~/bin/papercrop
 svn checkout http://papercrop.googlecode.com/svn/trunk/ paperCrop_source
 cd paperCrop_source
 echo 'svn update .'
