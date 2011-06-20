@@ -84,6 +84,7 @@ static void _initLuaEnvironment(RightPanel* win)
 			.def_readonly("filename", &PDFwin::_filename)
 			.def_readonly("currPage", &PDFwin::mCurrPage)
 			.def("getRectImage_width", &PDFwin::getRectImage_width)
+			.def("load", &PDFwin::load)
 			.def("getDPI_width", &PDFwin::getDPI_width)
 			.def("getDPI_height", &PDFwin::getDPI_height)
 			.def("getRectImage_height", &PDFwin::getRectImage_height)
@@ -128,6 +129,8 @@ static void _releaseScript(LUAwrapper* L, FlLayout& l)
 		delete L;
 	}
 }
+
+extern TString g_arg;
 static void _loadScript(RightPanel* win, const char* script)
 {
 	_initLuaEnvironment(win);
@@ -135,6 +138,8 @@ static void _loadScript(RightPanel* win, const char* script)
 	{
 		try
 		{
+			if (g_arg.length()>0)
+				L->dostring(g_arg.ptr());
 			L->dofile(script);
 		}
 		CATCH_LUABIND_ERROR("_loadScript", *win)
