@@ -46,6 +46,7 @@ if(UNIX)
   message(${FLTK_INCLUDE_DIR} "\n")
   message(${DevIL_INCLUDE_DIR} "\n")
   message(${Luabind_INCLUDE_DIR} "\n")
+  message(${FLTK_LIBRARIES} "\n")
 else()
   set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
   set(LUA_LIB "${paperCrop_SOURCE_DIR}/../lua5.1.4/lua5.1.lib")
@@ -243,8 +244,9 @@ if(UNIX)
 
   target_link_libraries(paperCrop
 	
-	fltk_images
-	fltk
+	${FLTK_LIBRARIES}
+	# fltk_images
+	# fltk
 	hpdf
 	X11
 	ILU
