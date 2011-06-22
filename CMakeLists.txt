@@ -34,11 +34,13 @@ if(UNIX)
   # set(LUA_INCLUDE "/usr/include/lua5.1" )
   # set(LUA_LIB "${paperCrop_SOURCE_DIR}/../Lua5.1.4/src" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
   # set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_44_0")
+  include(FindPkgConfig)
   find_package(Boost REQUIRED)
   find_package(DevIL REQUIRED)
   find_package(FLTK REQUIRED)
   find_package(Lua51 REQUIRED)
   find_package(Luabind REQUIRED)
+  pkg_check_modules(Fontconfig fontconfig REQUIRED)
   set(image_INCLUDE) # all in /usr/include 
   message("include directories:")
   message(${LUA_INCLUDE_DIR} "\n")
@@ -47,6 +49,8 @@ if(UNIX)
   message(${DevIL_INCLUDE_DIR} "\n")
   message(${Luabind_INCLUDE_DIR} "\n")
   message(${FLTK_LIBRARIES} "\n")
+  message(${Fontconfig_LIBRARIES} "\n")
+
 else()
   set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
   set(LUA_LIB "${paperCrop_SOURCE_DIR}/../lua5.1.4/lua5.1.lib")
@@ -242,8 +246,9 @@ add_executable(paperCrop
 
 if(UNIX)
 
+  link_directories(${Fontconfig_LIBRARY_DIRS})
   target_link_libraries(paperCrop
-	
+	${Fontconfig_LIBRARIES}
 	${FLTK_LIBRARIES}
 	# fltk_images
 	# fltk
