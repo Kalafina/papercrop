@@ -153,6 +153,7 @@ function onCallback(w, userData)
 
 		local fn=os.capture("python filechooser.py")
 		if fn~='Closed, no files selected' then
+			print(fn..':')
 			win:load(fn)
 		end
 	elseif w:id()=="Convert processed pages to PDF" then
