@@ -1,4 +1,4 @@
-
+sudo apt-get install libpoppler-dev
 cd libharu-2.0.8
 chmod 700 ./configure
 ./configure
