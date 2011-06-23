@@ -138,10 +138,12 @@ if(UNIX)
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8
 	${paperCrop_SOURCE_DIR}/devil/lib
 	${paperCrop_SOURCE_DIR}/../FreeImage/Dist
-	${paperCrop_SOURCE_DIR}/poppler/
+	# ${paperCrop_SOURCE_DIR}/poppler/
 	${paperCrop_SOURCE_DIR}/../Freetype/objs/.libs 
 	${paperCrop_SOURCE_DIR}/luabind-0.9/Release
 	${LUA_LIB}
+	${Fontconfig_LIBRARY_DIRS}
+	${poppler_LIBRARY_DIRS}
 	)
 else()
   link_directories(${paperCrop_SOURCE_DIR}/build/luabind-0.9/release)
@@ -249,7 +251,6 @@ add_executable(paperCrop
 
 if(UNIX)
 
-  link_directories(${Fontconfig_LIBRARY_DIRS})
   target_link_libraries(paperCrop
 	${Fontconfig_LIBRARIES}
 	${FLTK_LIBRARIES}
@@ -258,7 +259,7 @@ if(UNIX)
 	hpdf
 	X11
 	ILU
-	poppler
+	${poppler_LIBRARIES}
 	freeimage
 	z
 	jpeg
