@@ -38,6 +38,12 @@ function ctor()
 	panel:widget(0):buttonShortcut("FL_ALT+l");
 	panel:widget(0):buttonTooltip("Alt+L");
 
+	if os.isUnix() then
+		panel:create("Button", "Load a PDF file (native)", "Load a PDF file (native)");
+
+		panel:widget(0):buttonShortcut("FL_ALT+n");
+		panel:widget(0):buttonTooltip("Alt+N");
+	end
 	do 
 		-- load preset
 		presets=os.glob("presets/*.lua")
@@ -143,8 +149,13 @@ function Fltk.ChooseFile(title, path, mask, write)
 	return fn
 end
 function onCallback(w, userData)
+	if w:id()=="Load a PDF file (native)" then
 
-	if w:id()=="Convert processed pages to PDF" then
+		local fn=os.capture("python filechooser.py")
+		if fn~='Closed, no files selected' then
+			win:load(fn)
+		end
+	elseif w:id()=="Convert processed pages to PDF" then
 		local outdir=string.sub(win.filename, 1, -5)
 
 		local files=os.glob(outdir.."/*"..output_format)
