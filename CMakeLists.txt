@@ -254,6 +254,7 @@ if(UNIX)
   target_link_libraries(paperCrop
 	${Fontconfig_LIBRARIES}
 	${FLTK_LIBRARIES}
+	${DevIL_LIBRARIES}
 	# fltk_images
 	# fltk
 	hpdf
