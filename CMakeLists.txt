@@ -1,7 +1,7 @@
 # -*- mode: cmake; -*-
 cmake_minimum_required(VERSION 2.6)
 
-#set (CMAKE_VERBOSE_MAKEFILE  ON)
+set (CMAKE_VERBOSE_MAKEFILE  ON)
 
 project (paperCrop)
 
@@ -36,12 +36,12 @@ if(UNIX)
   # set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_44_0")
   include(FindPkgConfig)
   find_package(Boost REQUIRED)
-  find_package(DevIL REQUIRED)
   find_package(FLTK REQUIRED)
   find_package(Lua51 REQUIRED)
   find_package(Luabind REQUIRED)
   pkg_check_modules(Fontconfig REQUIRED fontconfig)
   pkg_check_modules(poppler REQUIRED poppler-splash)
+  pkg_check_modules(DevIL REQUIRED ILU)
   set(image_INCLUDE) # all in /usr/include 
   message("include directories:")
   message(${LUA_INCLUDE_DIR} "\n")
@@ -52,6 +52,7 @@ if(UNIX)
   message(${FLTK_LIBRARIES} "\n")
   message(${Fontconfig_LIBRARIES} "\n")
   message(${poppler_INCLUDE_DIRS} "\n")
+  message(${DevIL_INCLUDE_DIRS} "\n")
 
 else()
   set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
@@ -105,6 +106,7 @@ if(UNIX)
 	# ${paperCrop_SOURCE_DIR}/poppler/splash	
 	# ${paperCrop_SOURCE_DIR}/poppler/
 	${poppler_INCLUDE_DIRS}
+	${DevIL_INCLUDE_DIRS}
 	./include 
 	.
 	./unix
@@ -136,7 +138,7 @@ if(UNIX)
 
 	#${paperCrop_SOURCE_DIR}/../FLTK/lib
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8
-	${paperCrop_SOURCE_DIR}/devil/lib
+	# ${paperCrop_SOURCE_DIR}/devil/lib
 	${paperCrop_SOURCE_DIR}/../FreeImage/Dist
 	# ${paperCrop_SOURCE_DIR}/poppler/
 	${paperCrop_SOURCE_DIR}/../Freetype/objs/.libs 
@@ -144,6 +146,7 @@ if(UNIX)
 	${LUA_LIB}
 	${Fontconfig_LIBRARY_DIRS}
 	${poppler_LIBRARY_DIRS}
+	${DevIL_LIBRARY_DIRS}
 	)
 else()
   link_directories(${paperCrop_SOURCE_DIR}/build/luabind-0.9/release)
