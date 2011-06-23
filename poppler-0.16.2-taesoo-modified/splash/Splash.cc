@@ -1747,7 +1747,7 @@ SplashError Splash::fillChar(SplashCoord x, SplashCoord y,
   if (clipRes != splashClipAllOutside) {
 
 	  // Taesoo modified
-	  notifyDraw(c, x0, y0, glyph.w, glyph.h, glyph.x, glyph.y);  
+	  //  notifyDraw(c, x0, y0, glyph.w, glyph.h, glyph.x, glyph.y);  
     fillGlyph2(x0, y0, &glyph, clipRes == splashClipAllInside);
   }
   opClipRes = clipRes;

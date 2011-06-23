@@ -40,7 +40,8 @@ if(UNIX)
   find_package(FLTK REQUIRED)
   find_package(Lua51 REQUIRED)
   find_package(Luabind REQUIRED)
-  pkg_check_modules(Fontconfig fontconfig REQUIRED)
+  pkg_check_modules(Fontconfig REQUIRED fontconfig)
+  pkg_check_modules(poppler REQUIRED poppler-splash)
   set(image_INCLUDE) # all in /usr/include 
   message("include directories:")
   message(${LUA_INCLUDE_DIR} "\n")
@@ -50,6 +51,7 @@ if(UNIX)
   message(${Luabind_INCLUDE_DIR} "\n")
   message(${FLTK_LIBRARIES} "\n")
   message(${Fontconfig_LIBRARIES} "\n")
+  message(${poppler_INCLUDE_DIRS} "\n")
 
 else()
   set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
@@ -70,7 +72,7 @@ endif()
 
 
 if(UNIX)
-  add_subdirectory(poppler)
+  # add_subdirectory(poppler) # moved out my modified portion so that system library can be used
 else()
   set(CMAKE_SOURCE_DIR "${paperCrop_SOURCE_DIR}/poppler-0.16.2")
   set(FREETYPE_INCLUDE_DIRS "${paperCrop_SOURCE_DIR}/ext/freetype231/include")
@@ -98,10 +100,11 @@ if(UNIX)
 	${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
 	${paperCrop_SOURCE_DIR}/luabind-0.9
-	${paperCrop_SOURCE_DIR}/poppler/goo
-	${paperCrop_SOURCE_DIR}/poppler/poppler
-	${paperCrop_SOURCE_DIR}/poppler/splash	
-	${paperCrop_SOURCE_DIR}/poppler/
+	# ${paperCrop_SOURCE_DIR}/poppler/goo
+	# ${paperCrop_SOURCE_DIR}/poppler/poppler
+	# ${paperCrop_SOURCE_DIR}/poppler/splash	
+	# ${paperCrop_SOURCE_DIR}/poppler/
+	${poppler_INCLUDE_DIRS}
 	./include 
 	.
 	./unix

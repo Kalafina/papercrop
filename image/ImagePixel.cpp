@@ -130,6 +130,13 @@ void CImagePixel::DrawVertLine(int x, int y, int height, CPixelRGB8 color,bool b
 	if(bDotted) step=3;
 	std::vector<CPixelRGB8 *> & inputptr=(m_pCPP);
 
+		if(x<0) return;
+		if(x>=m_pInput->GetWidth()) return;
+		if(y<0) return;
+		if(y>=m_pInput->GetHeight()) return;
+		if (y+height>=m_pInput->GetHeight())
+			height=m_pInput->GetHeight()-y-1;
+
 	for(int j=y; j<y+height; j+=step)
 	{
 		inputptr[j][x]=color;
@@ -147,6 +154,8 @@ void CImagePixel::DrawLineBox(const TRect& rect, CPixelRGB8 color)
 void CImagePixel::DrawBox(const TRect& _rect, CPixelRGB8 sColor)
 {
 	TRect rect=_rect;
+	if(rect.left> rect.right) std::swap(rect.left, rect.right);
+	if(rect.top> rect.bottom) std::swap(rect.top, rect.bottom);
 	if(rect.left<0) rect.left=0;
 	if(rect.top<0) rect.top=0;
 	if(rect.bottom>Height())rect.bottom=Height();
@@ -171,7 +180,7 @@ void CImagePixel::DrawBox(const TRect& _rect, CPixelRGB8 sColor)
 		CPixelRGB8* aBuffer;
 		int width=rect.right-rect.left;
 
-		if(width)
+		if(width>0)
 		{
 			aBuffer=new CPixelRGB8[width];
 			for(int i=0; i<width; i++)

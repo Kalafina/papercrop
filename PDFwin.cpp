@@ -31,14 +31,16 @@
 // poppler headers
 #include "PDFDoc.h"
 #include "GlobalParams.h"
-#include "GooMutex.h"
-#include "GooString.h"
+// #include "GooMutex.h"
+#include <goo/GooString.h>
 #include "Link.h"
 #include "Object.h" /* must be included before SplashOutputDev.h */
 #include "PDFDoc.h"
-#include "SplashBitmap.h"
-#include "SplashOutputDev.h"
+#include <splash/SplashBitmap.h>
+#include <SplashOutputDev.h>
 #include "TextOutputDev.h"
+#include "NullOutputDev.h"
+#include "SplashMod.h"
 #include "image/Image.h"
 #include "image/ImagePixel.h"
 #include "math/Operator.h"
@@ -48,8 +50,9 @@
 
 PDFmodel* gModel=NULL;
 enum {TC_c=0, TC_x, TC_y, TC_w, TC_h, TC_fx, TC_fy};
-//#define DEBUG_FONT_DETECTION
+// #define DEBUG_FONT_DETECTION
 #define USE_FONT_DETECTION
+// #define USE_NULLOUTPUTDEV
 
 
 class PDFmodel
@@ -58,6 +61,7 @@ public:
 
 	PDFDoc* _pdfDoc ;
 	SplashOutputDev* _outputDev;
+	NullOutputDev* _nullOutputDev;
 	std::vector<boost::shared_ptr<CImage> > _bmpCache;
 	std::vector<boost::shared_ptr<intmatrixn> > _textCache;	
 	int _textCacheState;
@@ -70,6 +74,7 @@ public:
 		}
 		_pdfDoc =NULL;
 		_outputDev=NULL;
+		_nullOutputDev=NULL;
 		_textCacheState=-1;// do not cache.
 		gModel=this;
 	}
@@ -78,12 +83,14 @@ public:
 	{
 		delete _pdfDoc;
 		delete _outputDev;
+		delete _nullOutputDev;
 		gModel=NULL;
 	}
 	bool load(const char* fileName)
 	{
 		delete _pdfDoc;
 		delete _outputDev;
+		delete _nullOutputDev;
 		_bmpCache.resize(0);
 		_textCache.resize(0);
 
@@ -100,12 +107,15 @@ public:
 		white[1]=0xff;
 		white[2]=0xff;
 
-		_outputDev = new SplashOutputDev(splashModeRGB8, 4, gFalse, white, bitmapTopDown);
+		_outputDev = new SplashOutputDev_mod(splashModeRGB8, 4, gFalse, white, bitmapTopDown);
 		if(!_outputDev)
 		{
 			printf("error loading pdf");
 			return false;
 		}
+#ifdef USE_NULLOUTPUTDEV
+		_nullOutputDev=new NullOutputDev();
+#endif
 		_outputDev->startDoc(_pdfDoc->getXRef());
 
 		_bmpCache.resize(_pdfDoc->getNumPages());
@@ -204,6 +214,17 @@ public:
 			_textCacheState=pageNo;
 			//_pdfDoc->getPageRotate(pageNo+1)
 			_pdfDoc->displayPage(_outputDev, pageNo+1, DPI, DPI, 0, gFalse, gTrue, gFalse);
+#ifdef USE_NULLOUTPUTDEV
+			_nullOutputDev->setInfo(_pdfDoc->getPageRotate(pageNo+1),
+									_pdfDoc->getCatalog()->getPage(pageNo+1)->getCropBox()->x1,
+									_pdfDoc->getCatalog()->getPage(pageNo+1)->getCropBox()->y1,
+									_pdfDoc->getPageCropWidth(pageNo+1),
+									_pdfDoc->getPageCropHeight(pageNo+1),
+									_outputDev->getBitmap()->getWidth(),
+									_outputDev->getBitmap()->getHeight());
+		
+			_pdfDoc->displayPage(_nullOutputDev, pageNo+1, DPI, DPI, 0, gFalse, gTrue, gFalse);
+#endif
 			_textCacheState=-1;
 				/*//_pdfDoc->displayPageSlice(_outputDev, pageNo+1, DPI, DPI, 0, gFalse, gTrue, gFalse, 20,20, 400,400);
 				if(zoom2<zoom1)
@@ -774,7 +795,7 @@ void PDFwin::pageChanged()
 			if(drawLetterBoundingBox)
 			{
 				CImagePixel ip(bmp);
-				for(int i=0; i<textCache.rows(); i++)
+				for(int i=0; i<textCache.rows()-1; i++)
 				{
 					int* info=textCache[i];
 					int c=info[TC_c];
@@ -784,6 +805,8 @@ void PDFwin::pageChanged()
 					int h=info[TC_h];
 					int fx=info[TC_fx];
 					int fy=info[TC_fy];
+					if (std::abs(y-textCache[i+1][TC_y])<=3) // draw excluding trailing space
+						{
 
 #ifdef DEBUG_FONT_DETECTION
 					ip.DrawLineBox(TRect(x-fx,y-fy, x-fx+w, y-fy+h), CPixelRGB8(0,0,0));				
@@ -791,6 +814,8 @@ void PDFwin::pageChanged()
 					ip.DrawBox(TRect(x-fx,y-fy, x-fx+w, y-fy+h), CPixelRGB8(0,0,0));
 #endif
 					ip.DrawHorizLine(x, y, w, CPixelRGB8(255,0,0));
+						}
+					// else printf("%d %d %d %d\n", x,y, textCache[i+1][TC_x], textCache[i+1][TC_y]);
 				}
 			}
 
