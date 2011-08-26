@@ -16,7 +16,7 @@ extern "C"
 #include "lauxlib.h"
 	//#include "luadebug.h"
 }
-#include "../../OgreFltk/MotionSynthesisLib/RigidBody/luna.h"
+#include "../luna.h"
 #endif
 
 
