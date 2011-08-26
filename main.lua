@@ -103,7 +103,7 @@ function ctor()
 	panel:layout(0):widget(0):buttonShortcut("FL_ALT+u")
 	panel:layout(0):widget(0):buttonTooltip("ALT+u")
 	panel:layout(0):updateLayout();
-	panel:setLineSpace(60);
+	panel:setWidgetHeight(60);
 	panel:setUniformGuidelines(5);
 	panel:create("Input", "Option_Input", "Option",1);
 	panel:widget(0):inputType("FL_MULTILINE_OUTPUT");

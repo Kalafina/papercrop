@@ -23,12 +23,22 @@
 #include "RightPanel.h"
 #include "PDFwin.h"
 #include "utility/operatorString.h"
+#ifdef USE_LUABIND
 #include "WrapperLua/BaselibLUA.h"
 #include "WrapperLua/MainlibLUA.h"
 #include <luabind/luabind.hpp>
 #include <luabind/function.hpp>
 //#include <luabind/policy.hpp>
 #include <luabind/operator.hpp>
+using namespace luabind;
+#else 
+#include "WrapperLua/LUAwrapper.h"
+#include "WrapperLua/OR_LUA_Stack.h"
+#include "luna_baselib.h"
+#include "luna_mainlib.h"
+void Register_mainlib(lua_State* L);
+void Register_baselib(lua_State* L);
+#endif
 #include "PDFWriter.h"
 #include "utility/FltkAddon.h"
 #include <iostream>
@@ -37,7 +47,7 @@ void reflow(CImage& inout, int desired_width, int min_gap, int max_gap, int thr_
 void trimVertSpaces(CImage& inout, int min_gap, int max_gap, int thr_white) ;
 
 
-using namespace luabind;
+
 
 TString processOption(const char* option)
 {
@@ -63,16 +73,19 @@ static int add_file_and_line(lua_State* L)
 }
 bool CreateDirectory(const char *PathToCreate);
 bool DeleteAllFiles(const char* path, const char* mask,bool bConfirm);
+#ifdef USE_LUABIND
 static LUAwrapper* L=NULL;
+#else
+static lua_State* L=NULL;
+#endif
 static void _initLuaEnvironment(RightPanel* win)
 {
+
+#ifdef USE_LUABIND
 	delete(L);
 	L=new LUAwrapper();
-
 	luabind::set_pcall_callback(&add_file_and_line);
-
 	addMainlibModule(L->L);
-
 	// export member functions of PDFwin for use in LUA script.
 	// to understand the following codes, please refer to "luabind" manual.
 	module(L->L)[
@@ -108,8 +121,23 @@ static void _initLuaEnvironment(RightPanel* win)
 
 	L->setRef<PDFwin>("win", *(win->mPDFwin));
 	L->setRef<FlLayout>("panel", *win);
+#else
+	if(L) lua_close(L);
+	L=lua_open();
+	luaopen_base(L);
+	luaL_openlibs(L);
+	Register_baselib(L);
+	Register_mainlib(L);
+	lunaStack ls(L);
+	ls.set<PDFwin>("win", (win->mPDFwin));
+	ls.set<FlLayout>("panel", win);
+#endif
+	
+
+	
 }
 
+#ifdef USE_LUABIND
 #define CATCH_LUABIND_ERROR(x, y) catch(luabind::error& e)\
 	{\
 		std::cout <<"lua error"<<x<<","<<e.what()<<"\n";\
@@ -130,10 +158,31 @@ static void _releaseScript(LUAwrapper* L, FlLayout& l)
 	}
 }
 
+#else
+static void _releaseScript(lua_State* L, FlLayout& l)
+{
+	if(L)
+	{
+		lunaStack l(L);
+		l.getglobal("dtor");
+		l.call(0,0);
+		lua_close(L);
+		L=NULL;
+	}
+}
+static void handleLUAerror(lua_State* L)
+{
+	printf("handleLUAerror:\n");
+	luna_printStack(L);
+	luaL_dostring(L, "dbg.traceBack()");
+	luaL_dostring(L, "dbg.console()");
+}
+#endif
 extern TString g_arg;
 static void _loadScript(RightPanel* win, const char* script)
 {
 	_initLuaEnvironment(win);
+#ifdef USE_LUABIND
 	if(L)
 	{
 		try
@@ -153,6 +202,20 @@ static void _loadScript(RightPanel* win, const char* script)
 		}
 		CATCH_LUABIND_ERROR("ctor", *win)
 	}
+#else
+	if(L)
+	{
+		if (g_arg.length()>0)
+		{
+			if (luaL_dostring(L, g_arg.ptr())==1) handleLUAerror(L);
+		}
+		if(luaL_dofile(L, script)==1)
+			handleLUAerror(L);
+		lunaStack l(L);
+		l.getglobal("ctor");
+		l.call(0,0);
+	}
+#endif
 }
 
 RightPanel::RightPanel(int x, int y, int w, int h, PDFwin* pdfwin)
@@ -172,6 +235,7 @@ RightPanel::~RightPanel(void)
 #include <FL/Fl_Native_File_Chooser.H>
 void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int userData)
 {
+#ifdef USE_LUABIND
 	try
 	{
 		if(L)
@@ -181,6 +245,19 @@ void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int 
 		}
 	}
 	CATCH_LUABIND_ERROR("onCallBack", *this)
+#else
+		if(L)
+		{
+			lunaStack l(L);
+			l.getglobal("onCallback");
+			l.push<FlLayout::Widget>(&w);
+			l<<userData;
+			l.call(2,1);
+			bool res;
+			l>>res;
+			if(res) return;
+		}
+#endif
 	if(w.mId=="update")
 	{
 		mPDFwin->pageChanged();

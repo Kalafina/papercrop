@@ -1,19 +1,21 @@
 #include "stdafx.h"
-#include "FltkAddon.h"
 #include "FlLayout.h"
+#ifndef NO_GUI
 #include "FL/Fl_Scroll.H"
 #include "FL/Fl_Adjuster.H"
 #include "FL/Fl_Multi_Browser.H"
 #include "FL/Fl_Select_Browser.H"
 #include "FL/Fl_Multiline_Input.H"
 #include "FL/Fl_Box.H"
-#include "math/Operator.h"
-
+#endif
 #ifdef NO_GUI
 #define FL_VOID(x)
 #else
 #define FL_VOID(x) x
 #endif
+#include "utility/FltkAddon.h"
+#include "math/Operator.h"
+
 
 
 FlLayout ::Widget::Widget()
@@ -115,7 +117,7 @@ void FlLayout::setUniformGuidelines(int totalSlot)
 
 void FlLayout::setWidgetPosUniform(int totalSlot, int slot)
 {
-	// ���η� totalSlot����� �ؼ�, ���°�� �־��.
+	// ???��? totalSlot????? ???, ???��?? ????.
 	guideLines().linspace(0, 1.0, totalSlot+1);
 	setWidgetPos(slot, slot+1);
 }
@@ -189,6 +191,8 @@ public:
 		Fl_Adjuster::redraw();
 	}
 };
+
+
 
 #endif
 
@@ -465,7 +469,7 @@ void FlLayout::updateLayout()
 		for(int j=0; j<guidelines.size(); j++)
 			guidelines[j]=sop::interpolateInt(mWidgets[i].mState.mGuideLines[j], 3, w()-2);
 
-		// widget�� 5�ȼ� ������ ��⵵�� �Ѵ�.
+		// widget?? 5??? ?????? ????? ???.
 
 		//int gap=5;
 		int gap=mWidgets[i].mState.mHorizSpace;
@@ -476,7 +480,7 @@ void FlLayout::updateLayout()
 
 
 		/*
-		// title ��ŭ �ڵ����� offset �ϴ� ����� �����. ���۾����� ����� widget pos�� �����ؼ� �� ��.
+		// title ??? ??????? offset ??? ????? ?????. ????????? ????? widget pos?? ??????? ?? ??.
 		if((mWidgets[i].mType=="Slider" ||
 			mWidgets[i].mType=="Choice" ||
 			mWidgets[i].mType=="Input"||
@@ -532,9 +536,9 @@ void FlLayout::updateLayout()
 	// connect
 	for(int i=0; i<mWidgets.size()-1; i++)
 	{
-		// parent�� ���� �ִ� ��� widget�� �޴��� ���� layout�� ������� �����Ͽ���.
-		// ���������� �����Ҷ��� parent��ü�� callee�� �ǵ��� �ϴ°� ���� Ȯ���ϴ�.
-		// �� parent��  Fl_Group(�Ǵ� Fl_Window ��)�� FlLayout�� ���û��.
+		// parent?? ???? ??? ??? widget?? ????? ???? layout?? ??????? ?????????.
+		// ?????????? ????????? parent??u?? callee?? ????? ??��? ???? ??????.
+		// ?? parent??  Fl_Group(??? Fl_Window ??)?? FlLayout?? ???u??.
 
 		Fl_Widget*o=mWidgets[i].mWidget;
 
@@ -555,6 +559,31 @@ int FlLayout::minimumHeight()
 	return m_minimumHeight;
 }
 
+int FlLayout::work(TString const& workname, OR::LUAStack& L)
+{
+	if(workname=="checkButton")
+	{
+		TString bn;
+		bool bValue;
+		L>>bn>>bValue;
+		findCheckButton(bn)->value(int(bValue));
+	}
+	else if(workname=="menu")
+	{
+		TString bn;
+		int eValue;
+		L>>bn>>eValue;
+		findMenu(bn)->value(eValue);
+	}
+	else if(workname=="valuator")
+	{
+		TString bn;
+		m_real value;
+		L>>bn>>value;
+		findValuator(bn)->value(value);
+	}
+	return 0;
+}
 
 Fl_Widget* FlLayout::_createWidget(const char* id, Fl_Widget* o)
 {
@@ -574,7 +603,7 @@ Fl_Widget* FlLayout::_createWidget(const char* id, Fl_Widget* o)
 	}
 #endif
 	mWidgets.resize(mWidgets.size()+1);
-	// state�� ���� state�� �����Ѵ�.
+	// state?? ???? state?? ???????.
 	mWidgets[mWidgets.size()-1].mState=mWidgets[mWidgets.size()-2].mState;
 
 	mWidgets[mWidgets.size()-2].mId=id;

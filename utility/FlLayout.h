@@ -3,10 +3,9 @@
 
 #pragma once
 
-
+#include "../WrapperLua/OR_LUA_Stack.h"
 #include "luabindWorker.h"
-#include "namedmapsupport.h"
-class FlChoice;
+
 class FlLayout;
 class FlLayoutGroup : public Fl_Group
 {
@@ -28,8 +27,10 @@ public:
 };
 
 class Fl_Scrollbar;
-// 자동으로 layout을 해준다.
-class FlLayout  : public Fl_Double_Window
+class FlChoice;
+#include <map>
+#include "namedmapsupport.h"
+class FlLayout  : public Fl_Double_Window, public OR::LUAWrap::Worker
 {
 public:
 
@@ -73,6 +74,7 @@ public:
 			ui:work("menu", "method", 3)
 			...
 	**********************************************************************/
+	virtual int work(TString const& workname, OR::LUAStack& L);
 	virtual void __call(const char* wn, luabind::adl::object const& table);
 
 	// type-> FL_를 제외한 클래스 이름. ex) Input, Box, Adjuster, Check_Button, Menu, Choice, Slider, Frame_Adjuster, Layout...
@@ -97,7 +99,7 @@ public:
 	void setUniformGuidelines(int totalSlot); // 가로로 totalSlot등분한다.
 	void setWidgetPos(int startSlot, int endSlot=INT_MAX); // guideline 따라 나누어져있는 영역에서 얼만큼 차지할지.
 	void setWidgetPosUniform(int totalSlot, int slot);	// 가로로 totalSlot등분을 해서, 몇번째에 넣어라.
-	void resetToDefault()	{setUniformGuidelines(3); setWidgetPos(0); setWidgetHeight(20);}
+	void resetToDefault()	{setUniformGuidelines(3); setWidgetPos(0); setWidgetHeight(20); setLineSpace(5); }
 	vectorn& guideLines();
 
 	// updateLayout를 마지막에 반드시 해주어야한다.

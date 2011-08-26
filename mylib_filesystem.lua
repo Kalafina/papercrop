@@ -66,7 +66,7 @@ function os.absoluteToRelativePath(folder, currDir) -- param1: folder or file na
 	end
 	print(n_ddot, currDir)
 	str=str..string.sub(folder,#currDir+2)
-	return str
+	return string.trimSpaces(str)
 end
 
 function os.currentDirectory()
@@ -76,13 +76,22 @@ function os.currentDirectory()
 		return os.capture('cd')
 	end
 end
-function os.copyFile(mask)
+function os.copyFile(mask, mask2)
 
    if os.isUnix() then
-      os.execute("cp "..mask)
+	   if mask2 then
+		   os.execute('cp "'..mask..'" "'..mask2..'"')
+	   else
+		   os.execute("cp "..mask)
+	   end
    else
-      print("copy "..      string.gsub(mask, '/', '\\'))
-      os.execute("copy "..      string.gsub(mask, '/', '\\'))
+	   if mask2 then
+		   print('copy "'..      string.gsub(mask, '/', '\\')..'" "'..string.gsub(mask2, '/', '\\')..'"')
+		   os.execute('copy "'..      string.gsub(mask, '/', '\\')..'" "'..string.gsub(mask2, '/', '\\')..'"')
+	   else
+		   print("copy "..      string.gsub(mask, '/', '\\'))
+		   os.execute("copy "..      string.gsub(mask, '/', '\\'))
+	   end
    end
 end
 
@@ -227,13 +236,6 @@ function os.find(mask, bRecurse, nomessage, printFunc)
 	end
 	if bRecurse==nil then bRecurse=false end
 
-	local acceptedExt=deepCopyTable(os.globParam.acceptedExt)
-
-	if string.find(mask,"%*%.") then
-		local idx=string.find(mask,"%*%.")+2
-		acceptedExt[#acceptedExt+1]="%."..string.sub(mask,idx)..'$'
-		print(acceptedExt[#acceptedExt])
-	end
 	if os.isUnix() then 
 		local folder, lmask=os.rightTokenize(mask, '/')
 		if lmask=="*" then
@@ -249,6 +251,13 @@ function os.find(mask, bRecurse, nomessage, printFunc)
 		local lenfolder=string.len(folder)
 		--print(cmd,mask,#tbl,lenfolder)
 		if lenfolder==0 then lenfolder=-1 end
+		local acceptedExt=deepCopyTable(os.globParam.acceptedExt)
+
+		if string.find(mask,"%*%.") then
+			local idx=string.find(mask,"%*%.")+2
+			acceptedExt[#acceptedExt+1]="%."..string.sub(mask,idx)..'$'
+			--print(acceptedExt[#acceptedExt])
+		end
 
 		for i=1, table.getn(tbl)-1 do
 			local v=tbl[i]
@@ -267,6 +276,7 @@ function os.find(mask, bRecurse, nomessage, printFunc)
 	else
 		local folder, lmask=os._processMask(mask)
 		local out=os._globWin32("-d", folder..lmask)
+		local acceptedExt=os.globParam.acceptedExt
 		for i=1, table.getn(out) do
 			if string.isMatched(out[i], acceptedExt) then
 				printFunc:iterate(folder..out[i])
@@ -322,6 +332,10 @@ function os.processFileName(target)-- fullpath
 	if lastSep==0 then filename=string.sub(target,lastSep) else filename=string.sub(target, lastSep+1) end
 
 	return filename, path
+end
+function os.filename(target)
+	local f=os.processFileName(target)
+	return f
 end
 
 function os.isFileExist(fn)

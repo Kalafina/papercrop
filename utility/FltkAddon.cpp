@@ -340,3 +340,26 @@ void fl_draw_CImage(const CImage& imagee, const TRect& sourceRect, int x, int y)
 	}
 
 }
+int FlGenShortcut(const char* s)
+{
+#ifdef NO_GUI
+	return 0;
+#else
+	TString ss(s);
+
+	TString token;
+	int shortc=0;
+	for(int start=0, end=ss.length(); start!=end; )
+		{
+			ss.token(start, "+", token) ;
+
+			if(token=="FL_ALT")
+				shortc+=FL_ALT;
+			else if(token=="FL_CTRL")
+				shortc+=FL_CTRL;
+			else
+				shortc+=token[0];
+		}
+	return shortc;
+#endif
+}

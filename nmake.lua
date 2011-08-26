@@ -70,7 +70,7 @@ function devenvInstall(folder, definitions, build_tgt, build_opt, executable)
    for i,v in ipairs(definitions) do def=def.." -D "..v end
    devenvmake(folder, def, build_tgt.."|Win32", build_opt)
 
-   os.execute("cp "..folder.."/"..build_tgt.."/paperCrop.exe ./"..executable)
+   os.execute("copy "..folder.."\\"..build_tgt.."\\paperCrop.exe .\\"..executable)
 
 end
 
