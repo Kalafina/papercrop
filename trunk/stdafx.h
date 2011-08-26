@@ -81,8 +81,8 @@
 #pragma warning( disable : 4819)
 
 #ifdef _MSC_VER
-// Fltk를 dynamic liking할꺼면 FL_DLL을 디파인 하시오. 
-// - mainlibPython을 쓰는 경우나 링크에러가 나는경우를 제외하고는 FL_DLL 비추.
+// Fltk�?dynamic liking?�꺼�?FL_DLL???�파???�시?? 
+// - mainlibPython???�는 경우??링크?�러가 ?�는경우�??�외?�고??FL_DLL 비추.
 #define FL_DLL 
 
 /*
@@ -135,8 +135,6 @@
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_Int_Input.H>
 
-#include <boost/noncopyable.hpp>
-
 #include "utility/TypeString.h"
 
 #ifdef _DEBUG		
@@ -151,7 +149,7 @@
 
 namespace Msg
 {
-	void verify(bool bExpression, const char*, ...);// release에서도 없어지지 않는 verify를 하고 싶은경우 사용.
+	void verify(bool bExpression, const char*, ...);// release?�서???�어지지 ?�는 verify�??�고 ?��?경우 ?�용.
 	void print(const char*,...);
 	void print2(const char*,...);
 	void error(const char*,...);
@@ -173,7 +171,7 @@ namespace Msg
 		virtual void error(const char* msg);
 		virtual void msgBox(const char* msg);
 		virtual void output(const char* key, const char* msg);
-		// 아직 구현안됨. 사용자에게 yes or no물어보는 기능.
+		// ?�직 구현?�됨. ?�용?�에�?yes or no물어보는 기능.
 		virtual bool confirm(const char* msg);
 		bool m_bOutput;
 		
