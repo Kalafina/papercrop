@@ -174,4 +174,5 @@ public:
 class CImage;
 class TRect;
 void fl_draw_CImage(const CImage& imagee, const TRect& sourceRect, int x, int y);
+int FlGenShortcut(const char* s);
 #endif

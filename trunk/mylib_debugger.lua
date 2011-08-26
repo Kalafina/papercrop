@@ -1,4 +1,23 @@
 
+function dbg.traceBack(level)
+   if level==nil then
+      level=1
+   end
+   while true do
+      local info=debug.getinfo(level)
+      local k=info.name
+      if k==nil then
+	 break
+      else
+	 print('----------------------------------------------------------')
+	 print('Level: ', level)
+	 print(info.short_src..":"..info.currentline..":"..k)
+	 print('Local variables:')
+	 dbg.locals(level)
+	 level=level+1
+      end
+   end
+end
 function os.VI_path()
 	if os.isUnix() then
 --		return "vim" 
@@ -35,24 +54,38 @@ function os.vi_console_cmd(fn, line)
 		cc=' "'..fn..'"'
 	end
 
-	if false then
-		-- use open buffer checking. doesn't work correctly if you use "l vf..." command.
-		local check_res=os.vi_check(fn)
-		if check_res then
-			print('already open')
-			-- open the already open window.. (not very useful)
-			--return 'vim --servername "'..fn..'" --remote '..cc
-			-- open viewer mode
-			return os.vi_readonly_console_cmd(fn, line)
-		elseif check_res==nil then
-			-- doesn't support servername
-			return 'vim '..cc
-		else
-			return 'vim --servername "'..fn..'" '..cc
-		end
+	return 'vim '..cc
+end
+function os.emacs_cmd(fn, line)
+	local cc
+	if line then
+		cc=' +'..line..' "'..fn..'"'
 	else
-		return 'vim '..cc
+		cc=' "'..fn..'"'
 	end
+
+	--return 'lua ~/.config/mtiler/mstiler.lua launch-gui-app emacs '..cc
+	return 'emacs '..cc
+end
+function os.emacs_client_cmd(fn, line)
+	local cc
+	if line then
+		cc=' +'..line..' "'..fn..'"'
+	else
+		cc=' "'..fn..'"'
+	end
+
+	return 'emacsclient -n '..cc
+end
+function os.emacs_console_cmd(fn, line)
+	local cc
+	if line then
+		cc=' +'..line..' "'..fn..'"'
+	else
+		cc=' "'..fn..'"'
+	end
+
+	return 'emacs -nw '..cc
 end
 
 function os.vi_readonly_console_cmd(fn, line)
@@ -151,7 +184,7 @@ function os._vi(servername, ...)
 				if os.isUnix() then
 					os.execute(cmd.."&")
 				else
-					os.execute(cmd)
+					os.execute("start "..cmd)
 				end
 			else
 				local lastSep
@@ -195,6 +228,23 @@ function os._vi(servername, ...)
 				os.execute(cmd)
 			end
 		end
+	end
+ end
+function os.emacs_client(fn, line)
+	local cmd=os.emacs_client_cmd(fn,line)
+	print(cmd)
+	local tt=os.capture(cmd.." 2>&1", true)
+	print(tt)
+	if select(1,string.find(tt, 'have you started the server') ) then
+		print('Error detected! launching a new server...')
+		local cmd
+		if line then
+			cmd='emacs +'..line..' "'..fn..'" --eval "(server-start)"&'
+		else
+			cmd='emacs "'..fn..'" --eval "(server-start)"&'
+		end
+		print(cmd)
+		os.execute(cmd)
 	end
 end
 function os.emacs(...)
@@ -281,6 +331,10 @@ function dbg.showCode(fn,ln)
 	{ 
 		iterate=function (self, lineno, c) 
 			if lineno>ln-5 and lineno<ln+5 then
+				c=string.gsub(c, "\t", "    ")
+				if #c > 70 then
+					c=string.sub(c,1,65).."..."
+				end
 				if lineno==ln then
 					print(lineno.."* "..c)
 				else
@@ -296,11 +350,20 @@ function dbg.console(msg, stackoffset)
 
 	stackoffset=stackoffset or 0
 	if(msg) then print (msg) end
+	
 	if dbg._consoleLevel==nil then
 		dbg._consoleLevel=0
 	else
 		dbg._consoleLevel=dbg._consoleLevel+1
 	end
+      if fineLog~=nil and rank~=nil then
+		  debug.sethook() -- stop all kinds of debugger
+		  fineLog("dbg.console called")
+		  fineLog(dbg.callstackString(1))
+		  fineLog(util.tostring(dbg.locals()))
+		  dbg.callstack0()
+		  return
+      end
 	local function at(line, index)
 		return string.sub(line, index, index)
 	end
@@ -324,7 +387,12 @@ function dbg.console(msg, stackoffset)
 			if type(output[1])~='boolean' then
 				output[2]=output[1] -- sometimes error code is not returned for unknown reasons.
 			end
-			if type(output[2])=='table' then printTable(output[2]) 
+			if type(output[2])=='table' then 
+				if getmetatable(output[2]) and getmetatable(output[2]).__tostring then
+					print(output[2])
+				else
+					printTable(output[2]) 
+				end
 			elseif output[2] then
 				dbg.print(unpack(table.isubset(output, 2)))
 			elseif type(output[2])=='boolean' then
@@ -349,6 +417,7 @@ function dbg.console(msg, stackoffset)
 
 		if cmd=="h" or string.sub(line,1,4)=="help" then --help
 			print('cs[level=3]      : print callstack')
+			print('c[level=1]       : print source code at a stack level')
 			print(';(lua statement) : eval lua statements. e.g.) ;print(a)')
 			print(':(lua statement) : eval lua statements and exit debug console. e.g.) ;dbg.startCount(10)')
 			print('s[number=1]      : proceed n steps')
@@ -359,12 +428,13 @@ function dbg.console(msg, stackoffset)
 			print('l[level=0]       : print local variables. Results are saved into \'l variable.')
 			print("                   e.g) DEBUG]>print('l.self.mVec)")
 			print('cont             : exit debug mode')
-			print('lua variable     : print contents; Simply typing "a" print the content of the variable "a".')
+			print('lua global variable     : Simply typing "a" print the content of a global variable "a".')
+			print('lua local variable     : Simply typing "`a" print the content of a local variable "a".')
 			print('lua statement    : run it')
 		elseif line=="cont" then break
 		elseif string.sub(line,1,2)=="cs" then dbg.callstack(tonumber(string.sub(line,3)) or 3)
 		elseif cmd=="v" then
-			local info=debug.getinfo((cmd_arg or 1)+1+stackoffset)
+			local info=debug.getinfo((cmd_arg or 1)+stackoffset)
 			if info and info.source=="=(tail call)" then
 				info=debug.getinfo((cmd_arg or 1)+2+stackoffset)
 			end
@@ -376,25 +446,26 @@ function dbg.console(msg, stackoffset)
 				os.luaExecute([[os.vi_line("]]..fn..[[",]]..info.currentline..[[)]])
 			end
 		elseif cmd=="c" then
-			local level=(cmd_arg or 1)+1+stackoffset
+			local level=(cmd_arg or 1)+stackoffset-1 -- -1 means 'excluding dbg.showCode'
 			local info=debug.getinfo(level)
-			if info and info.source=="=(tail call)" then
-				level=level+1
-				info=debug.getinfo(level)
-			end
 			if info then
-				local ln=info.currentline
-				print(string.sub(info.source,2))
-				dbg.showCode(string.sub(info.source,2),ln)
-				dbg._saveLocals=dbg.locals(level+1,true)
+				local a=string.sub(info.source, 1,1)
+				if a=='=' or a=='[' then
+					print(info.source)
+				else
+					local ln=info.currentline
+					print(string.sub(info.source,2))
+					dbg.showCode(string.sub(info.source,2),ln)
+					dbg._saveLocals=dbg.locals(level+1,true)
+				end
 			else
 				print('no such level')
 			end
 		elseif cmd=="e" then
 			local info=debug.getinfo((cmd_arg or 1)+1+stackoffset)
-			local cmd="emacsclient -n +"..info.currentline..' "'..string.sub(info.source,2)..' "'
-			print(cmd)
-			os.execute(cmd)
+			if info then
+			   os.emacs_client(os.relativeToAbsolutePath(string.sub(info.source,2)),info.currentline)
+			end
 		elseif cmd==";" then
 			handleStatement(string.sub(line,2))
 		elseif cmd==":" then
@@ -408,7 +479,7 @@ function dbg.console(msg, stackoffset)
 			event={"r", string.sub(line, 3)}
 			break
 		elseif cmd=="l" then
-			local level=(cmd_arg or 1)+2
+			local level=(cmd_arg or 1)
 			dbg._saveLocals=dbg.locals(level)
 		else 
 			statement=string.gsub(line, '``', 'dbg._saveLocals')
@@ -428,9 +499,26 @@ function dbg.console(msg, stackoffset)
 
 end
 
+function dbg._stepFunc (event, line)
+   dbg._step=dbg._step+1
+   if dbg._step==dbg._nstep then
+      debug.sethook()
+	  local info=debug.getinfo(2)
+	  if info then
+		  print(info.source, line)
+		  dbg.showCode(string.sub(info.source,2), line)
+	  end
+      return dbg.console()
+   end
+end
+function dbg.step(n) 
+   dbg._step=0
+   dbg._nstep=n
+   debug.sethook(dbg._stepFunc, "l")	
+end
 function dbg.callstack(level)
 	if level==nil then
-		level=4
+		level=1
 	end
 	while true do
 		local info=debug.getinfo(level)
@@ -445,9 +533,26 @@ function dbg.callstack(level)
 end
 
 
+function dbg.callstack0(level)
+	if level==nil then
+		level=1
+	end
+	while true do
+		local info=debug.getinfo(level)
+		if info==nil then break end
+		local k=info.name
+		if k==nil then
+			printTable(info)
+			level=level+1
+		else
+			print(info.short_src..":"..info.currentline..":"..k)
+			level=level+1
+		end
+	end
+end
 function dbg.locals(level, noprint)
 	local output={}
-	if level==nil then level=4 end
+	if level==nil then level=1 end
 	cur=1
 	while true do
 		if debug.getinfo(level, 'n')==nil then return output end
@@ -463,4 +568,38 @@ function dbg.locals(level, noprint)
 		os.print(output)
 	end
 	return output
+end
+function dbg.run(run_str) -- run_str example: a.lua 374 
+   local tbl=string.tokenize(run_str, " ")
+   local filename=tbl[1]
+   local lineno=tonumber(tbl[2])
+
+   --print(filename..","..tostring(lineno))
+   if tonumber(filename)~=nil then
+	   lineno=tonumber(filename)
+	   filename=''
+   end
+   if filename=='' then
+	   local info=debug.getinfo(3)
+	   filename=info.source
+	   if string.sub(info.source,1,1)=="=" then
+		   info=debug.getinfo(4)
+		   filename=info.source
+	   end
+   end
+   print("stop at "..filename.." +",lineno)
+   local strlen=string.len(filename)*-1
+   dbg._runFuncParam={filename, strlen, lineno}
+   debug.sethook(dbg._runFunc, "l")	
+end
+
+function dbg._runFunc (event, line)
+   local src=debug.getinfo(2).source
+   local param=dbg._runFuncParam
+
+   if string.sub(src, param[2])==param[1] and (param[3]==nil or line==param[3]) then
+      debug.sethook()
+      print(debug.getinfo(2).source, line)
+      return dbg.console()
+   end
 end

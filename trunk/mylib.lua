@@ -1,20 +1,39 @@
+if false then -- debug mode functions. (significant performance overhead when enabled.)
+	ipairs_old=ipairs
+	function ipairs(t,f)
+		if t==nil then dbg.console('ipairs error') end
+		return ipairs_old(t,f)
+	end
+end
 -- collection of utility functions that depends only on standard LUA. (no dependency on baseLib or mainLib)
 -- all functions are platform independent
 
+function string.trimSpaces(s)
+  s = string.gsub(s, '^%s+', '') --trim left spaces
+  s = string.gsub(s, '%s+$', '') --trim right spaces
+  return s
+  end
+  function string.startsWith(a,b)
+	  return string.sub(a,1,string.len(b))==b
+  end
 function os.capture(cmd, raw)
   local f = assert(io.popen(cmd, 'r'))
   local s = assert(f:read('*a'))
   f:close()
   if raw then return s end
-  s = string.gsub(s, '^%s+', '') --trim left spaces
-  s = string.gsub(s, '%s+$', '') --trim right spaces
-  s = string.gsub(s, '[\n\r]+', ' ') 
+  s = string.gsub(string.trimSpaces(s), '[\n\r]+', ' ') 
   return s
 end
 function os.rightTokenize(str, sep, includeSep)
+	--deprecated
+	return string.rightTokenize(str, sep, includeSep)
+end
+
+function string.rightTokenize(str, sep, includeSep)
 	local len=string.len(str)
 	for i=len,1,-1 do
-		if string.sub(str, i,i)==sep then
+		local s=string.find(string.sub(str, i,i),sep)
+		if s then
 			if includeSep then
 				return string.sub(str, 1, i-1)..sep, string.sub(str, i+1)
 			end
@@ -24,19 +43,38 @@ function os.rightTokenize(str, sep, includeSep)
 	return "", str
 end
 
+
 function os.sleep(aa)
    local a=os.clock()
    while os.difftime(os.clock(),a)<aa do -- actually busy waits rather then sleeps
    end
 end
 
+function string.isLongestMatched(str, patterns, prefix, postfix)
+	local matched=nil
+	local ll=0
+	for k,ip in ipairs(patterns) do
+		if str==ip then return k end -- exact match has the highest priority
+		if prefix then ip=prefix..ip end
+		if postfix then ip=ip..postfix end
+		local idx,idx2=string.find(str, ip)
+		
+		if idx~=nil then
+			if idx2-idx>=ll then
+				matched=k
+				ll=idx2-idx
+			end
+		end
+	end
+	return matched
+end
 
 function string.isMatched(str, patterns)
-	local matched=false
+	local matched=nil
 	for k,ip in ipairs(patterns) do
 		local idx=string.find(str, ip)
 		if idx~=nil or str==ip then
-			matched=true
+			matched=k
 		end
 	end
 	return matched
@@ -65,6 +103,10 @@ function os.isUnix()  -- has posix commands
 	return true
 end
 
+function os.isMsysgit()
+	local isMsysgit=string.find(string.lower(os.getenv('PATH') or 'nil'), 'msysgit')~=nil
+	return isMsysgit
+end
 function os.isWindows()
 	local isWin=string.find(string.lower(os.getenv('OS') or 'nil'),'windows')~=nil
 	return isWin
@@ -81,42 +123,92 @@ end
 --              MotionLoader.__init(self,a,b,c)
 --        end
 
---  loader=VRMLloader:create({a,b,c}) -- Note that parameters are enclosed by {}
+--  loader=VRMLloader(a,b,c) 
 
 function LUAclass(baseClass)
 
-
 	local classobj={}
-	if __classMTs==nil then
-		__classMTs={}
-		__classMTs.N=0
-	end
-
-	__classMTs.N=__classMTs.N+1
-	local classId=__classMTs.N
-	__classMTs[classId]={__index=classobj}
-	classobj.__classId=classId
-
+	classobj.__index=classobj
 	classobj.new=function (classobj, ...)
 		local new_inst={}
-		setmetatable(new_inst, __classMTs[classobj.__classId])
-		new_inst:__init(unpack({...}))
+		setmetatable(new_inst, classobj)
+		new_inst:__init(...)
 		return new_inst
 	end
-	if baseClass~=nil then
-		setmetatable(classobj, {__index=baseClass})
-	end
 
-	return classobj	 
+	if baseClass~=nil then
+		if baseClass.luna_class then
+			local derivedName=baseClass.luna_class..'_derived'
+			while __luna['_'..derivedName] do
+				derivedName=derivedName..'_'
+			end
+			__luna['_'..derivedName]=classobj
+			classobj.luna_class=derivedName
+			if baseClass.new_modified_T==nil then
+				print("Error!".. baseClass.luna_class.." doesn't have new_modified_T member!")
+				print("Did you forget to set isLuaInheritable=true?")
+			end
+			for k,v in pairs(baseClass) do
+				classobj[k]=v
+			end
+
+			classobj.new=function (classobj, ...)
+							 local new_inst=classobj.new_modified_T(classobj, '_'..derivedName) -- has to have default constructor. 
+							 new_inst:__init(...)
+							 return new_inst
+						 end
+		end
+		setmetatable(classobj, {__index=baseClass,__call=classobj.new})
+	else
+		setmetatable(classobj, {__call=classobj.new})
+	end
+	return classobj
 end
 
+function LUAclass_getProperty(t, nocheck)
+	local result={}
+	if type(t)=="userdata" then
+		result=t:toTable() -- {"__userdata", typeName, type_specific_information...}
+	elseif type(t)=='table' and getmetatable(t) and t.toTable and not nocheck then
+		result=t:toTable()
+	elseif type(t)=="table" then
+		for k, v in pairs(t) do
+			if k=="__index" then
+				-- do nothing
+			elseif k=="__newindex" then
+				-- do nothing
+			elseif type(v)=="function" then
+				-- do nothing
+			elseif type(v)=="table" or type(v)=="userdata" then
+				result[k]=LUAclass_getProperty(v)
+			else
+				result[k]=v
+			end
+		end
+	else
+		result=t
+	end
+	return result
+end
+function LUAclass_setProperty(result, t)
+	for k, v in pairs(t) do
+		if type(v)=='table' and v[1]=="__userdata" then
+			result[k]=_G[v[2]].fromTable(v)
+		elseif type(v)=='table' then
+			assert(result[k] and type(result[k])=='table')
+			LUAclass_setProperty(result[k], v)
+		else
+			result[k]=v
+		end
+	end
+end
 -- one indexing. 100% compatible with original lua table. (an instance is an empty table having a metatable.)
 array=LUAclass()
 
 --[[
     zip_with_helper ()
 
-    This is a generalized version of Haskell's zipWith, but instead
+    This is a generalized version of Haskells zipWith, but instead
     of running a function and appending that result to the list of results
     returned, we call a helper function instead.
 
@@ -196,6 +288,52 @@ function array.filter(func, ...)
     return zip_with_helper(filter_helper, func, ...)
 end
 
+ --[[
+    map(function, [one or more tables])
+
+    Repeatedly apply the function to the arguments composed from the
+    elements of the lists provided.
+
+    Examples:
+        function double(x) return x * 2 end
+        function add(x,y) return x + y end
+
+        map(double, {1,2,3})                -> {2,4,6}
+        map(add, {1,2,3}, {10, 20, 30})     -> {11, 22, 33}
+
+    This also implements the functionality of 
+        zipWith, zipWith3, zipWith4, etc. 
+    in Haskell.
+
+    func() should be a function that takes as many
+    arguments as tables provided.  map() returns a list of just the
+    first return values from each call to func().
+ ]]--
+local function map_helper (func, arg_list, results_l)
+    table.insert(results_l, func(unpack(arg_list)))
+end
+
+function array.map(func, ...)
+    return zip_with_helper(map_helper, func, ...)
+end
+ --[[
+    foldr() - list fold right, with initial value
+
+    foldr(function, default_value, table)
+
+    Example:
+        function mul(x, y) return x * y end
+        function div(x, y) return x / y end
+
+        foldr(mul, 1, {1,2,3,4,5})  ->  120
+        foldr(div, 2, {35, 15, 6})  ->  7
+ ]]--
+function array.foldr(func, val, tbl)
+    for i = #tbl, 1, -1 do
+        val = func(tbl[i], val)
+    end
+    return val
+end
 function array:__init()
 end
 
@@ -204,15 +342,44 @@ function array:size()
 end
 
 function array:pushBack(...)
+	assert(self)
 	for i, x in ipairs({...}) do
 		table.insert(self, x)
 	end
+end
+
+function array:popFront()
+	local out=self[1]
+	for i=1,#self-1 do
+		self[i]=self[i+1]
+	end
+	self[#self]=nil
+	return out
+end
+
+function array:pushBackIfNotExist(a)
+	for i, v in ipairs(self) do
+		if self[i]==a then
+			return 
+		end
+	end
+	array.pushBack(self, a)
 end
 
 function array:concat(tbl)
 	for i, v in ipairs(tbl) do 
 		table.insert(self, v)
 	end
+end
+
+-- input : tables
+function array.concatMulti(...)
+	local out={}
+	for i,v in ipairs({...}) do
+		assert(type(v)=='table')
+		array.concat(out,v)
+	end
+	return  out
 end
 
 
@@ -423,6 +590,50 @@ end
 function table.fromstring2(t)
 	return util.convertFromLuaNativeTable(table.fromstring(t))
 end
+function table.toHumanReadableString(t, spc)
+	spc=spc or 4
+	-- does not check reference. so infinite loop can occur.  to prevent
+	-- such cases, use pickle() or util.saveTable() But compared to pickle,
+	-- the output of table.tostring is much more human readable.  if the
+	-- table contains userdata, use table.tostring2, fromstring2 though it's
+	-- slower.  (it preprocess the input using
+	-- util.convertToLuaNativeTable 
+	-- a=table.tostring(util.convertToLuaNativeTable(t)) convert to
+	-- string t=util.convertFromLuaNativeTable(table.fromstring(a)) 
+	-- convert back from the string)
+
+	local out="{"
+
+	local N=table.getn(t)
+	local function packValue(v)
+		local tv=type(v)
+		if tv=="number" or tv=="boolean" then
+			return tostring(v)
+		elseif tv=="string" then
+			return '"'..tostring(v)..'"'
+		elseif tv=="table" then
+			return table.toHumanReadableString(v,spc+4)
+		end
+	end
+
+	for i,v in ipairs(t) do
+		out=out..packValue(v)..", "
+	end
+
+	for k,v in pairsByKeys(t) do
+
+		local tk=type(k)
+		local str_k
+		if tk=="string" then
+			str_k="['"..k.."']="
+			out=out..string.rep(' ',spc)..str_k..packValue(v)..',\n '
+		elseif tk~="number" or k>N then	 
+			str_k='['..k..']='
+			out=out..string.rep(' ',spc)..str_k..packValue(v)..',\n '
+		end
+	end
+	return out..'}\n'
+end
 function table.tostring(t)
 	-- does not check reference. so infinite loop can occur.  to prevent
 	-- such cases, use pickle() or util.saveTable() But compared to pickle,
@@ -445,6 +656,8 @@ function table.tostring(t)
 			return '"'..tostring(v)..'"'
 		elseif tv=="table" then
 			return table.tostring(v)
+		else 
+			return tostring(v)
 		end
 	end
 
@@ -484,6 +697,8 @@ function util.convertToLuaNativeTable(t)
 	local result={}
 	if type(t)=="userdata" then
 		result=t:toTable() -- {"__userdata", typeName, type_specific_information...}
+	elseif type(t)=='table' and getmetatable(t) and t.toTable then
+		result=t:toTable()
 	elseif type(t)=="table" then
 		for k, v in pairs(t) do
 			if type(v)=="table" or type(v)=="userdata" then
@@ -572,10 +787,13 @@ function util.appendFile(fn, arg)
 end
 
 util.outputToFileShort=util.appendFile
-function util.mergeString(arg)
+function util.mergeStringShort(arg)
 	local out=""
 	for i,v in ipairs(arg) do
-		if type(v)~="string" then
+		local t=type(v)
+		if t=='number' then
+			out=out.."\t"..string.format("%.2f",v)
+		elseif t~="string" then
 			out=out.."\t"..tostring(v)
 		else
 			out=out.."\t"..v
@@ -584,8 +802,20 @@ function util.mergeString(arg)
 	return out
 end
 
+function util.mergeString(arg)
+	local out=""
+	for i,v in ipairs(arg) do
+		if type(t)~="string" then
+			out=out.."\t"..tostring(v)
+		else
+			out=out.."\t"..v
+		end
+	end
+	return out
+end
 
 function string.lines(str)
+	assert(type(str)=='string')
 	local t = {}
 	local function helper(line) table.insert(t, line) return "" end
 	helper((str:gsub("(.-)\r?\n", helper)))
@@ -598,6 +828,15 @@ function string.tokenize(str, pattern)
 	helper((str:gsub("(.-)"..pattern, helper)))
 	return t
 end
+
+function string.tokenize2(str, pattern, sep)
+	local t = {}
+	local function helper(line) if line~="" then table.insert(t, line) end table.insert(t, sep) return "" end
+	helper((str:gsub("(.-)"..pattern, helper)))
+	table.remove(t, #t)
+	return t
+end
+
 function string.trimLeft(str)
 	a=string.find(str, '[^%s]')
 	if a==nil then
@@ -607,7 +846,7 @@ function string.trimLeft(str)
 end
 function string.trimRight(str)
 	--a=string.find(str, '[%s$]')-- doesn't work
-	a=string.find(str, '[%s]',#str-1)
+	a=string.find(str, '[%s]',#str)
 	if a==nil then return str end
 	return string.trimRight(string.sub(str,1,a-1))
 end
@@ -674,11 +913,16 @@ end
 -- t1 and t2 will be shallow copied. you can deepCopy using deepCopy(table.merge(...))
 function table.merge(t1, t2)
 	local result={}
+	assert(type(t1)=='table' and type(t2)=='table')
 	for k,v in pairs(t1) do
 		result[k]=v
 	end
 	for k,v in pairs(t2) do
-		result[k]=v
+		if result[k] and type(result[k])=='table' and type(v)=='table' then
+			result[k]=table.merge(result[k],v)
+		else
+			result[k]=v
+		end
 	end
 	return result
 end
@@ -707,12 +951,21 @@ function dbg.print(...)
 	local arr={...}
 	for k,v in ipairs(arr) do
 		if type(v)=='userdata' then
-			local info=class_info(v)
-			if info.methods.__tostring then
-				print(v)
+			if getmetatable(v).__luabind_class then
+				local info=class_info(v)
+				if info.methods.__tostring then
+					print(v)
+				else
+					print('userdata which has no __tostring implemented:')
+					util.printInfo(v)
+				end
 			else
-				print('userdata which has no __tostring implemented:')
-				util.printInfo(v)
+				if getmetatable(v).__tostring then
+					print(v)
+				else
+					print('userdata which has no __tostring implemented:')
+					printTable(getmetatable(v))
+				end
 			end
 		else
 			print(v)

@@ -10,9 +10,12 @@
 
 class LUAwrapper;
 class FlLayout;
+#ifdef USE_LUABIND
 #include "luabindWorker.h"
+#endif
 
-class GlobalUI
+#include "WrapperLua/OR_LUA_Stack.h"
+class GlobalUI : public OR::LUAWrap::Worker
 {
   TStrings _param;
   LUAwrapper* _L;
@@ -21,7 +24,10 @@ class GlobalUI
   ~GlobalUI();
 
   void releaseScript();
+#ifdef USE_LUABIND
   virtual void work(const char* wn, luabind::adl::object const& table);
+#endif
   
+  virtual int work(TString const& workname, OR::LUAStack& L);
 };
 #endif

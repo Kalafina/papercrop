@@ -5,7 +5,8 @@ set (CMAKE_VERBOSE_MAKEFILE  ON)
 
 project (paperCrop)
 
-
+set(LUNA_GEN ${paperCrop_SOURCE_DIR}/luna_gen.lua)
+#set(LUA ${paperCrop_SOURCE_DIR}/lua)
 
 include(${paperCrop_SOURCE_DIR}/modules.cmake)
 
@@ -35,20 +36,20 @@ if(UNIX)
   # set(LUA_LIB "${paperCrop_SOURCE_DIR}/../Lua5.1.4/src" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
   # set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_44_0")
   include(FindPkgConfig)
-  find_package(Boost REQUIRED)
+  #find_package(Boost REQUIRED)
   find_package(FLTK REQUIRED)
   find_package(Lua51 REQUIRED)
-  find_package(Luabind REQUIRED)
+  # find_package(Luabind REQUIRED)
   pkg_check_modules(Fontconfig REQUIRED fontconfig)
   pkg_check_modules(poppler REQUIRED poppler-splash)
   pkg_check_modules(DevIL REQUIRED ILU)
   set(image_INCLUDE) # all in /usr/include 
   message("include directories:")
   message(${LUA_INCLUDE_DIR} "\n")
-  message(${Boost_INCLUDE_DIR} "\n")
+  #message(${Boost_INCLUDE_DIR} "\n")
   message(${FLTK_INCLUDE_DIR} "\n")
   message(${DevIL_INCLUDE_DIR} "\n")
-  message(${Luabind_INCLUDE_DIR} "\n")
+  #  message(${Luabind_INCLUDE_DIR} "\n")
   message(${FLTK_LIBRARIES} "\n")
   message(${Fontconfig_LIBRARIES} "\n")
   message(${poppler_INCLUDE_DIRS} "\n")
@@ -57,7 +58,7 @@ if(UNIX)
 else()
   set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
   set(LUA_LIB "${paperCrop_SOURCE_DIR}/../lua5.1.4/lua5.1.lib")
-  set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_34_1")
+  #set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_34_1")
   set(image_INCLUDE 
 	"${paperCrop_SOURCE_DIR}/devil/include"
 	"${paperCrop_SOURCE_DIR}/FreeImage/Dist"
@@ -68,7 +69,7 @@ endif()
 if (UNIX)
 else()
   # Additional sources
-  add_subdirectory(luabind-0.9)
+  #  add_subdirectory(luabind-0.9)
 endif()
 
 
@@ -93,14 +94,14 @@ endif()
 if(UNIX)
   include_directories(
 	${LUA_INCLUDE_DIR}
-	${Luabind_INCLUDE_DIR}
-	${Boost_INCLUDE}
+	#${Luabind_INCLUDE_DIR}
+	#${Boost_INCLUDE}
 	${FLTK_INCLUDE_DIR}
 	${paperCrop_SOURCE_DIR}
 	#${paperCrop_SOURCE_DIR}/../FLTK  # fltk would be in /usr/include
 	${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
-	${paperCrop_SOURCE_DIR}/luabind-0.9
+	#${paperCrop_SOURCE_DIR}/luabind-0.9
 	# ${paperCrop_SOURCE_DIR}/poppler/goo
 	# ${paperCrop_SOURCE_DIR}/poppler/poppler
 	# ${paperCrop_SOURCE_DIR}/poppler/splash	
@@ -115,13 +116,13 @@ else()
   include_directories(
 
 	${LUA_INCLUDE}
-	${boost_INCLUDE}
+	#${boost_INCLUDE}
 	${paperCrop_SOURCE_DIR}	
 	${image_INCLUDE}
 	${paperCrop_SOURCE_DIR}/../fltk
 	${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
-	${paperCrop_SOURCE_DIR}/luabind-0.9
+	#${paperCrop_SOURCE_DIR}/luabind-0.9
 	${paperCrop_SOURCE_DIR}/poppler-0.16.2/poppler
 	${paperCrop_SOURCE_DIR}/poppler-0.16.2/goo
 	${paperCrop_SOURCE_DIR}/ext/jpeg
@@ -142,14 +143,14 @@ if(UNIX)
 	${paperCrop_SOURCE_DIR}/../FreeImage/Dist
 	# ${paperCrop_SOURCE_DIR}/poppler/
 	${paperCrop_SOURCE_DIR}/../Freetype/objs/.libs 
-	${paperCrop_SOURCE_DIR}/luabind-0.9/Release
+	#${paperCrop_SOURCE_DIR}/luabind-0.9/Release
 	${LUA_LIB}
 	${Fontconfig_LIBRARY_DIRS}
 	${poppler_LIBRARY_DIRS}
 	${DevIL_LIBRARY_DIRS}
 	)
 else()
-  link_directories(${paperCrop_SOURCE_DIR}/build/luabind-0.9/release)
+	#link_directories(${paperCrop_SOURCE_DIR}/build/luabind-0.9/release)
   link_directories(${paperCrop_SOURCE_DIR}/build/poppler-0.16.2/release)
 endif()
 
@@ -164,13 +165,32 @@ else()
 	)
 endif()
 
+add_custom_command(
+	OUTPUT 
+	"${paperCrop_SOURCE_DIR}/luna_mainlib.cpp" 
+	"${paperCrop_SOURCE_DIR}/luna_baselib.cpp" 
+	"${paperCrop_SOURCE_DIR}/luna_baselib.h"
+	"${paperCrop_SOURCE_DIR}/luna_mainlib.h"
+	DEPENDS 
+	"${LUNA_GEN}" 
+	"${paperCrop_SOURCE_DIR}/luna_baselib.lua"
+	"${paperCrop_SOURCE_DIR}/luna_mainlib.lua"
+	PRE_BUILD
+	COMMAND lua "${LUNA_GEN}" "../luna_baselib.lua"
+	)
 
-
-
+set(ctarget 
+  "./luna_baselib.cpp"
+  "./luna_baselib.h"
+  "./luna_mainlib.cpp"
+  "./luna_mainlib.h"
+  )
 
 set(src
   "./GlobalUI.cpp"
   "./GlobalUI.h"
+  "./luna.h"
+  "./luna.cpp"
   "./ImageSegmentation.cpp"
   "./ImageSegmentation.h"
   "./PaperCrop.cpp"
@@ -184,14 +204,17 @@ set(src
   "./RightPanel.h"
   "./stdafx.cpp"
   "./stdafx.h"
-  "./WrapperLua/BaselibLUA.cpp"
-  "./WrapperLua/BaselibLUA.h"
-  "./WrapperLua/BaselibLUA2.cpp"
-  "./WrapperLua/BaselibLUA2.h"
-  "./WrapperLua/BaselibLUA3.cpp"
-  "./WrapperLua/BaselibLUA3.h"
-  "./WrapperLua/MainlibLUA.cpp"
-  "./WrapperLua/MainlibLUA.h"
+  #  "./WrapperLua/BaselibLUA.cpp"
+  #  "./WrapperLua/BaselibLUA.h"
+  #  "./WrapperLua/BaselibLUA2.cpp"
+  #  "./WrapperLua/BaselibLUA2.h"
+  #  "./WrapperLua/BaselibLUA3.cpp"
+  #  "./WrapperLua/BaselibLUA3.h"
+  #  "./WrapperLua/MainlibLUA.cpp"
+  #  "./WrapperLua/MainlibLUA.h"
+  "./WrapperLua/LUAwrapper.cpp"
+  "./WrapperLua/OR_LUA_Stack.cpp"
+  "./WrapperLua/OR_LUA_Stack.h"
   "./math/bitVectorN.cpp"
   "./math/bitVectorN.h"
   "./math/interval.cpp"
@@ -247,9 +270,9 @@ set(src
 
 
 
-
 add_executable(paperCrop
   ${src}
+  ${ctarget}
   )
 
 if(UNIX)
@@ -268,7 +291,7 @@ if(UNIX)
 	z
 	jpeg
 	${LUA_LIBRARY}
-	luabind
+	#luabind
 	)
 
 endif()
@@ -277,7 +300,7 @@ endif()
 IF(MSVC)
   target_link_libraries(paperCrop
 	${LUA_LIB}
-	luabind
+	#luabind
 	poppler
 	debug ${paperCrop_SOURCE_DIR}/ext/freetype231/freetype231mt_d.lib 
 	debug ${paperCrop_SOURCE_DIR}/ext/zlib/zlib_ds.lib 
