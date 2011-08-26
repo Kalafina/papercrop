@@ -22,7 +22,6 @@
 #include "stdafx.h"
 #include "PDFwin.h"
 
-#include <boost/smart_ptr.hpp>
 #include <vector>
 
 #include "utility/FlLayout.h"
@@ -62,8 +61,8 @@ public:
 	PDFDoc* _pdfDoc ;
 	SplashOutputDev* _outputDev;
 	NullOutputDev* _nullOutputDev;
-	std::vector<boost::shared_ptr<CImage> > _bmpCache;
-	std::vector<boost::shared_ptr<intmatrixn> > _textCache;	
+	std::vector<CImage* > _bmpCache;
+	std::vector<intmatrixn* > _textCache;	
 	int _textCacheState;
 	PDFmodel()
 	{
@@ -86,12 +85,16 @@ public:
 		delete _nullOutputDev;
 		gModel=NULL;
 	}
+	
 	bool load(const char* fileName)
 	{
 		delete _pdfDoc;
 		delete _outputDev;
 		delete _nullOutputDev;
+
+		for (int i=0; i<_bmpCache.size(); i++)	delete _bmpCache[i];
 		_bmpCache.resize(0);
+		for (int i=0; i<_textCache.size(); i++)	delete _textCache[i];
 		_textCache.resize(0);
 
 		_pdfDoc= new PDFDoc(new GooString(fileName), NULL, NULL, NULL);
@@ -120,7 +123,9 @@ public:
 		_outputDev->startDoc(_pdfDoc->getXRef());
 
 		_bmpCache.resize(_pdfDoc->getNumPages());
+		for (int i=0; i<_bmpCache.size(); i++)	_bmpCache[i]=NULL;
 		_textCache.resize(_pdfDoc->getNumPages());
+		for (int i=0; i<_textCache.size(); i++)	_textCache[i]=NULL;
 
 		return true;
 	}
@@ -131,7 +136,7 @@ public:
 		int count=0;
 		for(int i=0; i<_bmpCache.size(); i++)
 		{
-			if(_bmpCache[i].get())
+			if(_bmpCache[i])
 				count++;
 		}
 
@@ -140,8 +145,8 @@ public:
 		{
 			for(int i=0; i<_bmpCache.size(); i++)
 			{
-				_bmpCache[i].reset();
-				_textCache[i].reset();
+				delete _bmpCache[i]; _bmpCache[i]=NULL;
+				delete _textCache[i]; _textCache[i]=NULL;				
 			}
 		}
 
@@ -149,7 +154,7 @@ public:
 			return false;
 
 
-		CImage* bmp=_bmpCache[pageNo].get();
+		CImage* bmp=_bmpCache[pageNo];
 		if(bmp==NULL
 			|| (bmp->GetWidth()>w || bmp->GetHeight()>h)
 			|| (bmp->GetWidth()<w && bmp->GetHeight()<h))
@@ -211,7 +216,7 @@ public:
 			double DPI_H=calcDPI_height(h, pageNo);
 			double DPI=MIN(DPI_W, DPI_H);
 
-			_textCache[pageNo].reset(new intmatrixn());
+			delete _textCache[pageNo]; _textCache[pageNo]=new intmatrixn();
 			_textCacheState=pageNo;
 			//_pdfDoc->getPageRotate(pageNo+1)
 			_pdfDoc->displayPage(_outputDev, pageNo+1, DPI, DPI, 0, gFalse, gTrue, gFalse);
@@ -254,11 +259,11 @@ public:
 
 			CImage* ptr=new CImage();
 			ptr->SetData(temp->getWidth(), temp->getHeight(), temp->getDataPtr(), temp->getRowSize());
-			_bmpCache[pageNo].reset(ptr);
+			delete _bmpCache[pageNo]; _bmpCache[pageNo]=ptr;
 			delete temp;
 		}
 
-		return _bmpCache[pageNo].get();
+		return _bmpCache[pageNo];
 	}
 
 	void notifyDraw(int c, int x, int y, int w, int h, int fx, int fy)
@@ -266,7 +271,7 @@ public:
 #ifdef USE_FONT_DETECTION
 		if(_textCacheState!=-1)
 		{
-			// ĳ�� �ϸ� �ȵɵ�.. �ʹ� ����. �׳� �׸����..
+			// ĳ�� �ϸ� �ȵɵ�.. �ʹ� ����. �׳� �׸����?.
 			//printf("%c", c);
 			//fflush(stdout);
 			const int MAX_CHAR_PER_PAGE=30000;
