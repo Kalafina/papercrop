@@ -43,7 +43,7 @@
 #include "image/Image.h"
 #include "image/ImagePixel.h"
 #include "math/Operator.h"
-
+#include <cstdlib>
 
 #include "ImageSegmentation.h"
 
