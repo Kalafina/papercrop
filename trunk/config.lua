@@ -4,7 +4,8 @@
 -- please send me e-mail if you know your device's correct configuration.
 ---------------------------------------------------------------------
 
-kindle3 = {552,736} 
+kindle2 = {560,735, pad_right=3, pad_bottom=4, mark_corners=true} 
+kindle3 = kindle2   -- not sure. previous default was {552,736} 
 cybook = {600, 800} -- when title bar is hidden
 kobo_wireless_old_firmware = {582,740} -- Up to firmware version 1.7.4. Huge waste of screen real estate. 
 kobo_wireless= {600,800, output_format=".cbz"} -- Kobo wireless firmware 1.9 started to support CBZ. This format has faster page turning speed and fullscreen!
@@ -16,6 +17,7 @@ kobo_wireless= {600,800, output_format=".cbz"} -- Kobo wireless firmware 1.9 sta
 
 device={600,800} -- {device_width, device_height}
 --uncomment if your device is listed below
+device=kindle2
 --device=kindle3
 --device=kobo_wireless_old_firmware
 --device=kobo_wireless
@@ -140,16 +142,25 @@ function outputImage(image, outdir, pageNo, rectNo)
 			image:downsample4(image_4x)
 		end
 		if force_resolution then
-			if image:GetWidth()<device_width or image:GetHeight()<device_height then
+			local pad_right=device.pad_right or 0
+			local pad_bottom=device.pad_bottom  or 0
+			if image:GetWidth()<device_width+pad_right or image:GetHeight()<device_height+pad_bottom then
 				local img=CImage()
 				img:CopyFrom(image)
-				local new_width=math.max(image:GetWidth(), device_width)
-				local new_height=math.max(image:GetHeight(), device_height)
+				local new_width=math.max(image:GetWidth(), device_width + pad_right)
+				local new_height=math.max(image:GetHeight(), device_height + pad_bottom)
 				image:create(new_width, new_height)
 				image:drawBox(TRect(0,0,image:GetWidth(), image:GetHeight()), 255,255,255)
 				local y=math.max(device_height-img:GetHeight(),0)
 				local x=math.max(device_width-img:GetWidth(),0)
 				image:blit(img, TRect(0,0,img:GetWidth(), img:GetHeight()), x,y)
+
+				if device.mark_corners then
+					image:drawBox(TRect(0,0,1,1),0,0,0)
+					image:drawBox(TRect(device_width-1,0,device_width,1),0,0,0)
+					image:drawBox(TRect(0,device_height-1,1,device_height),0,0,0)
+					image:drawBox(TRect(device_width-1,device_height-1,device_width,device_height),0,0,0)
+				end
 			end
 		end
 
