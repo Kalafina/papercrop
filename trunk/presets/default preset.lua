@@ -1,1 +1,1 @@
-dofile("presets/two-column papers (landscape).lua")
+dofile(device.default_preset or default_preset)

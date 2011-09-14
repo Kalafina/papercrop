@@ -9,6 +9,8 @@ kindle3 = kindle2   -- not sure. previous default was {552,736}
 cybook = {600, 800} -- when title bar is hidden
 kobo_wireless_old_firmware = {582,740} -- Up to firmware version 1.7.4. Huge waste of screen real estate. 
 kobo_wireless= {600,800, output_format=".cbz"} -- Kobo wireless firmware 1.9 started to support CBZ. This format has faster page turning speed and fullscreen!
+-- android tablet: perfect viewer apk (modify resolution 600,800 to your device's vertical mode resolution)
+android={600,800, gamma=1.0, output_format=".cbz", default_split='(outputs a single image per page)', default_preset="presets/two-column papers (portrait).lua" } -- android comic viewer: adjust resolution to match your device
 -- other kindles, sony readers, etc -- Please let me know if you know. I've got many e-mails asking about this.
 
 ---------------------------------------------------------------------
@@ -22,7 +24,14 @@ device=kindle2
 --device=kobo_wireless_old_firmware
 --device=kobo_wireless
 --device=cybook
+--device=android
 
+---------------------------------------------------------------------
+-- default options
+---------------------------------------------------------------------
+device.gamma=device.gamma or 0.5
+device.default_split=device.default_split or '(outputs multiple images)'
+default_preset="presets/two-column papers (landscape).lua"
 scroll_overlap_pixels=40
 output_format=".png" -- ".jpg", ".png", ".gif" are supported
 output_to_pdf=true -- output to a pdf or cbz file, instead of multiple image files when possible. (to use cbz search for kobo_wireless)
@@ -109,7 +118,27 @@ function book_pages:writeToFile(outdir)
 				print(cmd)
 				os.execute(cmd)
 			end
+		else
+			local fn2=Fltk.ChooseFile('save as '.. os.filename(fn)..'?', fn, '*.'..string.sub(fn,-3), true)
+			print(fn,fn2)
+			if fn and fn~=fn2 then
+				if os.isUnix() then
+					local cmd='cp "'..fn..'" "'..fn2..'"'
+					print(cmd)
+					os.execute(cmd)
+				else
+					local fn3=string.gsub(fn,"/", "\\")
+					local fn4=string.gsub(fn2,"/", "\\")
+					local cmd='move /Y "'..fn3..'" "'..fn4..'"'
+					print(cmd)
+					os.execute(cmd)
+				end
+				win:setStatus('saved as '..fn2)
+			else
+				win:setStatus('Saved as '..fn)
+			end
 		end
+
 		collectgarbage();
 	end;
 end
@@ -207,7 +236,7 @@ function postprocessImage(image)
 	--image:contrast(1.5)
 	--    image:gamma(0.5) -- uncomment if you want thicker fonts.
 	if color_depth<8 then
-		image:gamma(0.5) -- e-ink devices tends to have low contrast.
+		image:gamma(device.gamma) -- e-ink devices tends to have low contrast.
 	end
 
 	if color_depth==2 then
