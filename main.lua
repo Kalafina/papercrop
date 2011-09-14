@@ -141,6 +141,7 @@ function ctor()
 	end
 end
 function dtor()
+	print('')
 end
 function Fltk.ChooseFile(title, path, mask, write)
 	if write==nil then write=false end
@@ -184,6 +185,12 @@ function onCallback(w, userData)
 			collectgarbage();
 		end
 		outpdf:save(fn)
+		if os.isUnix() then
+			print('gnome-open "'..fn..'"')
+			os.execute('gnome-open "'..fn..'"')
+		else
+			os.execute('start "'..fn..'"')
+		end
 		collectgarbage();
 	elseif w:id()=="presets" then
 		local fn=presets[w:menuValue()+1]
