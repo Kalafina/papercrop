@@ -106,23 +106,27 @@ void PDFWriter::addPage(CImage const& pageImage, int bpp)
 	HPDF_BYTE* ptr=&im[0];
 	if (bpp==4 || bpp==2 || bpp==1)
 	{
-		im4.resize(w*h/2+1);
+		im4.resize(w*h/2+h+1);
 		int c=0;
 		int k=0;
+		int koffset=0;
 		for(int i=0; i<h; i++)
+		  {
 			for(int j=0; j<w; j++)
 			{
 				if (k%2==0)
 				{
-					im4[c]=((im[k]>>4)&0xFF)<<4;
+					im4[c]=((im[k+koffset]>>4)&0xFF)<<4;
 				}
 				else
 				{
-					im4[c]=(im[k]>>4)&0xFF | im4[c];
+					im4[c]=(im[k+koffset]>>4)&0xFF | im4[c];
 					c++;
 				}
 				k++;
 			}
+			if (w%2==1) {c++;k++;koffset--;}
+		  }
 		ptr=&im4[0];
 		bpp=4;
 	}
