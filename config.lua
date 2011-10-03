@@ -4,7 +4,7 @@
 -- please send me e-mail if you know your device's correct configuration.
 ---------------------------------------------------------------------
 
-kindle2 = {560,735, pad_right=3, pad_bottom=4, mark_corners=true} 
+kindle2 = {560,735, pad_right=3, pad_bottom=4, mark_corners=true, output_format=".pdf"} 
 kindle3 = kindle2   -- not sure. previous default was {552,736} 
 cybook = {600, 800} -- when title bar is hidden
 kobo_wireless_old_firmware = {582,740} -- Up to firmware version 1.7.4. Huge waste of screen real estate. 
