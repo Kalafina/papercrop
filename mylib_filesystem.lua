@@ -78,7 +78,7 @@ function os.currentDirectory()
 end
 function os.copyFile(mask, mask2)
 
-   if os.isUnix() then
+   if os.isUnix() or os.isMsysgit() then
 	   if mask2 then
 		   os.execute('cp "'..mask..'" "'..mask2..'"')
 	   else
@@ -146,7 +146,9 @@ function os.copyFiles(src, dest, ext) -- copy source files to destination folder
 end
 
 function os._globWin32(attr, mask, ignorepattern)
-	local tbl=string.tokenize(os.capture("dir /b/a:"..attr.." "..string.gsub(mask, "/", "\\").." 2>nul", true), "\n")
+	local cmd="dir /b/a:"..attr..' "'..string.gsub(mask, "/", "\\")..'" 2>nul'
+	local cap=os.capture(cmd, true)
+	local tbl=string.tokenize(cap, "\n")
 	tbl[table.getn(tbl)]=nil
 	local files={}
 	local c=1
@@ -276,7 +278,13 @@ function os.find(mask, bRecurse, nomessage, printFunc)
 	else
 		local folder, lmask=os._processMask(mask)
 		local out=os._globWin32("-d", folder..lmask)
-		local acceptedExt=os.globParam.acceptedExt
+		local acceptedExt=deepCopyTable(os.globParam.acceptedExt)
+
+		if string.find(mask,"%*%.") then
+			local idx=string.find(mask,"%*%.")+2
+			acceptedExt[#acceptedExt+1]="%."..string.sub(mask,idx)..'$'
+			--print(acceptedExt[#acceptedExt])
+		end
 		for i=1, table.getn(out) do
 			if string.isMatched(out[i], acceptedExt) then
 				printFunc:iterate(folder..out[i])

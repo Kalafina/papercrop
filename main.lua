@@ -161,6 +161,7 @@ function onCallback(w, userData)
 		local outdir=string.sub(win.filename, 1, -5)
 
 		local files=os.glob(outdir.."/*"..output_format)
+		printTable(files)
 		table.sort(files)
 
 		local outpdf, fn
@@ -172,6 +173,13 @@ function onCallback(w, userData)
 			fn=outdir.."_1.pdf"
 		end
 		outpdf:init()
+
+		if not os.isUnix() then
+			for i=1,#files do
+				files[i]=string.gsub(files[i],"/","\\")
+			end
+		end
+
 
 		for i=1,#files do
 			print(files[i])
@@ -189,7 +197,7 @@ function onCallback(w, userData)
 			print('gnome-open "'..fn..'"')
 			os.execute('gnome-open "'..fn..'"')
 		else
-			os.execute('start "'..fn..'"')
+			print('exported to '..fn)
 		end
 		collectgarbage();
 	elseif w:id()=="presets" then
