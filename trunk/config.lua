@@ -4,13 +4,14 @@
 -- please send me e-mail if you know your device's correct configuration.
 ---------------------------------------------------------------------
 
-kindle2 = {560,735, pad_right=3, pad_bottom=4, mark_corners=true, output_format=".pdf"} 
+kindle2 = {560,735, pad_right=3, pad_bottom=4, mark_corners=true, color_depth=8}  -- color_depth==4 seems to have bugs when resolutions are odd numbers.
 kindle3 = kindle2   -- not sure. previous default was {552,736} 
 cybook = {600, 800} -- when title bar is hidden
 kobo_wireless_old_firmware = {582,740} -- Up to firmware version 1.7.4. Huge waste of screen real estate. 
 kobo_wireless= {600,800, output_format=".cbz"} -- Kobo wireless firmware 1.9 started to support CBZ. This format has faster page turning speed and fullscreen!
--- android tablet: perfect viewer apk (modify resolution 600,800 to your device's vertical mode resolution)
+-- android tablet: the perfect viewer app (modify resolution 600,800 to your device's vertical mode resolution)
 android={600,800, gamma=1.0, output_format=".cbz", default_split='(outputs a single image per page)', default_preset="presets/two-column papers (portrait).lua" } -- android comic viewer: adjust resolution to match your device
+sony_PRS_T1={594-2-2-2-2-2,733-4-3-3-2-5-2+8+8+8+8, landscapeRotate='rotateLeft', mark_corners=true, move_to_folder_linux='/media/READER/Books'}
 -- other kindles, sony readers, etc -- Please let me know if you know. I've got many e-mails asking about this.
 
 ---------------------------------------------------------------------
@@ -19,48 +20,55 @@ android={600,800, gamma=1.0, output_format=".cbz", default_split='(outputs a sin
 
 device={600,800} -- {device_width, device_height}
 --uncomment if your device is listed below
-device=kindle2
+--device=kindle2
 --device=kindle3
 --device=kobo_wireless_old_firmware
 --device=kobo_wireless
 --device=cybook
 --device=android
+device=sony_PRS_T1
 
 ---------------------------------------------------------------------
 -- default options
 ---------------------------------------------------------------------
-device.gamma=device.gamma or 0.5
-device.default_split=device.default_split or '(outputs multiple images)'
-default_preset="presets/two-column papers (landscape).lua"
-scroll_overlap_pixels=40
-output_format=".png" -- ".jpg", ".png", ".gif" are supported
-output_to_pdf=true -- output to a pdf or cbz file, instead of multiple image files when possible. (to use cbz search for kobo_wireless)
-color_depth=4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. 
-force_resolution=true
-use_4xsupersampling=false -- better quality output for scanned documents, but slower.
-nr_of_pages_per_pdf_book = 100;
-max_vspace=16 -- pixels
+function setDefault()
 
---move_to_folder="h:\\ebooks" -- uncomment and edit if you want to automatically move the output file to the ebook device
-landscapeRotate="rotateLeft"
+	-- Do not edit below unless you know what you are doing. Edit line 22 instead.
+	device.gamma=device.gamma or 0.5
+	device.default_split=device.default_split or '(outputs multiple images)'
+	default_preset="presets/two-column papers (landscape).lua"
+	scroll_overlap_pixels=40
+	output_format=".png" -- ".jpg", ".png", ".gif" are supported
+	output_to_pdf=true -- output to a pdf or cbz file, instead of multiple image files when possible. (to use cbz search for kobo_wireless)
+	color_depth=device.color_depth or 4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. 
+	force_resolution=true
+	use_4xsupersampling=false -- better quality output for scanned documents, but slower.
+	nr_of_pages_per_pdf_book = 100;
+	max_vspace=16 -- pixels
 
----------------------------------------------------------------------
--- utility functions
----------------------------------------------------------------------
+	if os.isUnix() then
+		move_to_folder=device.move_to_folder_linux
+	end
+	--move_to_folder="h:\\ebooks" -- uncomment and edit if you want to automatically move the output file to the ebook device
+	landscapeRotate=device.landscapeRotate or "rotateRight"
+	device_width=device[1]
+	device_height=device[2]
+	if use_4xsupersampling then
+		device_width=device_width*2
+		device_height=device_height*2
+	end
 
--- Do not edit below unless you know what you are doing. Edit line 14 instead.
-device_width=device[1]
-device_height=device[2]
-if use_4xsupersampling then
-	device_width=device_width*2
-	device_height=device_height*2
+	if landscapeRotate=="rotateLeft" then
+		landscapeRotate=function (img) img:rotateLeft() end
+	else
+		landscapeRotate=function (img) img:rotateRight() end
+	end
 end
 
-if landscapeRotate=="rotateLeft" then
-	landscapeRotate=function (img) img:rotateLeft() end
-else
-	landscapeRotate=function (img) img:rotateRight() end
-end
+setDefault()
+
+devices={['kindle 2']=kindle2, ['kindle 3']=kindle3, ['cybook (no title bar)']=cybook, ['kobo wireless']=kobo_wireless,
+['android (width 600)']=android, ['sony PRS-t1']=sony_PRS_T1}
 
 
 ---------------------------------------------------------------------
@@ -121,7 +129,7 @@ function book_pages:writeToFile(outdir)
 		else
 			local fn2=Fltk.ChooseFile('save as '.. os.filename(fn)..'?', fn, '*.'..string.sub(fn,-3), true)
 			print(fn,fn2)
-			if fn and fn~=fn2 then
+			if fn and fn~=fn2 and fn2 then
 				if os.isUnix() then
 					local cmd='cp "'..fn..'" "'..fn2..'"'
 					print(cmd)
@@ -290,14 +298,14 @@ function splitImage_old(imageM, height, outdir, pageNo, rotateRight)
 		for subPage=0, numSubPage-1 do
 			start=math.floor(startPos:value(subPage))
 			imageS:crop(imageM, 0, start, imageM:GetWidth(), start+height)
-			if rotateRight then imageS:rotateRight() end
+			if rotateRight then landscapeRotate(imageS) end
 			outputImage(imageS,outdir,pageNo,subPage)
 			win:setStatus("saving "..pageNo.."_"..subPage)
 		end
 	else
 		local imageS=CImage()
 		imageS:crop(imageM, 0, 0, imageM:GetWidth(), imageM:GetHeight())
-		if rotateRight then imageS:rotateRight() end
+		if rotateRight then landscapeRotate(imageS) end
 		outputImage(imageS,outdir,pageNo,0)
 	end
 end
@@ -313,12 +321,12 @@ function splitImage(imageM, height, outdir, pageNo, rotateRight)
 			--      print(curY, height)
 			if curY+height <= imageM:GetHeight() then
 				imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
-				if rotateRight then imageS:rotateRight() end
+				if rotateRight then landscapeRotate(imageS) end
 				outputImage(imageS,outdir,pageNo,subPage)
 				win:setStatus("saving "..pageNo.."_"..subPage)
 			else
 				imageS:crop(imageM, 0, curY, imageM:GetWidth(), imageM:GetHeight())
-				if rotateRight then imageS:rotateRight() end
+				if rotateRight then landscapeRotate(imageS) end
 				outputImage(imageS,outdir,pageNo,subPage)
 				win:setStatus("saving "..pageNo.."_"..subPage)
 				break
@@ -338,7 +346,7 @@ function splitImage(imageM, height, outdir, pageNo, rotateRight)
 				--      print(curY, height)
 				if curY+height <= imageM:GetHeight() then
 					imageS:crop(imageM, 0, curY, imageM:GetWidth(), curY+height)
-					if rotateRight then imageS:rotateRight() end
+					if rotateRight then landscapeRotate(imageS) end
 					postprocessImage(imageS)
 					outputImage(imageS,outdir,pageNo,subPage)
 					win:setStatus("saving "..pageNo.."_"..subPage)
