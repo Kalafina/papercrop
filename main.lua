@@ -197,7 +197,7 @@ function onCallback(w, userData)
 			print('gnome-open "'..fn..'"')
 			os.execute('gnome-open "'..fn..'"')
 		else
-			print('exported to '..fn)
+			os.execute('start "'..fn..'"')
 		end
 		collectgarbage();
 	elseif w:id()=="presets" then
