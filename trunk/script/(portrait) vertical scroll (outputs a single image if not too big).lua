@@ -1,4 +1,3 @@
-dofile("config.lua")
 width=device_width
 height=device_height
 max_height=height*10.1

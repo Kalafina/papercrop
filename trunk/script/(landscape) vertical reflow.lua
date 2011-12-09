@@ -1,4 +1,3 @@
-dofile("config.lua")
 width=device_height
 height=device_width
 right_max_margin=0.1
