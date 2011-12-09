@@ -64,8 +64,29 @@ function ctor()
 			panel:widget(0):menuItem(i-1, processPresetName(presets[i]),shortc)
 		end
 		panel:widget(0):menuValue(0)
+		
+		-- load devices
+		panel:create("Choice", "devices")
+		local ndevices=0
+		local idevice=0
+		gdevices={}
+		for k,v in pairs(devices) do 
+			ndevices=ndevices+1 
+			gdevices[ndevices]={k,v}
+			if device==v then 
+				idevice=ndevices 
+			end 
+		end
+		panel:widget(0):menuSize(ndevices+1)
+		panel:widget(0):menuValue(idevice)
+		panel:widget(0):menuItem(0, 'choose a device')
+		for i,v in ipairs(gdevices) do
+			panel:widget(0):menuItem(i, v[1])
+		end
+		panel:widget(0):menuValue(idevice)
 	end
 	--panel:create("Button", "Preset", "default preset");
+		
 
 	panel:create("Check_Button", "Use automatic segmentation", "Use automatic segmentation");
 	panel:widget(0):checkButtonValue(1);
@@ -157,6 +178,12 @@ function onCallback(w, userData)
 			print(fn..':')
 			win:load(fn)
 		end
+	elseif w:id()=="devices" then
+		local dev=gdevices[w:menuValue()]
+		device=dev[2] or device
+		print(dev[1]..' selected', dev[2])
+		setDefault()	
+		loadPreset("presets/default preset.lua")
 	elseif w:id()=="Convert processed pages to PDF" then
 		local outdir=string.sub(win.filename, 1, -5)
 

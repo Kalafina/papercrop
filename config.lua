@@ -93,6 +93,7 @@ function book_pages:init(part_nr,outdir)
 		self.filename=outdir.."_"..tostring(part_nr)..".pdf"
 		self.outpdf=PDFWriter()
 	end
+	print('book_pages: init '..self.filename)
 	self.outpdf:init()
 end
 

@@ -1,4 +1,3 @@
-dofile("config.lua")
 
 function processPage(outdir, pageNo, numRects)
    local width=device_height
