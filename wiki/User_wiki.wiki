@@ -18,14 +18,18 @@ This will install paperCrop at the current folder where ubuntu_installer.sh is.
 
 * How to execute.
 
+1. Easy way:
+
+Assuming ~/bin is in the path, simply type paperCrop aaa.pdf
+
+2. Using a file manager:
 Run "papercrop" in the "~/bin/papercrop/paperCrop_source".
 
-Alternatively, in the terminal:
+3. Alternative way in the terminal:
 {{{
 cd ~/bin/papercrop
 ./paperCropLauncher
 }}}
-
 
 * How to update to the latest version.
 
