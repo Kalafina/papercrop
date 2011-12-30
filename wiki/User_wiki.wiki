@@ -20,12 +20,17 @@ This will install paperCrop at the current folder where ubuntu_installer.sh is.
 
 1. Easy way:
 
-Assuming ~/bin is in the path, simply type paperCrop aaa.pdf
+Assuming ~/bin is in the path, simply type in a terminal
+{{{
+paperCrop aaa.pdf
+}}}
+Here, paperCrop is a python script located in your ~/bin.
 
 2. Using a file manager:
+
 Run "papercrop" in the "~/bin/papercrop/paperCrop_source".
 
-3. Alternative way in the terminal:
+3. Alternative way in a terminal:
 {{{
 cd ~/bin/papercrop
 ./paperCropLauncher
