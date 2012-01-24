@@ -9,7 +9,7 @@ cmake ..
 make clean
 make
 cp paperCrop ..
-cp paperCrop.py ../../../paperCrop
+cp ../paperCrop.py ../../../paperCrop
 chmod 700 ../../../paperCrop
 mkdir -p ~/.referencer
 mkdir -p ~/.referencer/plugins
