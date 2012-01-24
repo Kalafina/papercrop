@@ -7,7 +7,7 @@ svn checkout http://papercrop.googlecode.com/svn/trunk/ paperCrop_source
 cd paperCrop_source
 echo 'svn update .'
 svn update .
-sudo apt-get install libpoppler-dev libdevil-dev libfontconfig-dev libfltk1.1-dev libdevil-dev libfreeimage-dev liblua5.1-dev libpng12-dev lua5.1 cmake g++ libxml2-dev libogre-dev libgsl0-dev 
+sudo apt-get install libpoppler-dev libdevil-dev libfontconfig-dev libfltk1.1-dev libdevil-dev libfreeimage-dev liblua5.1-dev libpng12-dev lua5.1 cmake g++ libxml2-dev libgsl0-dev 
 echo 'start building paperCrop'
 sh clean_build.sh
 cd ..
