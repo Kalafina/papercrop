@@ -120,7 +120,11 @@ public:
 #ifdef USE_NULLOUTPUTDEV
 		_nullOutputDev=new NullOutputDev();
 #endif
+#if POPPLER_VERSION_0_20
+		_outputDev->startDoc(_pdfDoc);
+#else
 		_outputDev->startDoc(_pdfDoc->getXRef());
+#endif
 
 		_bmpCache.resize(_pdfDoc->getNumPages());
 		for (int i=0; i<_bmpCache.size(); i++)	_bmpCache[i]=NULL;

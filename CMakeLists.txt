@@ -286,6 +286,7 @@ if(UNIX)
 	hpdf
 	X11
 	ILU
+	IL
 	${poppler_LIBRARIES}
 	freeimage
 	z
