@@ -33,3 +33,27 @@ function CBZwriter:addPageColor(image)
 	-- compatibility function
 	self:addPage(image,24)
 end
+
+do
+	XMLwriter=LUAclass()
+
+	function XMLwriter:__init(fn)
+		self.filename=fn
+		self.numPages=0
+
+		if os.isFileExist(fn) then
+			os.deleteFiles(fn)
+		end
+	end
+	function XMLwriter:addPage(image, color_depth)
+		self.numPages=self.numPages+1
+	end
+	function XMLwriter:save()
+	end
+	function XMLwriter:init()
+		-- compatibility function. does nothing
+	end
+	function XMLwriter:addPageColor(image)
+		-- compatibility function
+	end
+end

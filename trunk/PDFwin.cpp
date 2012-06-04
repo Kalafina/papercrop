@@ -334,6 +334,11 @@ double PDFwin::getDPI_width(int pageNo, int rectNo, int width)
 	return DPI;
 }
 
+void PDFwin::getRectSize(int pageNo, int rectNo, SelectionRectangle& rect)
+{
+	rect=::find(mRects, rectNo);
+}
+
 void PDFwin::getRectImage_width(int pageNo, int rectNo, int width, CImage& image)
 {
 	SelectionRectangle& rect=::find(mRects, rectNo);

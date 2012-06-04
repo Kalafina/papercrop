@@ -55,6 +55,7 @@ public:
 
 	int getNumPages();
 	int getNumRects();
+	void getRectSize(int pageNo, int rectNo, SelectionRectangle& rect);
 	void getRectImage_width(int pageNo, int rectNo, int width, CImage& image);
 	void getRectImage_height(int pageNo, int rectNo, int height, CImage& image);
 	double getDPI_height(int pageNo, int rectNo, int height);
