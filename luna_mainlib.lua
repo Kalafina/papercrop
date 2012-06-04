@@ -6,11 +6,29 @@ bindTargetMainLib={
 			
 	classes={
 		{
+			name='SelectionRectangle',
+			decl='class SelectionRectangle;',
+			ctors={'()'},
+			wrapperCode=[[
+			static double left(SelectionRectangle& w){ return w.p1.x;}
+			static double top(SelectionRectangle& w){ return w.p1.y;}
+			static double right(SelectionRectangle& w){ return w.p2.x;}
+			static double bottom(SelectionRectangle& w){ return w.p2.y;}
+			]],
+			staticMemberFunctions={[[
+			static double left(SelectionRectangle& w);
+			static double top(SelectionRectangle& w);
+			static double right(SelectionRectangle& w);
+			static double bottom(SelectionRectangle& w);
+			]]}
+		},
+		{
 			name='PDFwin',
 			decl='class PDFwin;',
 			properties={'std::string _filename @ filename', 'int mCurrPage @ currPage'},
 			memberFunctions={[[
 
+			void getRectSize(int pageNo, int rectNo, SelectionRectangle& rect);
 			void getRectImage_width(int pageNo, int rectNo, int width, CImage& image);
 			void getRectImage_height(int pageNo, int rectNo, int height, CImage& image);
 			void load(const char* filename);

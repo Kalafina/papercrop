@@ -10,7 +10,10 @@ cybook = {600, 800} -- when title bar is hidden
 kobo_wireless_old_firmware = {582,740} -- Up to firmware version 1.7.4. Huge waste of screen real estate. 
 kobo_wireless= {600,800, output_format=".cbz"} -- Kobo wireless firmware 1.9 started to support CBZ. This format has faster page turning speed and fullscreen!
 -- android tablet: the perfect viewer app (modify resolution 600,800 to your device's vertical mode resolution)
-android={600,800, gamma=1.0, output_format=".cbz", default_split='(outputs a single image per page)', default_preset="presets/two-column papers (portrait).lua" } -- android comic viewer: adjust resolution to match your device
+android_old={600,800, gamma=1.0, output_format=".cbz", default_split='(outputs a single image per page)', default_preset="presets/two-column papers (portrait).lua" } -- android comic viewer: adjust resolution to match your device
+--  output vector graphic PDF files (no rasterization).
+vector_PDF={0,0,output_format=".xml", default_split='(outputs a single image per page)', default_preset="presets/two-column papers (portrait).lua" } -- android comic viewer: adjust resolution to match your device
+
 sony_PRS_T1={594-2-2-2-2-2,733-4-3-3-2-5-2+8+8+8+8, landscapeRotate='rotateLeft', mark_corners=true, move_to_folder_linux='/media/READER/Books'}
 -- other kindles, sony readers, etc -- Please let me know if you know. I've got many e-mails asking about this.
 
@@ -26,6 +29,7 @@ device={600,800} -- {device_width, device_height}
 --device=kobo_wireless
 --device=cybook
 --device=android
+--device=vector_PDF
 device=sony_PRS_T1
 
 ---------------------------------------------------------------------
@@ -82,6 +86,7 @@ book_pages = {
 };
 
 require('CBZwriter')
+
 function book_pages:init(part_nr,outdir)
 	self.book_part_nr = part_nr;
 	self.nr_of_pages = 0;
@@ -89,6 +94,9 @@ function book_pages:init(part_nr,outdir)
 	if device and device.output_format==".cbz" then
 		self.filename=outdir.."_"..tostring(part_nr)..".cbz"
 		self.outpdf=CBZwriter:new(self.filename)
+	elseif device and device.output_format==".xml" then
+		self.filename=outdir.."_"..tostring(part_nr)..".xml"
+		self.outpdf=XMLwriter:new(self.filename)
 	else
 		self.filename=outdir.."_"..tostring(part_nr)..".pdf"
 		self.outpdf=PDFWriter()
@@ -109,6 +117,10 @@ function book_pages:add_page (image, outdir)
 		self.outpdf:addPage(image, color_depth)
 	end
 	collectgarbage();
+end
+function book_pages:add_current_page()
+	assert (self.nr_of_pages==nil)
+
 end
 
 function book_pages:writeToFile(outdir)
@@ -171,33 +183,35 @@ function outputImage(image, outdir, pageNo, rectNo)
 	local device_width=device_width
 	local device_height=device_height
 	do
-		local image=image
-		if use_4xsupersampling then
-			device_width=device_width/2
-			device_height=device_height/2
-			local image_4x=image
-			image=CImage()
-			image:downsample4(image_4x)
-		end
-		if force_resolution then
-			local pad_right=device.pad_right or 0
-			local pad_bottom=device.pad_bottom  or 0
-			if image:GetWidth()<device_width+pad_right or image:GetHeight()<device_height+pad_bottom then
-				local img=CImage()
-				img:CopyFrom(image)
-				local new_width=math.max(image:GetWidth(), device_width + pad_right)
-				local new_height=math.max(image:GetHeight(), device_height + pad_bottom)
-				image:create(new_width, new_height)
-				image:drawBox(TRect(0,0,image:GetWidth(), image:GetHeight()), 255,255,255)
-				local y=math.max(device_height-img:GetHeight(),0)
-				local x=math.max(device_width-img:GetWidth(),0)
-				image:blit(img, TRect(0,0,img:GetWidth(), img:GetHeight()), x,y)
+		if device.output_format~=".xml" then
+			local image=image
+			if use_4xsupersampling then
+				device_width=device_width/2
+				device_height=device_height/2
+				local image_4x=image
+				image=CImage()
+				image:downsample4(image_4x)
+			end
+			if force_resolution then
+				local pad_right=device.pad_right or 0
+				local pad_bottom=device.pad_bottom  or 0
+				if image:GetWidth()<device_width+pad_right or image:GetHeight()<device_height+pad_bottom then
+					local img=CImage()
+					img:CopyFrom(image)
+					local new_width=math.max(image:GetWidth(), device_width + pad_right)
+					local new_height=math.max(image:GetHeight(), device_height + pad_bottom)
+					image:create(new_width, new_height)
+					image:drawBox(TRect(0,0,image:GetWidth(), image:GetHeight()), 255,255,255)
+					local y=math.max(device_height-img:GetHeight(),0)
+					local x=math.max(device_width-img:GetWidth(),0)
+					image:blit(img, TRect(0,0,img:GetWidth(), img:GetHeight()), x,y)
 
-				if device.mark_corners then
-					image:drawBox(TRect(0,0,1,1),0,0,0)
-					image:drawBox(TRect(device_width-1,0,device_width,1),0,0,0)
-					image:drawBox(TRect(0,device_height-1,1,device_height),0,0,0)
-					image:drawBox(TRect(device_width-1,device_height-1,device_width,device_height),0,0,0)
+					if device.mark_corners then
+						image:drawBox(TRect(0,0,1,1),0,0,0)
+						image:drawBox(TRect(device_width-1,0,device_width,1),0,0,0)
+						image:drawBox(TRect(0,device_height-1,1,device_height),0,0,0)
+						image:drawBox(TRect(device_width-1,device_height-1,device_width,device_height),0,0,0)
+					end
 				end
 			end
 		end
@@ -212,18 +226,22 @@ function outputImage(image, outdir, pageNo, rectNo)
 			end
 
 		else
-			if output_to_pdf then
-				print('Warning! output to a jpg file instead of a pdf file. (Process current page?)')
-			end
-			--		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
-			if color_depth<=8 then
-				if output_format==".jpg" then
-					image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),8)
-				else -- png support all bit depths
-					image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format), color_depth)
-				end
+			if device.output_format==".xml" then
+				book_pages:add_current_page()
 			else
-				image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
+				if output_to_pdf then
+					print('Warning! output to a jpg file instead of a pdf file. (Process current page?)')
+				end
+				--		image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
+				if color_depth<=8 then
+					if output_format==".jpg" then
+						image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format),8)
+					else -- png support all bit depths
+						image:save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format), color_depth)
+					end
+				else
+					image:Save(string.format("%s/%05d_%03d%s",outdir,pageNo,rectNo,output_format))
+				end
 			end
 		end
 	end
@@ -259,12 +277,20 @@ end
 
 function processPageSubRoutine(imageM, pageNo, width, numRects)
 
+	if device.output_format==".xml" then
+		for rectNo=0, numRects-1 do
+			win:setStatus("processing"..pageNo.."_"..rectNo)
+			local rect=SelectionRectangle()
+			win:getRectSize(pageNo, rectNo, rect)
+			print(rect:left(), rect:top(), rect:right(), rect:bottom())
+		end
+		return 
+	end
 
 	for rectNo=0, numRects-1 do
 		win:setStatus("processing"..pageNo.."_"..rectNo)
 		local image=CImage()
 		win:getRectImage_width(pageNo, rectNo, width, image)
-
 
 		if image:GetWidth()~=width then
 			-- rectify.
