@@ -143,6 +143,9 @@ function book_pages:writeToFile(outdir)
 				os.execute(cmd)
 			end
 		else
+			if string.sub(fn,-3)=="xml" then
+				fn=string.sub(fn,1,-4).."pdf"
+			end
 			local fn2=Fltk.ChooseFile('save as '.. os.filename(fn)..'?', fn, '*.'..string.sub(fn,-3), true)
 			print(fn,fn2)
 			if fn and fn~=fn2 and fn2 then
