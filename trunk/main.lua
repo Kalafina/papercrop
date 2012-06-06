@@ -192,9 +192,25 @@ function onCallback(w, userData)
 		table.sort(files)
 
 		local outpdf, fn
+		local function open(fn)
+			if os.isUnix() then
+				print('gnome-open "'..fn..'"')
+				os.execute('gnome-open "'..fn..'"')
+			else
+				os.execute('start "'..fn..'"')
+			end
+		end
 		if device and device.output_format==".cbz" then
 			fn=outdir.."_1.cbz"
 			outpdf=CBZwriter:new(fn)
+		elseif device and device.output_format==".xml" then
+			fn=outdir.."_1.xml"
+			outpdf=XMLwriter:new(fn,book_pages, outdir)
+			outpdf:init()
+			outpdf:addPage()
+			outpdf:save(fn)
+			open(string.sub(fn,1,-4).."pdf")
+			return
 		else
 			outpdf=PDFWriter()
 			fn=outdir.."_1.pdf"
@@ -220,12 +236,7 @@ function onCallback(w, userData)
 			collectgarbage();
 		end
 		outpdf:save(fn)
-		if os.isUnix() then
-			print('gnome-open "'..fn..'"')
-			os.execute('gnome-open "'..fn..'"')
-		else
-			os.execute('start "'..fn..'"')
-		end
+		open(fn)
 		collectgarbage();
 	elseif w:id()=="presets" then
 		local fn=presets[w:menuValue()+1]
