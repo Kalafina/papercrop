@@ -37,23 +37,45 @@ end
 do
 	XMLwriter=LUAclass()
 
-	function XMLwriter:__init(fn)
+	function XMLwriter:__init(fn, book_pages, outdir)
+		self.outdir=outdir
 		self.filename=fn
-		self.numPages=0
+		self.book_pages=book_pages
 
-		if os.isFileExist(fn) then
-			os.deleteFiles(fn)
-		end
+		--if os.isFileExist(fn) then
+		--	os.deleteFiles(fn)
+		--end
+		self.pages={}
 	end
 	function XMLwriter:addPage(image, color_depth)
-		self.numPages=self.numPages+1
+		for i=1, self.book_pages.cache.pages:size() do
+			local pdfPage=self.book_pages.cache.pages[i]
+			local tbl2={}
+			local tbl=self.book_pages.cache[pdfPage]
+			for i=1,#tbl do
+				tbl2[i]={tbl[i]:left(), tbl[i]:top(), tbl[i]:right(), tbl[i]:bottom()}
+			end
+			self.pages[#self.pages+1]=tbl2
+			self.pages[#self.pages].pdfPage=pdfPage+1
+		end
+		self.book_pages:clearCache()
 	end
 	function XMLwriter:save()
+		local str=table.tostring(self.pages)
+		str=string.gsub(str, "%['","")
+		str=string.gsub(str, "%']","")
+		util.writeFile(self.filename, str)
+		self.pages={}
+		local src=self.outdir..".pdf"
+		local tgt=string.sub(self.filename,1,-4).."pdf"
+		local xml=self.filename
+		print(src, tgt, xml)
+		execute("cd pdfCrop", "java -cp bin:lib/iText.jar:lib/iText-xtra.jar PdfCrop '"..src.."' '"..tgt.."' '"..xml.."'");
 	end
 	function XMLwriter:init()
 		-- compatibility function. does nothing
 	end
 	function XMLwriter:addPageColor(image)
-		-- compatibility function
+		assert(false)
 	end
 end

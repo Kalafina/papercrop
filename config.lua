@@ -72,7 +72,7 @@ end
 setDefault()
 
 devices={['kindle 2']=kindle2, ['kindle 3']=kindle3, ['cybook (no title bar)']=cybook, ['kobo wireless']=kobo_wireless,
-['android (width 600)']=android, ['sony PRS-t1']=sony_PRS_T1}
+['android (width 600)']=android, ['sony PRS-t1']=sony_PRS_T1, ['vector PDF']=vector_PDF}
 
 
 ---------------------------------------------------------------------
@@ -87,6 +87,10 @@ book_pages = {
 
 require('CBZwriter')
 
+function book_pages:clearCache()
+	book_pages.cache={}
+	book_pages.cache.pages=array:new()
+end
 function book_pages:init(part_nr,outdir)
 	self.book_part_nr = part_nr;
 	self.nr_of_pages = 0;
@@ -96,7 +100,7 @@ function book_pages:init(part_nr,outdir)
 		self.outpdf=CBZwriter:new(self.filename)
 	elseif device and device.output_format==".xml" then
 		self.filename=outdir.."_"..tostring(part_nr)..".xml"
-		self.outpdf=XMLwriter:new(self.filename)
+		self.outpdf=XMLwriter:new(self.filename,self, outdir)
 	else
 		self.filename=outdir.."_"..tostring(part_nr)..".pdf"
 		self.outpdf=PDFWriter()
@@ -120,7 +124,6 @@ function book_pages:add_page (image, outdir)
 end
 function book_pages:add_current_page()
 	assert (self.nr_of_pages==nil)
-
 end
 
 function book_pages:writeToFile(outdir)
@@ -278,11 +281,17 @@ end
 function processPageSubRoutine(imageM, pageNo, width, numRects)
 
 	if device.output_format==".xml" then
+		if book_pages.cache==nil then
+			book_pages:clearCache()
+		end
+		book_pages.cache.pages:pushBackIfNotExist(pageNo)
+		book_pages.cache[pageNo]={}
 		for rectNo=0, numRects-1 do
 			win:setStatus("processing"..pageNo.."_"..rectNo)
 			local rect=SelectionRectangle()
 			win:getRectSize(pageNo, rectNo, rect)
-			print(rect:left(), rect:top(), rect:right(), rect:bottom())
+			--print(rect:left(), rect:top(), rect:right(), rect:bottom())
+			book_pages.cache[pageNo][rectNo+1]=rect
 		end
 		return 
 	end
