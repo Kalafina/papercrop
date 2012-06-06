@@ -308,19 +308,18 @@ public class PdfCrop {
 				totalHeight=targetRects.get(targetRects.size()-1).bottom;
 				numRects=rects.size();
 
-				ArrayList<PdfReader> page1r=replicatePages(extractPages(reader,ipage,ipage), numRects);
+				ArrayList<PdfReader> page1r=replicatePages(extractPages(reader,ipage,ipage), 1);//numRects);
 				ss=reader.getPageSize(ipage);
 				if (iipage!=0){
 					document.setPageSize(new Rectangle(0,0,ss.getWidth(),(float)(ss.getHeight()*totalHeight)));
 					document.newPage();
 				}
+				PdfImportedPage p= writer.getImportedPage(page1r.get(0), 1);
 				for(int i=0; i<numRects; i++) {
 					//for(int i=1; i<2; i++){
-
 					//Rectangle cropBox=reader.getCropBox(i);
 					//System.out.printf("%f %f %f %f\n",cropBox.getLeft(), cropBox.getTop(), cropBox.getRight(), cropBox.getBottom());
 
-					PdfImportedPage p= writer.getImportedPage(page1r.get(i), 1);
 					//PdfImportedPage p= writer.getImportedPage(reader, i);
 
 					Rect ri=rects.get(i).flipY();
@@ -328,12 +327,14 @@ public class PdfCrop {
 					ri.top*=ss.getHeight();
 					ri.right*=ss.getWidth();
 					ri.bottom*=ss.getHeight();
-					p.setBoundingBox(new Rectangle(ri.left, ri.top, ri.right, ri.bottom));
+					PdfTemplate nt=canvas.createTemplate(ss.getWidth(),ss.getHeight());
+					nt.addTemplate(p, 1f,0,0,1f,0,0);
+					nt.setBoundingBox(new Rectangle(ri.left, ri.top, ri.right, ri.bottom));
 					float s=targetRects.get(i).scaleFactor;
 					//System.out.println("scale"+s);
 
 					//canvas.addTemplate(p, s, 0, 0, s, -ri.left*s ,-ri.bottom*s+ss.getHeight()*(totalHeight-targetRects.get(i).top));
-					canvas.addTemplate(p, s, 0, 0, s, -ri.left*s ,-ri.bottom*s+ss.getHeight()*(totalHeight-targetRects.get(i).top));
+					canvas.addTemplate(nt, s, 0, 0, s, -ri.left*s ,-ri.bottom*s+ss.getHeight()*(totalHeight-targetRects.get(i).top));
 					}
 				}
 			// step 5
