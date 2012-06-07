@@ -139,6 +139,7 @@ bindTargetMainLib={
 			static void menuValue(FlLayout::Widget& w, int v)
 			{
 				w.menu()->value(v);
+				w.menu()->redraw();
 			}
 			static std::string menuText(FlLayout::Widget& w, int v)
 			{
@@ -324,6 +325,12 @@ static void inputType(FlLayout::Widget& w, const char* str)
 		},
 	},
 	modules={
+		{
+			namespace='util',
+			functions={[[
+				void Msg::msgBox(const char*) @ msgBox
+			]]}
+		},
 		{
 			namespace='Fltk',
 			wrapperCode=[[

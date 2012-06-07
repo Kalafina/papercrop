@@ -12,7 +12,14 @@ kobo_wireless= {600,800, output_format=".cbz"} -- Kobo wireless firmware 1.9 sta
 -- android tablet: the perfect viewer app (modify resolution 600,800 to your device's vertical mode resolution)
 android_old={600,800, gamma=1.0, output_format=".cbz", default_split='(outputs a single image per page)', default_preset="presets/two-column papers (portrait).lua" } -- android comic viewer: adjust resolution to match your device
 --  output vector graphic PDF files (no rasterization).
-vector_PDF={0,0,output_format=".xml", default_split='(outputs a single image per page)', default_preset="presets/two-column papers (portrait).lua" } -- android comic viewer: adjust resolution to match your device
+vector_PDF={0,0,output_format=".xml"
+	, default_orientation="(portrait)"
+	, default_split='(outputs a single image per page)'
+	, default_preset="presets/two-column papers (portrait).lua" 
+	, supported_presets={["two-column papers (portrait)"]=true,["one-column papers"]=true}   
+	, supported_options={["(portrait) vertical scroll (outputs a single image per page).lua"]=true}
+	, device_name="vector PDF"
+	}
 
 sony_PRS_T1={594-2-2-2-2-2,733-4-3-3-2-5-2+8+8+8+8, landscapeRotate='rotateLeft', mark_corners=true, move_to_folder_linux='/media/READER/Books'}
 -- other kindles, sony readers, etc -- Please let me know if you know. I've got many e-mails asking about this.
@@ -29,8 +36,9 @@ device={600,800} -- {device_width, device_height}
 --device=kobo_wireless
 --device=cybook
 --device=android
---device=vector_PDF
-device=sony_PRS_T1
+--device=sony_PRS_T1
+-- all of the above devices rasterizes PDF to images
+device=vector_PDF
 
 ---------------------------------------------------------------------
 -- default options
@@ -78,7 +86,6 @@ devices={['kindle 2']=kindle2, ['kindle 3']=kindle3, ['cybook (no title bar)']=c
 ---------------------------------------------------------------------
 -- split books                                                     --
 ---------------------------------------------------------------------
-
 
 book_pages = {
 	book_part_nr,

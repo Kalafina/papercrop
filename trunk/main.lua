@@ -32,6 +32,34 @@ end
 function processPresetName(fn)
 	return string.sub(os.processFileName(fn), 1,-5)
 end
+function setPresetMenu()
+	local presetMenu=panel:findWidget('presets')
+	-- load preset
+	presets=os.glob("presets/*.lua")
+	local function comp(a,b)
+		local fn=processPresetName(a)
+		if fn=="default preset" then return true end
+		return a<b
+	end
+
+	table.sort(presets, comp)
+	if device.supported_presets then
+		device.supported_presets['default preset']=true
+		presets=array.filter(function(f) return device.supported_presets[processPresetName(f)] end,
+		presets)
+	end
+	presetMenu:menuSize(#presets)
+	for i=1,#presets do
+		local shortc
+		if i-1<10 then
+			shortc="FL_ALT+"..tostring(i-1)
+		end
+		local preset=processPresetName(presets[i])
+		presetMenu:menuItem(i-1,preset ,shortc)
+	end
+	presetMenu:menuValue(0)
+end
+
 function ctor()
 	panel:create("Button", "Load a PDF file", "Load a PDF file");
 
@@ -44,49 +72,28 @@ function ctor()
 		panel:widget(0):buttonShortcut("FL_ALT+n");
 		panel:widget(0):buttonTooltip("Alt+N");
 	end
-	do 
-		-- load preset
-		presets=os.glob("presets/*.lua")
-		local function comp(a,b)
-			local fn=processPresetName(a)
-			if fn=="default preset" then return true end
-			return a<b
-		end
-
-		table.sort(presets, comp)
-		panel:create("Choice", "presets")
-		panel:widget(0):menuSize(#presets)
-		for i=1,#presets do
-			local shortc
-			if i-1<10 then
-				shortc="FL_ALT+"..tostring(i-1)
-			end
-			panel:widget(0):menuItem(i-1, processPresetName(presets[i]),shortc)
-		end
-		panel:widget(0):menuValue(0)
-		
-		-- load devices
-		panel:create("Choice", "devices")
-		local ndevices=0
-		local idevice=0
-		gdevices={}
-		for k,v in pairs(devices) do 
-			ndevices=ndevices+1 
-			gdevices[ndevices]={k,v}
-			if device==v then 
-				idevice=ndevices 
-			end 
-		end
-		panel:widget(0):menuSize(ndevices+1)
-		panel:widget(0):menuValue(idevice)
-		panel:widget(0):menuItem(0, 'choose a device')
-		for i,v in ipairs(gdevices) do
-			panel:widget(0):menuItem(i, v[1])
-		end
-		panel:widget(0):menuValue(idevice)
-	end
+	panel:create("Choice", "presets")
 	--panel:create("Button", "Preset", "default preset");
+	setPresetMenu();
 		
+	-- load devices
+	panel:create("Choice", "devices")
+	local ndevices=0
+	local idevice=0
+	gdevices={}
+	for k,v in pairs(devices) do 
+		ndevices=ndevices+1 
+		gdevices[ndevices]={k,v}
+		if device==v then 
+			idevice=ndevices 
+		end 
+	end
+	panel:widget(0):menuSize(ndevices+1)
+	panel:widget(0):menuItem(0, 'choose a device')
+	for i,v in ipairs(gdevices) do
+		panel:widget(0):menuItem(i, v[1])
+	end
+	panel:widget(0):menuValue(idevice)
 
 	panel:create("Check_Button", "Use automatic segmentation", "Use automatic segmentation");
 	panel:widget(0):checkButtonValue(1);
@@ -170,6 +177,10 @@ function Fltk.ChooseFile(title, path, mask, write)
 	if fn=="" then return nil end
 	return fn
 end
+function setDefaultUI()
+	setPresetMenu()
+	setDefault()
+end
 function onCallback(w, userData)
 	if w:id()=="Load a PDF file (native)" then
 
@@ -182,8 +193,10 @@ function onCallback(w, userData)
 		local dev=gdevices[w:menuValue()]
 		device=dev[2] or device
 		print(dev[1]..' selected', dev[2])
-		setDefault()	
+		setDefaultUI()	
 		loadPreset("presets/default preset.lua")
+		win:redraw()
+		panel:redraw()
 	elseif w:id()=="Convert processed pages to PDF" then
 		local outdir=string.sub(win.filename, 1, -5)
 
@@ -246,6 +259,20 @@ function onCallback(w, userData)
 		win:pageChanged();
 		win:redraw();
 		panel:redraw();
+		return true
+	elseif (w:id()=="Option") then
+		local fn=Fltk.ChooseFile("Choose option", "script", "*.lua");
+		if fn then
+			local fn2=os.filename(fn)
+			if device.supported_options then
+				if not device.supported_options[fn2] then
+					util.msgBox('Option "'..string.sub(fn2,1,-5)..'" is not supported for '..(device.device_name or "the device").."!")	
+					return true
+				end
+			end
+			panel:findWidget("Option_Input"):inputValue(processOption(string.sub(fn, 1,-5)))
+		end
+		--print('hihi')
 		return true
 	elseif(w:id()=="Process current page" or  w:id()=="Process all pages") then
 		panel:findWidget("Process current page"):deactivate();
