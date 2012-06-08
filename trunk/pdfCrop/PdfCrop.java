@@ -23,6 +23,7 @@ import com.itextpdf.text.pdf.*;
 //import com.itextpdf.text.pdf.PdfWriter;
 //import com.itextpdf.text.pdf.PdfCopy;
 import com.itextpdf.text.Rectangle;
+import static java.lang.System.out;
 class Rect {
 	public float left, top, right, bottom;
 	Rect(float l, float t, float r, float b){
@@ -59,10 +60,15 @@ class TRect extends Rect {
 		super(r,b);
 		scaleFactor=1;
 	}
-	void scale(float s) { super.scale(s); scaleFactor=s;}
+	TRect(float l, float t, float r, float b, float s){
+		super(l,t,r,b);
+		scaleFactor=s;
+	}
+	void scale(float s) { super.scale(s); scaleFactor*=s;}
 }
 class PageInfo {
 	public ArrayList<Rect> rects=new ArrayList<Rect>();
+	public ArrayList<TRect> targetRects=new ArrayList<TRect>();
 	public int pdfPage;
 	PageInfo() { pdfPage=-1;}
 }
@@ -212,21 +218,6 @@ public class PdfCrop {
      * @throws DocumentException 
      * @throws IOException
      */
-	static ArrayList<TRect> processRects(ArrayList<Rect> rects)
-	{
-			ArrayList<TRect> targetRects=new ArrayList<TRect>();
-			float totalHeight=0;
-			for (int i=0; i<rects.size(); i++){
-				targetRects.add(new TRect(rects.get(i).width(), rects.get(i).height()));
-				float scalef=Math.min(1/targetRects.get(i).width(), 3);
-				scalef=Math.max(scalef,1);
-				targetRects.get(i).scale(scalef);
-				targetRects.get(i).translateY(totalHeight);
-				totalHeight+=targetRects.get(i).height();
-			}
-
-			return targetRects;
-	}
     public static void main(String[] args)
         throws IOException, DocumentException {
 
@@ -270,6 +261,13 @@ public class PdfCrop {
 							float r=Float.valueOf(t.nextToken());
 							float b=Float.valueOf(t.nextToken());
 							lastPage.rects.add(new Rect(l,top,r,b));
+							l=Float.valueOf(t.nextToken());
+							top=Float.valueOf(t.nextToken());
+							r=Float.valueOf(t.nextToken());
+							b=Float.valueOf(t.nextToken());
+							float s=Float.valueOf(t.nextToken());
+							lastPage.targetRects.add(new TRect(l,top,r,b,s));
+							//out.println(l+","+top+","+r+","+b+","+s);
 						}
 					}
 				}
@@ -284,8 +282,9 @@ public class PdfCrop {
 		{
 			PdfReader reader = new PdfReader(SRC);
 		 	ArrayList<Rect> rects=pageInfo.get(0).rects;
-			ArrayList<TRect> targetRects=processRects(pageInfo.get(0).rects);
+			ArrayList<TRect> targetRects=pageInfo.get(0).targetRects;
 			float totalHeight=targetRects.get(targetRects.size()-1).bottom;
+			//out.println(totalHeight);
 			int numRects=rects.size();
 			// step 1
 			Rectangle ss=reader.getPageSize(1);
@@ -304,7 +303,7 @@ public class PdfCrop {
 				int ipage=pageInfo.get(iipage).pdfPage;
 				System.out.println("processing page "+ipage);
 				rects=pageInfo.get(iipage).rects;
-				targetRects=processRects(pageInfo.get(iipage).rects);
+				targetRects=pageInfo.get(iipage).targetRects;
 				totalHeight=targetRects.get(targetRects.size()-1).bottom;
 				numRects=rects.size();
 
