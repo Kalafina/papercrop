@@ -70,7 +70,14 @@ do
 		local tgt=string.sub(self.filename,1,-4).."pdf"
 		local xml=self.filename
 		print(src, tgt, xml)
-		execute("cd pdfCrop", "java -cp bin:lib/iText.jar:lib/iText-xtra.jar PdfCrop '"..src.."' '"..tgt.."' '"..xml.."'");
+		local cmd
+
+		if os.isUnix() then
+			cmd="java -cp bin:lib/iText.jar:lib/iText-xtra.jar PdfCrop '"..src.."' '"..tgt.."' '"..xml.."'"
+		else
+			cmd='java -cp bin;lib/iText.jar;lib/iText-xtra.jar PdfCrop "'..src..'" "'..tgt..'" "'..xml..'"'
+ 		end
+		execute("cd pdfCrop", cmd);
 	end
 	function XMLwriter:init()
 		-- compatibility function. does nothing
