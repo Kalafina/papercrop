@@ -84,7 +84,10 @@ else()
   set(ZLIB_INCLUDE_DIRS "${paperCrop_SOURCE_DIR}/ext/zlib")
   set(ZLIB_LIBRARIES "${paperCrop_SOURCE_DIR}/ext/zlib/zlib_s.lib")
   set(ICONV_INCLUDE_DIR "c:/Program Files/GnuWin32/include")
-  set(ICONV_LIBRARIES "c:/Program Files/GnuWin32/lib")
+  set(ICONV_LIBRARIES 
+	"c:/Program Files/GnuWin32/lib/libiconv.lib"
+	"c:/Program Files/GnuWin32/lib/libcharset.lib"
+	)
   set(ICONV_SECOND_ARGUMENT_IS_CONST on)
   include_directories(${ICONV_INCLUDE_DIR} ${paperCrop_SOURCE_DIR}/poppler-0.16.2)
   add_subdirectory(poppler-0.16.2)
@@ -327,8 +330,8 @@ IF(MSVC)
 	winspool.lib 
 	Msimg32.lib 
 	wininet.lib
-	${ICONV_LIBRARIES}/libiconv.lib
-	${ICONV_LIBRARIES}/libcharset.lib
+	${ICONV_LIBRARIES}
+
 	
 	)
 endif()
