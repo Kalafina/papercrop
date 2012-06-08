@@ -11,13 +11,15 @@ kobo_wireless_old_firmware = {582,740} -- Up to firmware version 1.7.4. Huge was
 kobo_wireless= {600,800, output_format=".cbz"} -- Kobo wireless firmware 1.9 started to support CBZ. This format has faster page turning speed and fullscreen!
 -- android tablet: the perfect viewer app (modify resolution 600,800 to your device's vertical mode resolution)
 android_old={600,800, gamma=1.0, output_format=".cbz", default_split='(outputs a single image per page)', default_preset="presets/two-column papers (portrait).lua" } -- android comic viewer: adjust resolution to match your device
---  output vector graphic PDF files (no rasterization).
-vector_PDF={0,0,output_format=".xml"
+--  output vector graphic PDF files (no rasterization). first two numbers describe the aspect ratio.
+vector_PDF={600,800,output_format=".xml"
 	, default_orientation="(portrait)"
 	, default_split='(outputs a single image per page)'
 	, default_preset="presets/two-column papers (portrait).lua" 
 	, supported_presets={["two-column papers (portrait)"]=true,["one-column papers"]=true}   
-	, supported_options={["(portrait) vertical scroll (outputs a single image per page).lua"]=true}
+	, supported_options={
+		["(portrait) vertical scroll (outputs a single image per page)"]=true,
+		["(portrait) vertical scroll (outputs multiple images)"]=true}
 	, device_name="vector PDF"
 	}
 
@@ -288,6 +290,20 @@ function postprocessImage(image)
 
 end
 
+-- interface compatible to C++ SelectionRectangle class.
+SelectionRectangle_lua=LUAclass() 
+function SelectionRectangle_lua:__init(rect)
+	self.l=rect:left()
+	self.t=rect:top()
+	self.r=rect:right()
+	self.b=rect:bottom()
+end
+function SelectionRectangle_lua:left() return self.l end
+function SelectionRectangle_lua:right() return self.r end
+function SelectionRectangle_lua:top() return self.t end
+function SelectionRectangle_lua:bottom() return self.b end
+
+-- concatenate rectangles in a page vertically 
 function processPageSubRoutine(imageM, pageNo, width, numRects)
 
 	if device.output_format==".xml" then
@@ -296,13 +312,16 @@ function processPageSubRoutine(imageM, pageNo, width, numRects)
 		end
 		book_pages.cache.pages:pushBackIfNotExist(pageNo)
 		book_pages.cache[pageNo]={}
+
+		local subpages={}
 		for rectNo=0, numRects-1 do
 			win:setStatus("processing"..pageNo.."_"..rectNo)
 			local rect=SelectionRectangle()
 			win:getRectSize(pageNo, rectNo, rect)
 			--print(rect:left(), rect:top(), rect:right(), rect:bottom())
-			book_pages.cache[pageNo][rectNo+1]=rect
+			subpages[rectNo+1]=rect
 		end
+		book_pages.cache[pageNo][1]={src=subpages, tgt=XMLwriter.processRects(subpages)}
 		return 
 	end
 
@@ -332,31 +351,59 @@ function processPageSubRoutine(imageM, pageNo, width, numRects)
 	trimVertSpaces(imageM, 2, max_vspace, 255)
 end
 
-function splitImage_old(imageM, height, outdir, pageNo, rotateRight)
-
-	if imageM:GetHeight()>height then
-		-- split into multiple subpages 
-		numSubPage=math.ceil((imageM:GetHeight()-scroll_overlap_pixels)/height)
-		win:setStatus("num"..numSubPage)
-		local imageS=CImage()
-		startPos=vectorn()
-		startPos:linspace(0, imageM:GetHeight()-height, numSubPage)
-		for subPage=0, numSubPage-1 do
-			start=math.floor(startPos:value(subPage))
-			imageS:crop(imageM, 0, start, imageM:GetWidth(), start+height)
-			if rotateRight then landscapeRotate(imageS) end
-			outputImage(imageS,outdir,pageNo,subPage)
-			win:setStatus("saving "..pageNo.."_"..subPage)
-		end
-	else
-		local imageS=CImage()
-		imageS:crop(imageM, 0, 0, imageM:GetWidth(), imageM:GetHeight())
-		if rotateRight then landscapeRotate(imageS) end
-		outputImage(imageS,outdir,pageNo,0)
-	end
-end
 
 function splitImage(imageM, height, outdir, pageNo, rotateRight)
+	if device.output_format==".xml" then
+		local pageNo=book_pages.cache.pages:back()
+		if pageNo and #book_pages.cache[pageNo]==1 then
+			local original=book_pages.cache[pageNo][1]
+			local newSubpages={}
+
+			local subPage=0
+			local curPage={src={}}
+			local totalHeight=original.tgt[#original.tgt].bottom
+			local ferr=0.001
+			
+			-- split into multiple subpages 
+			for i=1,#original.src do
+				local curPageTop=subPage*(height-scroll_overlap_pixels)/width
+				local curPageBottom=curPageTop+height/width
+				local srcRect=original.src[i]
+				local tgtTop=original.tgt[i].top
+				local tgtBottom=original.tgt[i].bottom
+				if tgtBottom <= curPageBottom then
+					array.pushBack(curPage.src, SelectionRectangle_lua(srcRect))
+				else
+					local function fmap(a,b,c,d,e)
+						local t=(a-b)/(c-b)
+						return (e-d)*t+d
+					end
+					local function fracY(rect, a, b)
+						local out=SelectionRectangle_lua(rect)
+						out.t=fmap(a,0,1, rect:top(), rect:bottom())
+						out.b=fmap(b,0,1, rect:top(), rect:bottom())
+						return out
+					end
+					local a=fracY(srcRect, 0, (curPageBottom-tgtTop)/(tgtBottom-tgtTop));
+					local b=fracY(srcRect, (curPageBottom-tgtTop-scroll_overlap_pixels/width
+)/(tgtBottom-tgtTop),1);
+					array.pushBack(curPage.src, a)
+					curPage.tgt=XMLwriter.processRects(curPage.src)
+					--print(curPage.tgt[#curPage.tgt].bottom)
+					array.pushBack(newSubpages, curPage)
+					curPage={src={b}}
+					subPage=subPage+1
+				end
+			end
+			if #curPage.src~=0 then
+				curPage.tgt=XMLwriter.processRects(curPage.src)
+				array.pushBack(newSubpages, curPage)
+			end
+			book_pages.cache[pageNo]=newSubpages
+			outputImage(imageS,outdir,pageNo,subPage)
+		end
+		return 
+	end
 	-- split into multiple subpages 
 	local imageS=CImage()
 	local subPage=0
@@ -382,6 +429,9 @@ function splitImage(imageM, height, outdir, pageNo, rotateRight)
 	end
 
 	function splitImagePart(imageM, height, outdir, pageNo, rotateRight)
+		if device.output_format==".xml" then
+			return  splitImage(imageM, height, outdir, pageNo, rotateRight)
+		end
 		-- split into multiple subpages 
 		local imageS=CImage()
 		local subPage=0
