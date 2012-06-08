@@ -47,13 +47,42 @@ do
 		--end
 		self.pages={}
 	end
+	function XMLwriter.processRects(tbl)
+		local targetRects={}
+		local function width(trect)
+			return trect.right-trect.left
+		end
+		local function height(trect)
+			return trect.bottom-trect.top
+		end
+		local function scale(trect,s)
+			return {left=trect.left*s, top=trect.top*s, right=trect.right*s, bottom=trect.bottom*s, scalef=trect.scalef*s}
+		end
+		local function translateY(trect,y)
+			return {left=trect.left, top=trect.top+y, right=trect.right, bottom=trect.bottom+y, scalef=trect.scalef}
+		end
+		local totalHeight=0
+		for i=1,#tbl do
+			local trect={left=0, top=0, right=tbl[i]:right()-tbl[i]:left(), bottom=tbl[i]:bottom()-tbl[i]:top(), scalef=1}
+			local scalef=math.min(1/width(trect), 3)
+			scalef=math.max(scalef,1)
+			trect=scale(trect, scalef)
+			trect=translateY(trect, totalHeight)
+			totalHeight=totalHeight+height(trect)
+			targetRects[#targetRects+1]=trect
+		end
+		return targetRects
+	end
 	function XMLwriter:addPage(image, color_depth)
 		for i=1, self.book_pages.cache.pages:size() do
 			local pdfPage=self.book_pages.cache.pages[i]
 			local tbl2={}
 			local tbl=self.book_pages.cache[pdfPage]
+			local target_tbl=self.processRects(tbl)
 			for i=1,#tbl do
-				tbl2[i]={tbl[i]:left(), tbl[i]:top(), tbl[i]:right(), tbl[i]:bottom()}
+				tbl2[i]={tbl[i]:left(), tbl[i]:top(), tbl[i]:right(), tbl[i]:bottom(), 
+						target_tbl[i].left, target_tbl[i].top, target_tbl[i].right, target_tbl[i].bottom, 
+						target_tbl[i].scalef}
 			end
 			self.pages[#self.pages+1]=tbl2
 			self.pages[#self.pages].pdfPage=pdfPage+1
