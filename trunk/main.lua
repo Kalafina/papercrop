@@ -27,9 +27,17 @@ function loadPreset(fn)
 	layout:findWidget("Crop L"):sliderValue(crop_L);
 	layout:findWidget("Crop R"):sliderValue(crop_R);
 	panel:findWidget("Option_Input"):inputValue(processOption(option));
+
+	local options=panel:findWidget("options")
+	local argMenu=table.find(goptions, option)-1
+	--print("argMenu", argMenu)
+	options:menuValue(argMenu)
 	panel:redraw();
 end
 function processPresetName(fn)
+	return string.sub(os.processFileName(fn), 1,-5)
+end
+function processOptionName(fn)
 	return string.sub(os.processFileName(fn), 1,-5)
 end
 function setPresetMenu()
@@ -58,6 +66,30 @@ function setPresetMenu()
 		presetMenu:menuItem(i-1,preset ,shortc)
 	end
 	presetMenu:menuValue(0)
+end
+function setOptionMenu()
+	local optionMenu=panel:findWidget('options')
+	-- load option
+	options=os.glob("script/*.lua")
+	--printTable(options)
+	local function comp(a,b)
+		return a<b
+	end
+
+	table.sort(options, comp)
+	if device.supported_options then
+		options=array.filter(function(f) return device.supported_options[processOptionName(f)] end,
+		options)
+	end
+	for i=1, #options do
+		options[i]=processOptionName(options[i])
+	end
+	optionMenu:menuSize(#options)
+	for i=1,#options do
+		optionMenu:menuItem(i-1,options[i])
+	end
+	optionMenu:menuValue(0)
+	goptions=options
 end
 
 function ctor()
@@ -136,7 +168,9 @@ function ctor()
 	panel:create("Input", "Option_Input", "Option",1);
 	panel:widget(0):inputType("FL_MULTILINE_OUTPUT");
 	panel:resetToDefault()
-	panel:create("Button", "Option", "Change option", 1);
+--	panel:create("Button", "Option", "Change option", 1);
+	panel:create("Choice", "options","",0)
+	setOptionMenu()
 	
 	panel:create("Button", "Process current page", "Process current page",0);
 	panel:widget(0):deactivate();
@@ -274,6 +308,11 @@ function onCallback(w, userData)
 		end
 		--print('hihi')
 		return true
+	elseif (w:id()=="options") then
+		local menuText=w:menuText()
+		panel:findWidget("Option_Input"):inputValue(processOption(menuText))
+		--print('hihi')
+		return true
 	elseif(w:id()=="Process current page" or  w:id()=="Process all pages") then
 		panel:findWidget("Process current page"):deactivate();
 		panel:findWidget("Process all pages"):deactivate();
@@ -283,6 +322,7 @@ function onCallback(w, userData)
 
 		local fno,msg=loadfile(fn)
 		if not fno then
+			print(fn)
 			print(msg)
 			return false
 		end

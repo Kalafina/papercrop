@@ -76,16 +76,19 @@ do
 	function XMLwriter:addPage(image, color_depth)
 		for i=1, self.book_pages.cache.pages:size() do
 			local pdfPage=self.book_pages.cache.pages[i]
-			local tbl2={}
-			local tbl=self.book_pages.cache[pdfPage]
-			local target_tbl=self.processRects(tbl)
-			for i=1,#tbl do
-				tbl2[i]={tbl[i]:left(), tbl[i]:top(), tbl[i]:right(), tbl[i]:bottom(), 
-						target_tbl[i].left, target_tbl[i].top, target_tbl[i].right, target_tbl[i].bottom, 
-						target_tbl[i].scalef}
+			local cpage=self.book_pages.cache[pdfPage]
+			for j=1,#cpage do
+				local tbl2={}
+				local tbl=cpage[j].src
+				local target_tbl=cpage[j].tgt
+				for i=1,#tbl do
+					tbl2[i]={tbl[i]:left(), tbl[i]:top(), tbl[i]:right(), tbl[i]:bottom(), 
+					target_tbl[i].left, target_tbl[i].top, target_tbl[i].right, target_tbl[i].bottom, 
+					target_tbl[i].scalef}
+				end
+				self.pages[#self.pages+1]=tbl2
+				self.pages[#self.pages].pdfPage=pdfPage+1
 			end
-			self.pages[#self.pages+1]=tbl2
-			self.pages[#self.pages].pdfPage=pdfPage+1
 		end
 		self.book_pages:clearCache()
 	end
