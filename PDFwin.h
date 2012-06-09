@@ -60,7 +60,8 @@ public:
 	void getRectImage_height(int pageNo, int rectNo, int height, CImage& image);
 	double getDPI_height(int pageNo, int rectNo, int height);
 	double getDPI_width(int pageNo, int rectNo, int width);
-
+	double pageCropWidth(int pageNo);
+	double pageCropHeight(int pageNo);
 	void setStatus(const char* o);
 	
 	// LUA interface functions.

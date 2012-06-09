@@ -37,6 +37,8 @@ bindTargetMainLib={
 			void setStatus(const char* o);
 			int getNumPages();
 			int getNumRects();
+			double pageCropWidth(int pageNo);
+			double pageCropHeight(int pageNo);
 			void setCurPage(int pageNo);
 			void pageChanged();
 			void redraw();
