@@ -296,6 +296,14 @@ void notifyDraw(int c, int x, int y, int w, int h, int fx, int fy)
 }
 
 
+double PDFwin::pageCropWidth(int pageNo)
+{
+	return mModel->pageCropWidth(pageNo);
+}
+double PDFwin::pageCropHeight(int pageNo)
+{
+	return mModel->pageCropHeight(pageNo);
+}
 int PDFwin::getNumPages()
 {
 	return mModel->_pdfDoc ->getNumPages();

@@ -364,10 +364,13 @@ function splitImage(imageM, height, outdir, pageNo, rotateRight)
 			local totalHeight=original.tgt[#original.tgt].bottom
 			local ferr=0.001
 			
+			local pwidth=win:pageCropWidth(pageNo)
+			local pheight=win:pageCropHeight(pageNo)
+			local asptRatio=pwidth/pheight
 			-- split into multiple subpages 
 			for i=1,#original.src do
-				local curPageTop=subPage*(height-scroll_overlap_pixels)/width
-				local curPageBottom=curPageTop+height/width
+				local curPageTop=subPage*(height-scroll_overlap_pixels)/width*asptRatio
+				local curPageBottom=curPageTop+height/width*asptRatio
 				local srcRect=original.src[i]
 				local tgtTop=original.tgt[i].top
 				local tgtBottom=original.tgt[i].bottom
@@ -385,14 +388,26 @@ function splitImage(imageM, height, outdir, pageNo, rotateRight)
 						return out
 					end
 					local a=fracY(srcRect, 0, (curPageBottom-tgtTop)/(tgtBottom-tgtTop));
-					local b=fracY(srcRect, (curPageBottom-tgtTop-scroll_overlap_pixels/width
+					local b=fracY(srcRect, (curPageBottom-tgtTop-scroll_overlap_pixels/width*asptRatio
 )/(tgtBottom-tgtTop),1);
 					array.pushBack(curPage.src, a)
 					curPage.tgt=XMLwriter.processRects(curPage.src)
-					--print(curPage.tgt[#curPage.tgt].bottom)
 					array.pushBack(newSubpages, curPage)
-					curPage={src={b}}
-					subPage=subPage+1
+
+					while true do
+						local tgt=XMLwriter.processRects({b})
+						if tgt[1].bottom <=height/width*asptRatio then
+							curPage={src={b}}
+							subPage=subPage+1
+							break
+						else
+							local curPageBottom=height/width*asptRatio
+							local a=fracY(b, 0, curPageBottom/tgt[1].bottom)
+							array.pushBack(newSubpages, { src={a}, tgt=XMLwriter.processRects({a})})
+							b=fracY(b, (curPageBottom-scroll_overlap_pixels/width*asptRatio)/tgt[1].bottom, 1)
+							subPage=subPage+1
+						end
+					end
 				end
 			end
 			if #curPage.src~=0 then
