@@ -4,6 +4,7 @@ chmod 700 ./configure
 ./configure
 make
 cd ..
+mkdir -p build_linux
 cd build_linux
 cmake ..
 make
