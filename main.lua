@@ -214,6 +214,7 @@ end
 function setDefaultUI()
 	setPresetMenu()
 	setDefault()
+	setOptionMenu()
 end
 function onCallback(w, userData)
 	if w:id()=="Load a PDF file (native)" then
