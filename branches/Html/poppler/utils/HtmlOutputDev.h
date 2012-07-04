@@ -123,7 +123,9 @@ class HtmlPage {
 public:
 
   // Constructor.
-  HtmlPage(GBool rawOrder, char *imgExtVal);
+  HtmlPage(GBool rawOrder,char *imgExtVal,
+		  GBool complexMode,GBool noMerge,  GBool singleHtml,
+		  GBool ignore,  GBool xml,GBool noframes,GBool inlineImages,double wordBreakThreshold);
 
   // Destructor.
   ~HtmlPage();
@@ -165,6 +167,8 @@ public:
 
   void dump(FILE *f, int pageNum);
 
+  void InLineImagedump(FILE *f, int pageNum);
+
   // Clear the page.
   void clear();
   
@@ -174,6 +178,14 @@ private:
 
   double fontSize;		// current font size
   GBool rawOrder;		// keep strings in content stream order
+  GBool complexMode;
+  GBool noframes;
+  GBool noMerge;
+  GBool singleHtml;
+  GBool ignore;
+  GBool xml;
+  GBool inlineImages;
+  double wordBreakThreshold;
 
   HtmlString *curStr;		// currently active string
 
@@ -237,6 +249,20 @@ public:
 	  char *date,
 	  char *extension,
 	  GBool rawOrder,
+
+	  GBool complexMode,
+	  GBool inlineImages,
+	  GBool singleHtml,
+	  GBool ignore,
+	  GBool printCommands,
+	  GBool printHtml,
+	  GBool noframes,
+	  GBool stout,
+	  GBool xml,
+	  GBool showHidden,
+	  GBool noMerge,
+	  double wordBreakThreshold,
+
 	  int firstPage = 1,
 	  GBool outline = 0);
 
@@ -348,6 +374,21 @@ private:
   GooList *glMetaVars;
   Catalog *catalog;
   Page *docPage;
+
+  GBool noframes;
+  GBool complexMode;
+  GBool inlineImages;
+  GBool singleHtml;
+  GBool ignore;
+  GBool printCommands;
+  GBool printHtml;
+  GBool stout;
+  GBool xml;
+  GBool showHidden;
+  GBool noMerge;
+  double wordBreakThreshold;
+
+
   friend class HtmlPage;
 };
 

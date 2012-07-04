@@ -53,7 +53,7 @@ public:
   double getY2() const {return Ymax;}
   GBool inLink(double xmin,double ymin,double xmax,double ymax) const ;
   //GooString *Link(GooString *content);
-  GooString* getLinkStart();
+  GooString* getLinkStart(GBool xml);
   
 };
 

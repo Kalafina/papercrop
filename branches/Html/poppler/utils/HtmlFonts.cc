@@ -63,8 +63,6 @@ static Fonts fonts[font_num+1]={
 };
 
 #define xoutRound(x) ((int)(x + 0.5))
-extern GBool xml;
-extern GBool fontFullName;
 
 GooString* HtmlFont::DefaultFont=new GooString("Times"); // Arial,Helvetica,sans-serif
 
@@ -238,10 +236,10 @@ GooString* HtmlFont::getDefaultFont(){
 }
 
 // this method if plain wrong todo
-GooString* HtmlFont::HtmlFilter(Unicode* u, int uLen) {
+GooString* HtmlFont::HtmlFilter(Unicode* u, int uLen,GBool xml) {
   GooString *tmp = new GooString();
   UnicodeMap *uMap;
-  char buf[8];
+  char buf[9];
   int n;
 
   // get the output encoding
@@ -256,16 +254,42 @@ GooString* HtmlFont::HtmlFilter(Unicode* u, int uLen) {
 	case '&': tmp->append("&amp;");  break;
 	case '<': tmp->append("&lt;");  break;
 	case '>': tmp->append("&gt;");  break;
+	case 8482: tmp->append("&#0153;");  break;  // Trademark
+//	case 176: tmp->append("&deg;");  break;
+//	case 956: tmp->append("&micro;");  break;
+//	case 181: tmp->append("&micro;");  break;
+
+//	case 8217: tmp->append("&rsquo;");  break;  //quoteright
+//	case 8226: tmp->append("&bull;");  break;  //bullet
+//	case 163: tmp->append("&pound;");  break;	//Pound sterling
+//	case 174: tmp->append("&reg;");  break;	//Registered trademark
+//	case 183: tmp->append("&middot;");  break;	//Middle dot
+//	case 8211: tmp->append("&ndash;");  break;	//en dash
+//	case 8364: tmp->append("&euro;");  break;	//euro
+//	case 64257: tmp->append("&#64257;");  break;
+
+
 	case ' ': tmp->append( !xml && ( i+1 >= uLen || !tmp->getLength() || tmp->getChar( tmp->getLength()-1 ) == ' ' ) ? "&#160;" : " " );
 	          break;
 	default:  
 	  {
 	    // convert unicode to string
 	    if ((n = uMap->mapUnicode(u[i], buf, sizeof(buf))) > 0) {
+	      if (n > 1)
+	      	  {
+	    	  //printf ("HtmlFilter: Remap of code %d needed \n",(int) u[i]);
+	    	  sprintf (buf,"&#%d;",(unsigned short) u[i]);
+	    	  tmp->append(buf);
+
+	    	  //http://www.natural-innovations.com/wa/doc-charset.html
+	      	  }
+	      else
+	      	  {
 	      tmp->append(buf, n); 
 	  }
       }
     }
+  }
   }
 
   uMap->decRefCnt();
@@ -273,7 +297,7 @@ GooString* HtmlFont::HtmlFilter(Unicode* u, int uLen) {
 }
 
 GooString* HtmlFont::simple(HtmlFont* font, Unicode* content, int uLen){
-  GooString *cont=HtmlFilter (content, uLen); 
+  GooString *cont=HtmlFilter (content, uLen,false);
 
   /*if (font.isBold()) {
     cont->insert(0,"<b>",3);
@@ -310,7 +334,7 @@ int HtmlFontAccu::AddFont(const HtmlFont& font){
 }
 
 // get CSS font definition for font #i 
-GooString* HtmlFontAccu::CSStyle(int i, int j){
+GooString* HtmlFontAccu::CSStyle(int i, int j,GBool xml,GBool ffontFullName){
    GooString *tmp=new GooString();
    GooString *iStr=GooString::fromInt(i);
    GooString *jStr=GooString::fromInt(j);
@@ -320,7 +344,7 @@ GooString* HtmlFontAccu::CSStyle(int i, int j){
    HtmlFont font=*g;
    GooString *Size=GooString::fromInt(font.getSize());
    GooString *colorStr=font.getColor().toString();
-   GooString *fontName=(fontFullName ? font.getFullName() : font.getFontName());
+   GooString *fontName=(ffontFullName ? font.getFullName() : font.getFontName());
    GooString *lSize;
    
    if(!xml){
