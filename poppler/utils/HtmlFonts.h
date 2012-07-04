@@ -92,7 +92,7 @@ public:
    GooString* getFontName();
    static GooString* getDefaultFont();
    static void setDefaultFont(GooString* defaultFont);
-   static GooString* HtmlFilter(Unicode* u, int uLen); //char* s);
+   static GooString* HtmlFilter(Unicode* u, int uLen,GBool xml); //char* s);
    GBool isEqual(const HtmlFont& x) const;
    GBool isEqualIgnoreBold(const HtmlFont& x) const;
    static GooString* simple(HtmlFont *font, Unicode *content, int uLen);
@@ -110,7 +110,7 @@ public:
   HtmlFont *Get(int i){
     return &(*accu)[i];
   } 
-  GooString* CSStyle(int i, int j = 0);
+  GooString* CSStyle(int i, int j = 0,GBool xml=false,GBool ffontFullName=false);
   int size() const {return accu->size();}
   
 };  

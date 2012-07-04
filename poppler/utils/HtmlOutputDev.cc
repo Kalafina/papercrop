@@ -84,21 +84,25 @@ public:
   GooString  *fName;		// image file name
 };
 
+
+class HtmlLines
+{
+public:
+    HtmlLines(GooString *_fLine,int fTop , int fLeft)
+      : fLine(_fLine) {
+    	Top = fTop;
+    	Left = fLeft;
+  }
+ ~HtmlLines() { delete fLine; }
+
+ int Top, Left;
+ GooString  *fLine;
+};
+
 // returns true if x is closer to y than x is to z
 static inline bool IS_CLOSER(float x, float y, float z) { return fabs((x)-(y)) < fabs((x)-(z)); }
 
-extern GBool complexMode;
-extern GBool singleHtml;
-extern GBool ignore;
-extern GBool printCommands;
-extern GBool printHtml;
-extern GBool noframes;
-extern GBool stout;
-extern GBool xml;
-extern GBool showHidden;
-extern GBool noMerge;
 
-extern double wordBreakThreshold;
 
 static GBool debug = gFalse;
 static GooString *gstr_buff0 = NULL; // a workspace in which I format strings
@@ -263,8 +267,21 @@ void HtmlString::endString()
 // HtmlPage
 //------------------------------------------------------------------------
 
-HtmlPage::HtmlPage(GBool rawOrder, char *imgExtVal) {
+HtmlPage::HtmlPage(GBool rawOrder,char *imgExtVal,
+		  GBool complexMode,GBool noMerge,  GBool singleHtml,
+		  GBool ignore,  GBool xml,GBool noframes,GBool inlineImages,double wordBreakThreshold)
+{
   this->rawOrder = rawOrder;
+  this-> complexMode = complexMode;
+  this->noMerge =noMerge;
+  this->singleHtml=singleHtml;
+  this->ignore=ignore;
+  this->xml=xml;
+  this->noframes=noframes;
+  this->inlineImages = inlineImages;
+  this->wordBreakThreshold=wordBreakThreshold;
+
+
   curStr = NULL;
   yxStrings = NULL;
   xyStrings = NULL;
@@ -357,9 +374,30 @@ void HtmlPage::conv(){
 void HtmlPage::addChar(GfxState *state, double x, double y,
 		       double dx, double dy, 
 			double ox, double oy, Unicode *u, int uLen) {
-  double x1, y1, w1, h1, dx2, dy2;
+  double x1, y1, w1, h1, dx2, dy2, sp;
   int n, i;
+
+  //copied from TextOutputDev
+  // subtract char and word spacing from the dx,dy values
+  sp = state->getCharSpace();
+
+  state->textTransformDelta(sp * state->getHorizScaling(), 0, &dx2, &dy2);
+  dx -= dx2;
+  dy -= dy2;
+  state->transformDelta(dx, dy, &w1, &h1);
+
+
   state->transform(x, y, &x1, &y1);
+
+  // throw away chars that aren't inside the page bounds
+  // (and also do a sanity check on the character size)
+
+  if (x1 + w1 < 0 || x1 > pageWidth ||
+      y1 + h1 < 0 || y1 > pageHeight ||
+      w1 > pageWidth || h1 > pageHeight)  {
+    return;
+  }
+
   n = curStr->len;
  
   // check that new character is in the same direction as current string
@@ -572,7 +610,7 @@ void HtmlPage::coalesce() {
   if( hfont1->isItalic() )
     str1->htext->insert(0,"<i>",3);
   if( str1->getLink() != NULL ) {
-    GooString *ls = str1->getLink()->getLinkStart();
+    GooString *ls = str1->getLink()->getLinkStart(xml);
     str1->htext->insert(0, ls);
     delete ls;
   }
@@ -682,7 +720,7 @@ void HtmlPage::coalesce() {
       GBool finish_bold   = hfont1->isBold()   && ( !hfont2->isBold()   || finish_a || finish_italic );
       CloseTags( str1->htext, finish_a, finish_italic, finish_bold );
       if( switch_links && hlink2 != NULL ) {
-        GooString *ls = hlink2->getLinkStart();
+        GooString *ls = hlink2->getLinkStart(xml);
         str1->htext->append(ls);
         delete ls;
       }
@@ -720,7 +758,7 @@ void HtmlPage::coalesce() {
       if( hfont1->isItalic() )
 	str1->htext->insert(0,"<i>",3);
       if( str1->getLink() != NULL ) {
-	GooString *ls = str1->getLink()->getLinkStart();
+	GooString *ls = str1->getLink()->getLinkStart(xml);
 	str1->htext->insert(0, ls);
 	delete ls;
       }
@@ -926,15 +964,104 @@ void HtmlPage::dumpComplex(FILE *file, int page){
 }
 
 
+int InLineImageSort(const void *ptr1, const void *ptr2)
+{
+	HtmlLines *Line1 = *(HtmlLines**)ptr1;
+	HtmlLines *Line2 = *(HtmlLines**)ptr2;
+
+	if (Line1->Top < Line2->Top){
+		return -1;
+	} else 	if (Line1->Top > Line2->Top){
+		return +1;
+	}
+return 0;
+}
+
+void HtmlPage::InLineImagedump(FILE *f, int pageNum)
+{
+	GooList *LineList;
+	LineList = new GooList();
+	fprintf(f, "<a name=%d></a>", pageNum);
+	// Loop over the list of image names on this page
+	int listlen = imgList->getLength();
+
+
+	for (int i = 0; i < listlen; i++) {
+		HtmlImage *img = (HtmlImage*) imgList->del(0);
+
+		// see printCSS() for class names
+		const char *styles[4] = { "", " class=\"xflip\"", " class=\"yflip\"",
+				" class=\"xyflip\"" };
+		int style_index = 0;
+		if (img->xMin > img->xMax)
+			style_index += 1; // xFlip
+		if (img->yMin > img->yMax)
+			style_index += 2; // yFlip
+
+		GooString* Line_str;
+		Line_str = GooString::format("<img{0:s} src=\"{1:s}\"/><br/>\n",
+				styles[style_index], img->fName->getCString());
+		HtmlLines *Lines = new HtmlLines(Line_str, xoutRound(img->yMin),
+				xoutRound(img->xMin));
+		LineList->append(Lines);
+		delete img;
+	}
+
+	GooString* str;
+	for (HtmlString *tmp = yxStrings; tmp; tmp = tmp->yxNext) {
+		if (tmp->htext) {
+			str = new GooString(tmp->htext);
+			str->append("<br/>\n");
+			HtmlLines *Lines = new HtmlLines(str, xoutRound(tmp->yMin),
+					xoutRound(tmp->xMin));
+			LineList->append(Lines);
+		}
+	}
+
+	LineList->sort(InLineImageSort);
+
+	int Linelistlen = LineList->getLength();
+	//printf("linelist count %d\n",Linelistlen);
+
+	for (int i = 0; i < Linelistlen; i++) {
+		HtmlLines *myline = (HtmlLines*) LineList->del(0);
+		fputs(myline->fLine->getCString(), f);
+		//printf(myline->fLine->getCString());
+		delete myline;
+	}
+
+	delete LineList;
+	fputs("<hr/>\n", f);
+
+}
+
 void HtmlPage::dump(FILE *f, int pageNum) 
 {
+
+
+	if( noframes )
+	{
+		printf("NoFrames Set \n");
+	}
+	else
+	{
+		printf("NoFrames Not Set \n");
+	}
+
   if (complexMode || singleHtml)
   {
+	  printf("dumping complexMode \n");
     if (xml) dumpAsXML(f, pageNum);
     if (!xml) dumpComplex(f, pageNum);  
   }
+  else if (inlineImages)
+  {
+	  printf("dumping inlineImages\n");
+	InLineImagedump(f, pageNum);
+  }
   else
   {
+	printf("dumping open\n");
     fprintf(f,"<a name=%d></a>",pageNum);
     // Loop over the list of image names on this page
     int listlen=imgList->getLength();
@@ -1096,7 +1223,22 @@ void HtmlOutputDev::doFrame(int firstPage){
 HtmlOutputDev::HtmlOutputDev(Catalog *catalogA, char *fileName, char *title, 
 	char *author, char *keywords, char *subject, char *date,
 	char *extension,
-	GBool rawOrder, int firstPage, GBool outline) 
+	GBool rawOrder,
+	  GBool complexMode,
+	  GBool inlineImages,
+	  GBool singleHtml,
+	  GBool ignore,
+	  GBool printCommands,
+	  GBool printHtml,
+	  GBool noframes,
+	  GBool stout,
+	  GBool xml,
+	  GBool showHidden,
+	  GBool noMerge,
+	  double wordBreakThreshold,
+
+
+	int firstPage, GBool outline)
 {
   catalog = catalogA;
   fContentsFrame = NULL;
@@ -1106,12 +1248,29 @@ HtmlOutputDev::HtmlOutputDev(Catalog *catalogA, char *fileName, char *title,
   //write = gTrue;
   this->rawOrder = rawOrder;
   this->doOutline = outline;
+
+  this->complexMode = complexMode;
+  this->inlineImages = inlineImages;
+  this->singleHtml  = singleHtml;
+  this->ignore  = ignore;
+  this->printCommands = printCommands;
+  this->printHtml = printHtml;
+this->noframes = noframes;
+	this->stout  = stout;
+	this->xml   = xml;
+	this->showHidden = showHidden;
+	this->noMerge =  noMerge;
+	this->wordBreakThreshold =  wordBreakThreshold;
+
+
+
   ok = gFalse;
   //this->firstPage = firstPage;
   //pageNum=firstPage;
   // open file
   needClose = gFalse;
-  pages = new HtmlPage(rawOrder, extension);
+  pages = new HtmlPage(rawOrder,extension,complexMode,noMerge,singleHtml,ignore,xml,noframes,inlineImages,wordBreakThreshold);
+
   
   glMetaVars = new GooList();
   glMetaVars->append(new HtmlMetaVar("generator", "pdftohtml 0.36"));  
@@ -1494,9 +1653,113 @@ void HtmlOutputDev::drawImageMask(GfxState *state, Object *ref, Stream *str,
   }
 }
 
+
+
+static inline int Lower(double x)
+{
+	if (x > 0) return (int)x;
+	else return (int)floor(x);
+}
+
+static inline int Upper(double x) {
+  return Lower(x) + 1;
+}
+
+
+enum ClipResult {
+  ClipAllInside,
+  ClipAllOutside,
+  ClipPartial
+};
+
+ClipResult testRect(GfxState *state, int rectXMin, int rectYMin,
+				      int rectXMax, int rectYMax) {
+
+	double xMin,yMin,xMax,yMax;
+
+	state->getClipBBox(&xMin,&yMin,&xMax,&yMax);
+
+	//printf ("Test Rect: xMin:%f yMin:%f xMax:%f yMax:%f\n" ,xMin,yMin,xMax,yMax );
+	//printf ("Test Rect: rectXMin:%d rectYMin:%d rectXMax:%d  rectYMax:%d \n" ,rectXMin, rectYMin,rectXMax, rectYMax);
+
+
+  // This tests the rectangle:
+  //     x = [rectXMin, rectXMax + 1)    (note: rect coords are ints)
+  //     y = [rectYMin, rectYMax + 1)
+  // against the clipping region:
+  //     x = [xMin, xMax)                (note: clipping coords are fp)
+  //     y = [yMin, yMax)
+  if ((double)(rectXMax + 1) <= xMin || (double)rectXMin >= xMax ||
+      (double)(rectYMax + 1) <= yMin || (double)rectYMin >= yMax) {
+	  //printf("all outside\n");
+    return ClipAllOutside;
+  }
+  if ((double)rectXMin >= xMin && (double)(rectXMax + 1) <= xMax &&
+      (double)rectYMin >= yMin && (double)(rectYMax + 1) <= yMax //&&
+      //length == 0  todo do I need this
+      ) {
+	  //printf("all inside\n");
+    return ClipAllInside;
+  }
+  //printf("Clip Partial\n");
+  return ClipPartial;
+}
+
+
+
 void HtmlOutputDev::drawImage(GfxState *state, Object *ref, Stream *str,
 			      int width, int height, GfxImageColorMap *colorMap,
 			      GBool interpolate, int *maskColors, GBool inlineImg) {
+
+
+	double *ctm;
+	double mat[6];
+	int  i;
+	GBool minorAxisZero;
+	int x0, y0, x1, y1;
+	ClipResult clipRes;
+	double clipXMin,clipYMin,clipXMax,clipYMax;
+
+
+	ctm = state->getCTM();
+	  for (i = 0; i < 6; ++i) {
+	    if (!isfinite(ctm[i])) return;
+	  }
+	  mat[0] = ctm[0];
+	  mat[1] = ctm[1];
+	  mat[2] = -ctm[2];
+	  mat[3] = -ctm[3];
+	  mat[4] = ctm[2] + ctm[4];
+	  mat[5] = ctm[3] + ctm[5];
+
+	  minorAxisZero = mat[1] == 0 && mat[2] == 0;
+
+	  // scaling only
+	  if (mat[0] > 0 && minorAxisZero && mat[3] > 0) {
+	    x0 = Lower(mat[4]);
+	    y0 = Lower(mat[5]);
+	    x1 = Upper(mat[0] + mat[4]);
+	    y1 = Upper(mat[3] + mat[5]);
+	    // make sure narrow images cover at least one pixel
+	    if (x0 == x1) {
+	      ++x1;
+	    }
+	    if (y0 == y1) {
+	      ++y1;
+	    }
+
+	    state->getClipBBox(&clipXMin,&clipYMin,&clipXMax,&clipYMax);
+
+	    clipRes = testRect(state,x0, y0, x1 - 1, y1 - 1);
+
+	    if ( clipRes == ClipAllOutside)  {  //Ditch image
+	        OutputDev::drawImage(state, ref, str, width, height, colorMap, interpolate,
+	    			 maskColors, inlineImg);
+	        return;
+	    }
+	  }
+
+	  //todo: else
 
   if (ignore||(complexMode && !xml)) {
     OutputDev::drawImage(state, ref, str, width, height, colorMap, interpolate,
@@ -1762,7 +2025,7 @@ GBool HtmlOutputDev::newHtmlOutlineLevel(FILE *output, GooList *outlines, Catalo
 	{
 		OutlineItem *item = (OutlineItem*)outlines->get(i);
 		GooString *titleStr = HtmlFont::HtmlFilter(item->getTitle(),
-							   item->getTitleLength());
+							   item->getTitleLength(),xml);
 
 		GooString *linkName = NULL;;
         int page = getOutlinePageNum(item);
@@ -1825,7 +2088,7 @@ void HtmlOutputDev::newXmlOutlineLevel(FILE *output, GooList *outlines, Catalog*
     {
         OutlineItem *item     = (OutlineItem*)outlines->get(i);
         GooString   *titleStr = HtmlFont::HtmlFilter(item->getTitle(),
-                                                     item->getTitleLength());
+                                                     item->getTitleLength(),xml);
         int page = getOutlinePageNum(item);
         if (page > 0)
         {

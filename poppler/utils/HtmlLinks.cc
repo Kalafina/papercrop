@@ -27,7 +27,6 @@
 
 #include "HtmlLinks.h"
 
-extern GBool xml;
 
 HtmlLink::HtmlLink(const HtmlLink& x){
   Xmin=x.Xmin;
@@ -95,7 +94,7 @@ static GooString* EscapeSpecialChars( GooString* s )
 	return tmp ? tmp : s;
 }
 
-GooString* HtmlLink::getLinkStart() {
+GooString* HtmlLink::getLinkStart(GBool xml) {
   GooString *res = new GooString("<a href=\"");
   GooString *d = xml ? EscapeSpecialChars(dest) : dest;
   res->append( d );

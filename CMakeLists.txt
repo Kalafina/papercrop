@@ -41,7 +41,7 @@ if(UNIX)
   find_package(Lua51 REQUIRED)
   # find_package(Luabind REQUIRED)
   pkg_check_modules(Fontconfig REQUIRED fontconfig)
-  pkg_check_modules(poppler REQUIRED poppler-splash)
+  #pkg_check_modules(poppler REQUIRED poppler-splash)
   pkg_check_modules(DevIL REQUIRED ILU)
   set(image_INCLUDE) # all in /usr/include 
   message("include directories:")
@@ -67,6 +67,7 @@ else()
 endif()
 
 if (UNIX)
+	add_subdirectory(poppler)
 else()
   # Additional sources
   #  add_subdirectory(luabind-0.9)
@@ -105,10 +106,11 @@ if(UNIX)
 	${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
 	#${paperCrop_SOURCE_DIR}/luabind-0.9
-	# ${paperCrop_SOURCE_DIR}/poppler/goo
-	# ${paperCrop_SOURCE_DIR}/poppler/poppler
-	# ${paperCrop_SOURCE_DIR}/poppler/splash	
-	# ${paperCrop_SOURCE_DIR}/poppler/
+	${paperCrop_SOURCE_DIR}/poppler/goo
+	${paperCrop_SOURCE_DIR}/poppler/poppler
+	${paperCrop_SOURCE_DIR}/poppler/splash
+	${paperCrop_SOURCE_DIR}/poppler/html	
+	${paperCrop_SOURCE_DIR}/poppler/
 	${poppler_INCLUDE_DIRS}
 	${DevIL_INCLUDE_DIRS}
 	./include 
@@ -144,12 +146,12 @@ if(UNIX)
 	${paperCrop_SOURCE_DIR}/libharu-2.0.8
 	# ${paperCrop_SOURCE_DIR}/devil/lib
 	${paperCrop_SOURCE_DIR}/../FreeImage/Dist
-	# ${paperCrop_SOURCE_DIR}/poppler/
+	${paperCrop_SOURCE_DIR}/poppler/
 	${paperCrop_SOURCE_DIR}/../Freetype/objs/.libs 
 	#${paperCrop_SOURCE_DIR}/luabind-0.9/Release
 	${LUA_LIB}
 	${Fontconfig_LIBRARY_DIRS}
-	${poppler_LIBRARY_DIRS}
+	#${poppler_LIBRARY_DIRS}
 	${DevIL_LIBRARY_DIRS}
 	)
 else()
@@ -290,7 +292,9 @@ if(UNIX)
 	X11
 	ILU
 	IL
-	${poppler_LIBRARIES}
+	poppler
+	fontconfig
+	#${poppler_LIBRARIES}
 	freeimage
 	z
 	jpeg

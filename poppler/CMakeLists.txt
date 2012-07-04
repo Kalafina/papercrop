@@ -2,7 +2,7 @@ project(poppler)
 
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+set(CMAKE_MODULE_PATH ${poppler_SOURCE_DIR}/cmake/modules)
 
 include(PopplerDefaults)
 include(PopplerMacros)
@@ -21,14 +21,14 @@ set(POPPLER_VERSION "${POPPLER_MAJOR_VERSION}.${POPPLER_MINOR_VERSION}.${POPPLER
 
 # command line switches
 option(ENABLE_XPDF_HEADERS "Install unsupported xpdf headers." OFF)
-option(BUILD_GTK_TESTS "Whether compile the GTK+ test programs." ON)
-option(BUILD_QT4_TESTS "Whether compile the Qt4 test programs." ON)
-option(BUILD_CPP_TESTS "Whether compile the CPP test programs." ON)
+#option(BUILD_GTK_TESTS "Whether compile the GTK+ test programs." OFF)
+#option(BUILD_QT4_TESTS "Whether compile the Qt4 test programs." OFF)
+option(BUILD_CPP_TESTS "Whether compile the CPP test programs." OFF)
 option(ENABLE_SPLASH "Build the Splash graphics backend." ON)
-option(ENABLE_UTILS "Compile poppler command line utils." ON)
-option(ENABLE_CPP "Compile poppler cpp wrapper." ON)
+option(ENABLE_UTILS "Compile poppler command line utils." OFF)
+option(ENABLE_CPP "Compile poppler cpp wrapper." OFF)
 option(ENABLE_LIBOPENJPEG "Use libopenjpeg for JPX streams." ON)
-set(ENABLE_CMS "auto" CACHE STRING "Use color management system. Possible values: auto, lcms1, lcms2. 'auto' prefers lcms2 over lcms1 if both are available. Unset to disable color management system.")
+option(ENABLE_LCMS "Use liblcms for color management." ON)
 option(ENABLE_LIBCURL "Build libcurl based HTTP support." OFF)
 option(ENABLE_ZLIB "Build with zlib (not totally safe)." OFF)
 option(USE_FIXEDPOINT "Use fixed point arithmetic in the Splash backend" OFF)
