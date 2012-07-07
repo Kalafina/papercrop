@@ -30,6 +30,7 @@ bindTargetMainLib={
 
 			void getRectSize(int pageNo, int rectNo, SelectionRectangle& rect);
 			void getRectImage_width(int pageNo, int rectNo, int width, CImage& image);
+			void getRectHTML(int pageNo, int rectNo,int width,const char* html);
 			void getRectImage_height(int pageNo, int rectNo, int height, CImage& image);
 			void load(const char* filename);
 			double getDPI_height(int pageNo, int rectNo, int height);
@@ -100,7 +101,7 @@ bindTargetMainLib={
 				void setLineSpace(int l);
 				void setHorizSpace(int h);
 				void setWidgetHeight(int h);
-				void setWidgetPos(int startSlot, int endSlot); // guideline 따라 나누어져있는 영역에서 얼만큼 차지할지.
+				void setWidgetPos(int startSlot, int endSlot); // guideline 따�?� 나누어져있는 �?역�?서 얼만�?� 차지할지.
 				void setUniformGuidelines(int totalSlot); 
 				void updateLayout();
 				void redraw()
