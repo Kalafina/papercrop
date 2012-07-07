@@ -2,6 +2,7 @@ project(poppler)
 
 cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 
+#set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 set(CMAKE_MODULE_PATH ${poppler_SOURCE_DIR}/cmake/modules)
 
 include(PopplerDefaults)
@@ -21,14 +22,14 @@ set(POPPLER_VERSION "${POPPLER_MAJOR_VERSION}.${POPPLER_MINOR_VERSION}.${POPPLER
 
 # command line switches
 option(ENABLE_XPDF_HEADERS "Install unsupported xpdf headers." OFF)
-#option(BUILD_GTK_TESTS "Whether compile the GTK+ test programs." OFF)
-#option(BUILD_QT4_TESTS "Whether compile the Qt4 test programs." OFF)
-option(BUILD_CPP_TESTS "Whether compile the CPP test programs." OFF)
+#option(BUILD_GTK_TESTS "Whether compile the GTK+ test programs." ON)
+#option(BUILD_QT4_TESTS "Whether compile the Qt4 test programs." ON)
+#option(BUILD_CPP_TESTS "Whether compile the CPP test programs." ON)
 option(ENABLE_SPLASH "Build the Splash graphics backend." ON)
-option(ENABLE_UTILS "Compile poppler command line utils." OFF)
-option(ENABLE_CPP "Compile poppler cpp wrapper." OFF)
+#option(ENABLE_UTILS "Compile poppler command line utils." OFF)
+#option(ENABLE_CPP "Compile poppler cpp wrapper." ON)
 option(ENABLE_LIBOPENJPEG "Use libopenjpeg for JPX streams." ON)
-option(ENABLE_LCMS "Use liblcms for color management." ON)
+set(ENABLE_CMS "auto" CACHE STRING "Use color management system. Possible values: auto, lcms1, lcms2. 'auto' prefers lcms2 over lcms1 if both are available. Unset to disable color management system.")
 option(ENABLE_LIBCURL "Build libcurl based HTTP support." OFF)
 option(ENABLE_ZLIB "Build with zlib (not totally safe)." OFF)
 option(USE_FIXEDPOINT "Use fixed point arithmetic in the Splash backend" OFF)
@@ -41,24 +42,24 @@ endif(WIN32)
 
 set(LIB_SUFFIX "" CACHE STRING "Define suffix of directory name (32/64)")
 
-set(TESTDATADIR "${CMAKE_SOURCE_DIR}/../test" CACHE STRING "Specify test data dir.")
-if(NOT (EXISTS ${TESTDATADIR} AND EXISTS ${TESTDATADIR}/test-poppler.c))
-  message(WARNING "
- No test data found in $testdatadir.
- You will not be able to run 'make test' successfully.
-
- The test data is not included in the source packages
- and is also not part of the main git repository. Instead,
- you can checkout the test data from its own git
- repository with:
-
-   git clone git://git.freedesktop.org/git/poppler/test
-
- You should checkout the test data as a sibling of your
- poppler source folder or specify the location of your
- checkout with -DTESTDATADIR=/path/to/checkoutdir/test.
-  ")
-endif()
+#set(TESTDATADIR "${CMAKE_SOURCE_DIR}/../test" CACHE STRING "Specify test data dir.")
+#if(NOT (EXISTS ${TESTDATADIR} AND EXISTS ${TESTDATADIR}/test-poppler.c))
+#  message(WARNING "
+# No test data found in $testdatadir.
+# You will not be able to run 'make test' successfully.
+#
+# The test data is not included in the source packages
+# and is also not part of the main git repository. Instead,
+# you can checkout the test data from its own git
+# repository with:
+#
+#   git clone git://git.freedesktop.org/git/poppler/test
+#
+# You should checkout the test data as a sibling of your
+# poppler source folder or specify the location of your
+# checkout with -DTESTDATADIR=/path/to/checkoutdir/test.
+#  ")
+#endif()
 
 if(WIN32)
   set(_default_fontconfiguration "win32")
@@ -98,32 +99,37 @@ macro_optional_find_package(TIFF)
 if(JPEG_FOUND)
   set(ENABLE_LIBJPEG ${JPEG_FOUND})
 endif(JPEG_FOUND)
-macro_optional_find_package(Qt4)
-macro_optional_find_package(Cairo ${CAIRO_VERSION})
-if(CAIRO_FOUND)
-  set(HAVE_CAIRO ${CAIRO_FOUND})
-  set(CAIRO_FEATURE "#define POPPLER_HAS_CAIRO 1")
-  set(CAIRO_REQ "cairo")
-  set(POPPLER_GLIB_DISABLE_DEPRECATED "")
-  set(POPPLER_GLIB_DISABLE_SINGLE_INCLUDES "")
-  macro_optional_find_package(GLIB)
-  if(GLIB_FOUND)
-    set(ENABLE_GLIB ON)
-    # Check for introspection
-    macro_optional_find_package(GObjectIntrospection 0.9.12)
-    set(HAVE_INTROSPECTION ${INTROSPECTION_FOUND})
-    set(POPPLER_GLIB_DISABLE_DEPRECATED "${POPPLER_GLIB_DISABLE_DEPRECATED} -DG_DISABLE_DEPRECATED")
-    set(POPPLER_GLIB_DISABLE_SINGLE_INCLUDES "${POPPLER_GLIB_DISABLE_SINGLE_INCLUDES} -DG_DISABLE_SINGLE_INCLUDES")
-    macro_optional_find_package(GTK)
-  endif(GLIB_FOUND)
-else(CAIRO_FOUND)
+#macro_optional_find_package(Qt4)
+#macro_optional_find_package(Cairo ${CAIRO_VERSION})
+
+#if(CAIRO_FOUND)
+#  set(HAVE_CAIRO ${CAIRO_FOUND})
+#  set(CAIRO_FEATURE "#define POPPLER_HAS_CAIRO 1")
+#  set(CAIRO_REQ "cairo")
+#  set(POPPLER_GLIB_DISABLE_DEPRECATED "")
+#  set(POPPLER_GLIB_DISABLE_SINGLE_INCLUDES "")
+#  macro_optional_find_package(GLIB)
+#  if(GLIB_FOUND)
+#    set(ENABLE_GLIB ON)
+#    # Check for introspection
+#    macro_optional_find_package(GObjectIntrospection 0.9.12)
+#    set(HAVE_INTROSPECTION ${INTROSPECTION_FOUND})
+#    set(POPPLER_GLIB_DISABLE_DEPRECATED "${POPPLER_GLIB_DISABLE_DEPRECATED} -DG_DISABLE_DEPRECATED")
+#    set(POPPLER_GLIB_DISABLE_SINGLE_INCLUDES "${POPPLER_GLIB_DISABLE_SINGLE_INCLUDES} -DG_DISABLE_SINGLE_INCLUDES")
+#    macro_optional_find_package(GTK)
+#  endif(GLIB_FOUND)
+#else(CAIRO_FOUND)
   set(CAIRO_FEATURE "#undef POPPLER_HAS_CAIRO")
-endif(CAIRO_FOUND)
-if(ENABLE_CPP)
-  macro_optional_find_package(Iconv)
-  set(ENABLE_CPP ${ICONV_FOUND})
-  set(HAVE_ICONV ${ICONV_FOUND})
-endif(ENABLE_CPP)
+#endif(CAIRO_FOUND)
+
+
+#if(ENABLE_CPP)
+#  macro_optional_find_package(Iconv)
+#  set(ENABLE_CPP ${ICONV_FOUND})
+#  set(HAVE_ICONV ${ICONV_FOUND})
+#endif(ENABLE_CPP)
+
+
 if(ENABLE_ZLIB)
   find_package(ZLIB)
   if(ZLIB_FOUND)
@@ -308,6 +314,11 @@ set(poppler_SRCS
   poppler/XpdfPluginAPI.cc
   poppler/Movie.cc
   poppler/Rendition.cc
+
+  html/HtmlFonts.cc
+  html/HtmlLinks.cc
+  html/HtmlOutputDev.cc
+
 )
 set(poppler_LIBS ${FREETYPE_LIBRARIES})
 if(ENABLE_SPLASH)
@@ -560,7 +571,7 @@ endif(ENABLE_UTILS)
 if(ENABLE_GLIB)
   add_subdirectory(glib)
 endif(ENABLE_GLIB)
-add_subdirectory(test)
+#add_subdirectory(test)
 if(QT4_FOUND)
   add_subdirectory(qt4)
 endif(QT4_FOUND)
@@ -622,7 +633,7 @@ if(LCMS2_FOUND)
   message("      with lcms2")
 endif(LCMS2_FOUND)
 show_end_message_yesno("command line utils" ENABLE_UTILS)
-show_end_message("test data dir" ${TESTDATADIR})
+#show_end_message("test data dir" ${TESTDATADIR})
 
 if(USE_FIXEDPOINT AND USE_FLOAT)
   message("Warning: Single precision and fixed point options should not be enabled at the same time")

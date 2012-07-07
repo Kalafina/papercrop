@@ -1,7 +1,7 @@
 # -*- mode: cmake; -*-
 cmake_minimum_required(VERSION 2.6)
 
-set (CMAKE_VERBOSE_MAKEFILE  ON)
+#set (CMAKE_VERBOSE_MAKEFILE  ON)
 
 project (paperCrop)
 

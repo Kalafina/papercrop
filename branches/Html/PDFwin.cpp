@@ -36,6 +36,7 @@
 #include "Object.h" /* must be included before SplashOutputDev.h */
 #include "PDFDoc.h"
 #include <splash/SplashBitmap.h>
+#include <html/HtmlOutputDev.h>
 #include <SplashOutputDev.h>
 #include "TextOutputDev.h"
 #include "NullOutputDev.h"
@@ -123,7 +124,8 @@ public:
 #if POPPLER_VERSION_0_20
 		_outputDev->startDoc(_pdfDoc);
 #else
-		_outputDev->startDoc(_pdfDoc->getXRef());
+//		_outputDev->startDoc(_pdfDoc->getXRef());
+		_outputDev->startDoc(_pdfDoc); //TODO: Fix his so it works with new poppler
 #endif
 
 		_bmpCache.resize(_pdfDoc->getNumPages());
@@ -275,7 +277,7 @@ public:
 #ifdef USE_FONT_DETECTION
 		if(_textCacheState!=-1)
 		{
-			// ĳ�� �ϸ� �ȵɵ�.. �ʹ� ����. �׳� �׸����?.
+			// ĳ�� �ϸ� �ȵɵ�.. �ʹ� ����. �׳� �׸����?.
 			//printf("%c", c);
 			//fflush(stdout);
 			const int MAX_CHAR_PER_PAGE=30000;
@@ -378,6 +380,80 @@ void PDFwin::getRectImage_width(int pageNo, int rectNo, int width, CImage& image
 	ASSERT(image.GetHeight()==bottom-top);
 
 	delete bmp;
+}
+
+
+
+
+void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
+{
+	Object info;
+	static char extension[5]="png";
+	GooString *docTitle = NULL;
+	GooString *author = NULL, *keywords = NULL, *subject = NULL;
+	GooString *FileName = new GooString(html);
+
+	FileName->append("_");
+	FileName->append(GooString::fromInt(pageNo));
+	FileName->append("_");
+	FileName->append(GooString::fromInt(rectNo));
+	//FileName->append(".html");
+
+	SelectionRectangle& rect=::find(mRects, rectNo);
+
+	PDFDoc* _pdfDoc=mModel->_pdfDoc ;
+
+//	printf("File_Name: %s \n",FileName->getCString());
+//	printf("get Rect HTML: width: %d  rect.p1.x: %f rect.p1.y: %f rect.p2.x: %f rect.p2.y: %f  \n",width,rect.p1.x,rect.p1.y,rect.p2.x,rect.p2.y);
+//	printf("pageCropWidth: %f \n",pageCropWidth(pageNo));
+//	printf("->calcWidth_DPI(72): %d \n",mModel->calcWidth_DPI(72,pageNo));
+//	printf("->calcWidth_DPI(150): %d \n",mModel->calcWidth_DPI(150,pageNo));
+
+	double DPI = 150;
+	double PageWidth = mModel->calcWidth_DPI(DPI,pageNo);
+	double PageHeight = mModel->calcHeight_DPI(DPI,pageNo);
+	int left=int(rect.p1.x*(double)PageWidth+0.5);
+	int top=int(rect.p1.y*(double)PageHeight+0.5);
+	int right=int(rect.p2.x*(double)PageWidth+0.5);
+	int bottom=int(rect.p2.y*(double)PageHeight+0.5);
+
+
+	HtmlOutputDev*   htmlOut = new HtmlOutputDev(_pdfDoc->getCatalog(),FileName->getCString(),
+			  NULL, //title
+			  NULL, //author
+			  NULL,  //keywords
+		      NULL,  //subject
+			  NULL, //date
+			  extension,
+			  false,      //raw order
+
+			  false, //  fcomplexMode,
+			  true, // finlineImages,
+			  false, // fsingleHtml,
+			  false, // fignore,
+			  false, // fprintCommands,
+			  false, // fprintHtml,
+			  true, // fnoframes,
+			  false, // fstout,
+			  false, // fxml,
+			  false, // fshowHidden,
+			  false, // fnoMerge,
+			  10.0/100.0, // fwordBreakThreshold
+
+			  pageNo+1,
+			  false  //doOutline
+			  );
+
+
+
+	printf("page: %d DPI: %f left: %d top %d width %d height %d",pageNo+1, DPI, left,top, right-left,bottom-top);
+
+	_pdfDoc->displayPageSlice(htmlOut, pageNo+1, DPI, DPI, 0, gFalse, gTrue, gFalse, left,top, right-left,bottom-top);
+    htmlOut->dumpDocOutline(_pdfDoc);
+    delete htmlOut;
+    delete  FileName;
+
+
 }
 
 double PDFwin::getDPI_height(int pageNo, int rectNo, int height)

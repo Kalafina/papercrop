@@ -32,7 +32,7 @@ sony_PRS_T1={594-2-2-2-2-2,733-4-3-3-2-5-2+8+8+8+8, landscapeRotate='rotateLeft'
 
 device={600,800} -- {device_width, device_height}
 --uncomment if your device is listed below
---device=kindle2
+device=kindle2
 --device=kindle3
 --device=kobo_wireless_old_firmware
 --device=kobo_wireless
@@ -40,7 +40,7 @@ device={600,800} -- {device_width, device_height}
 --device=android
 --device=sony_PRS_T1
 -- all of the above devices rasterizes PDF to images
-device=vector_PDF
+--device=vector_PDF
 
 ---------------------------------------------------------------------
 -- default options
@@ -329,6 +329,7 @@ function processPageSubRoutine(imageM, pageNo, width, numRects)
 		win:setStatus("processing"..pageNo.."_"..rectNo)
 		local image=CImage()
 		win:getRectImage_width(pageNo, rectNo, width, image)
+		win:getRectHTML(pageNo,rectNo,width,"test");
 
 		if image:GetWidth()~=width then
 			-- rectify.
