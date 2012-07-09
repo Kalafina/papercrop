@@ -4,7 +4,13 @@
 -- please send me e-mail if you know your device's correct configuration.
 ---------------------------------------------------------------------
 
-kindle2 = {560,735, pad_right=3, pad_bottom=4, mark_corners=true, color_depth=8}  -- color_depth==4 seems to have bugs when resolutions are odd numbers.
+kindle2 = {560,735, pad_right=3, pad_bottom=4, mark_corners=true, color_depth=8
+	, default_orientation="(portrait)"
+	, default_split='(outputs multiple html files)'
+	, default_preset="presets/two-column papers (portrait).lua" 
+
+
+}  -- color_depth==4 seems to have bugs when resolutions are odd numbers.
 kindle3 = kindle2   -- not sure. previous default was {552,736} 
 cybook = {600, 800} -- when title bar is hidden
 kobo_wireless_old_firmware = {582,740} -- Up to firmware version 1.7.4. Huge waste of screen real estate. 
@@ -329,7 +335,7 @@ function processPageSubRoutine(imageM, pageNo, width, numRects)
 		win:setStatus("processing"..pageNo.."_"..rectNo)
 		local image=CImage()
 		win:getRectImage_width(pageNo, rectNo, width, image)
-		win:getRectHTML(pageNo,rectNo,width,"test");
+		--win:getRectHTML(pageNo,rectNo,width,"test");
 
 		if image:GetWidth()~=width then
 			-- rectify.
@@ -352,6 +358,19 @@ function processPageSubRoutine(imageM, pageNo, width, numRects)
 	trimVertSpaces(imageM, 2, max_vspace, 255)
 end
 
+-- concatenate rectangles in a page vertically 
+function processHTMLPageSubRoutine(outdir, pageNo, width, numRects)
+
+
+	for rectNo=0, numRects-1 do
+		win:setStatus("processing"..pageNo.."_"..rectNo)
+		print(outdir) 	
+		win:getRectHTML(pageNo,rectNo,width,outdir);
+
+		--print(width, image:GetWidth())
+
+	end
+end
 
 function splitImage(imageM, height, outdir, pageNo, rotateRight)
 	if device.output_format==".xml" then
