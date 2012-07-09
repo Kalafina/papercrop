@@ -1038,16 +1038,6 @@ void HtmlPage::InLineImagedump(FILE *f, int pageNum)
 void HtmlPage::dump(FILE *f, int pageNum) 
 {
 
-
-	if( noframes )
-	{
-		printf("NoFrames Set \n");
-	}
-	else
-	{
-		printf("NoFrames Not Set \n");
-	}
-
   if (complexMode || singleHtml)
   {
 	  printf("dumping complexMode \n");
@@ -1061,7 +1051,7 @@ void HtmlPage::dump(FILE *f, int pageNum)
   }
   else
   {
-	printf("dumping open\n");
+	printf("dumping other\n");
     fprintf(f,"<a name=%d></a>",pageNum);
     // Loop over the list of image names on this page
     int listlen=imgList->getLength();

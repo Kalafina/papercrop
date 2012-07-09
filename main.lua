@@ -30,7 +30,7 @@ function loadPreset(fn)
 
 	local options=panel:findWidget("options")
 	local argMenu=table.find(goptions, option)-1
-	--print("argMenu", argMenu)
+	print("argMenu", argMenu)
 	options:menuValue(argMenu)
 	panel:redraw();
 end
@@ -339,6 +339,8 @@ function onCallback(w, userData)
 		else
 			CreateDirectory(outdir);
 			processPage(outdir, win.currPage, win:getNumRects())
+			--Save_SelectionRectangles();
+			print("do Save Rect Here")
 			if output_to_pdf then
 				panel:findWidget("Convert processed pages to PDF"):activate();
 			end

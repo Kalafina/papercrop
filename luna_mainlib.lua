@@ -45,6 +45,7 @@ bindTargetMainLib={
 			void redraw();
 			void deleteAllFiles();
 			void deleteAllFilesWithoutConfirm();
+			void Save_SelectionRectangles(void);
 
 			]]}
 		},
@@ -101,7 +102,7 @@ bindTargetMainLib={
 				void setLineSpace(int l);
 				void setHorizSpace(int h);
 				void setWidgetHeight(int h);
-				void setWidgetPos(int startSlot, int endSlot); // guideline 따�?� 나누어져있는 �?역�?서 얼만�?� 차지할지.
+				void setWidgetPos(int startSlot, int endSlot); // guideline 따�?� 나누어져있는 �?역�?서 얼만�?� 차지할지.
 				void setUniformGuidelines(int totalSlot); 
 				void updateLayout();
 				void redraw()

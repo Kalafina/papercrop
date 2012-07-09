@@ -22,6 +22,11 @@
 #include "stdafx.h"
 #include "PDFwin.h"
 
+#include <boost/smart_ptr.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/foreach.hpp>
+
 #include <vector>
 
 #include "utility/FlLayout.h"
@@ -1154,3 +1159,59 @@ fl_draw_box( FL_BORDER_FRAME, 0, hh-wCropB, ww, wCropB, FL_BLACK);
 fl_draw_box( FL_BORDER_FRAME, 0, 0, wCropL, hh, FL_BLACK);
 fl_draw_box( FL_BORDER_FRAME, ww-wCropR, 0, wCropR, hh, FL_BLACK);
 }
+
+
+void PDFwin::Save_SelectionRectangles(void)
+{
+
+  // Create an empty property tree object
+  using boost::property_tree::ptree;
+  ptree pt;
+
+  try
+    {
+      read_xml("filename.xml", pt);
+    }
+  catch (...)
+    {
+    }
+
+
+  TString sPageNum;
+  sPageNum.format("Page%d", mCurrPage);
+
+  pt.erase(sPageNum.ptr()); //delete existing rects if there are any.
+
+  TString sNumRects = sPageNum + "." + "NumRects";
+  pt.put(sNumRects.ptr(), mRects.size());
+
+  int iRec_Count = 0;
+
+  BOOST_FOREACH( SelectionRectangle sel_rect, mRects )
+          {
+
+            TString sSelRects;
+            iRec_Count++;
+            TString sRect_Num;
+            sRect_Num.format("Rect_Number%d.", iRec_Count);
+
+            sSelRects = sPageNum + "." + sRect_Num + "left";
+            pt.put(sSelRects.ptr(), sel_rect.left);
+            sSelRects = sPageNum + "." + sRect_Num + "right";
+            pt.put(sSelRects.ptr(), sel_rect.right);
+            sSelRects = sPageNum + "." + sRect_Num + "top";
+            pt.put(sSelRects.ptr(), sel_rect.top);
+            sSelRects = sPageNum + "." + sRect_Num + "bottom";
+            pt.put(sSelRects.ptr(), sel_rect.bottom);
+
+          }
+
+
+  // Write the property tree to the XML file.
+  using boost::property_tree::xml_parser::xml_writer_settings;
+
+  xml_writer_settings<char> w(' ', 4);
+  write_xml("filename.xml", pt, std::locale(), w);
+
+}
+

@@ -89,4 +89,7 @@ public:
 	std::list<SelectionRectangle> mRects;
 	std::list<SelectionRectangle>::iterator mSelectedRect;
 	SelectionRectangle& selectedRect()	{return *mSelectedRect;}
+
+	void Save_SelectionRectangles(void);
+
 };
