@@ -398,10 +398,10 @@ void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
 	GooString *author = NULL, *keywords = NULL, *subject = NULL;
 	GooString *FileName = new GooString(html);
 
-	FileName->append("_");
-	FileName->append(GooString::fromInt(pageNo));
-	FileName->append("_");
-	FileName->append(GooString::fromInt(rectNo));
+//	FileName->append("_");
+//	FileName->append(GooString::fromInt(pageNo));
+//	FileName->append("_");
+//	FileName->append(GooString::fromInt(rectNo));
 	//FileName->append(".html");
 
 	SelectionRectangle& rect=::find(mRects, rectNo);
