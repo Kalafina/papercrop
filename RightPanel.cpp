@@ -42,11 +42,104 @@ void Register_baselib(lua_State* L);
 #include "PDFWriter.h"
 #include "utility/FltkAddon.h"
 #include <iostream>
+#include <fstream>
+
 
 void reflow(CImage& inout, int desired_width, int min_gap, int max_gap, int thr_white, double right_max_margin, int figure_min_height);
 void trimVertSpaces(CImage& inout, int min_gap, int max_gap, int thr_white) ;
 
 
+void Save_Other_File(std::ofstream & outfile, std::string FileName)
+{
+  std::string line;
+  bool Found_Body = false;
+  std::ifstream infile(FileName.c_str());
+
+  if(infile.is_open())
+  {
+    while (!infile.eof())
+    {
+      getline(infile, line);
+      if(!Found_Body)
+      {
+        if(line.find("<body") != std::string::npos)   //Found the <boady so start saving the files
+        {
+          Found_Body = true;
+        }
+      }
+      else
+      {
+        if(line.find("</body>") == std::string::npos)
+        {
+          outfile << line << std::endl;
+        }
+        else
+        {
+          infile.close();       //Found "</body>" so ignore the rest of the the file
+          return;
+        }
+      }
+    }
+    infile.close();
+  }
+}
+
+
+void Save_Other_Files(std::ofstream & outfile,std::ifstream & List_File)
+{
+  std::string line;
+
+	while (!List_File.eof())
+		{
+			 getline (List_File,line);   // get next file name
+			 Save_Other_File(outfile,line);
+		}
+}
+
+
+void Save_First_File(std::string FileName, std::ifstream & List_File, std::string Output_Filename)
+{
+  std::string line;
+
+  std::ofstream outfile(Output_Filename.c_str());
+  std::ifstream infile(FileName.c_str());
+
+  if(infile.is_open())
+  {
+    //while (file.good())
+    while (!infile.eof())
+    {
+      getline(infile, line);
+     // cout << line << std::endl;
+      if(line.find("</body>") == std::string::npos)
+      {
+        outfile << line << std::endl;         // save everything on the first page up to the "</body>"
+      }
+      else
+      {
+        Save_Other_Files(outfile, List_File);  // Found the "</body>".  Now save the other files
+      }
+    }
+    infile.close();
+  }
+}
+
+void Join_HTML_Files(const char* List_Filename, const char* Output_Filename)
+{
+  std::string line;
+  std::ifstream List_File(List_Filename);
+
+  if(List_File.is_open())
+  {
+    if(List_File.good())
+    {
+      getline(List_File, line);
+      Save_First_File(line, List_File, Output_Filename);
+    }
+    List_File.close();
+  }
+
+}
 
 
 TString processOption(const char* option)
@@ -260,6 +353,7 @@ void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int 
 #endif
 	if(w.mId=="update")
 	{
+		mPDFwin->mRunning_Update = true;
 		mPDFwin->pageChanged();
 		mPDFwin->redraw();
 	}

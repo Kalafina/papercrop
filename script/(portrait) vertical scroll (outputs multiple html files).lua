@@ -4,24 +4,29 @@ height=device_height
 -- outdir: output directory
 -- pageNo: current page
 -- numRects: # of crop rectangles.
+
+function aarons_fun(lineno, line)
+	print("aaron",lineno, line)
+end
+
+
+
 function processPage(outdir, pageNo, numRects)
 	
 	OPF_Table = {} 
-	table.insert(OPF_Table,"<html>\n")
-	table.insert(OPF_Table,"<body>\n")
-	
-	--print("my outdir is" ,string.format("%s/%05d",outdir,pageNo)) 
-    --processHTMLPageSubRoutine(string.format("%s/%05d",outdir,pageNo), pageNo, width, numRects,OPF_Table)
-
+	--table.insert(OPF_Table,"<html>\n")
+	--table.insert(OPF_Table,"<body>\n")
+ 
 	processHTMLPageSubRoutine(outdir, pageNo, width, numRects,OPF_Table)
 
-	table.insert(OPF_Table,"</body>\n")
-	table.insert(OPF_Table,"</html>\n")
+	--table.insert(OPF_Table,"</body>\n")
+	--table.insert(OPF_Table,"</html>\n")
 
 	str = table.concat(OPF_Table,'')
-	print (str)
-	util.writeFile(string.format("%s/FrontPage.html",outdir), str) 
-    
+	--util.iterateFile(string.format("%s/List.text",outdir),aarons_fun)
+	util.writeFile(string.format("%s/List.text",outdir), str)
+	Join_HTML_Files(string.format("%s/List.text",outdir),string.format("%s/Testout.html",outdir)) 
+    print("got here")
 	return 1
 end
 
@@ -31,8 +36,8 @@ function processAllPages(outdir)
 	local pageNo=0
 	
 	OPF_Table = {} 
-	table.insert(OPF_Table,"<html>\n")
-	table.insert(OPF_Table,"<body>\n")
+	--table.insert(OPF_Table,"<html>\n")
+	--table.insert(OPF_Table,"<body>\n")
 	
 	while pageNo<win:getNumPages() do
 		win:setCurPage(pageNo)
@@ -42,13 +47,14 @@ function processAllPages(outdir)
 		pageNo=pageNo+1
 	end
 	
-	table.insert(OPF_Table,"</body>\n")
-	table.insert(OPF_Table,"</html>\n")
+	--table.insert(OPF_Table,"</body>\n")
+	--table.insert(OPF_Table,"</html>\n")
 
 	str = table.concat(OPF_Table,'')
-	print (str)
-	util.writeFile(string.format("%s/FrontPage.html",outdir), str) 
-	
+	util.writeFile(string.format("%s/List.text",outdir), str) 
+	--util.iterateFile(string.format("%s/List.text",outdir))
+	Join_HTML_Files(string.format("%s/List.text",outdir),string.format("%s/Testoutfull.html",outdir)) 
+    print("got here")
 	
 	--finalizeOutput(outdir)
     return 1

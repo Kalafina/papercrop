@@ -42,10 +42,10 @@ bindTargetMainLib={
 			double pageCropHeight(int pageNo);
 			void setCurPage(int pageNo);
 			void pageChanged();
+			void Save_SelectionRectangles(void);
 			void redraw();
 			void deleteAllFiles();
 			void deleteAllFilesWithoutConfirm();
-			void Save_SelectionRectangles(void);
 
 			]]}
 		},
@@ -378,6 +378,7 @@ static void inputType(FlLayout::Widget& w, const char* str)
 			void trimVertSpaces(CImage& inout, int min_gap, int max_gap, int thr_white) ;
 			bool CreateDirectory(const char *PathToCreate);
 			bool DeleteAllFiles(const char* path, const char* mask,bool bConfirm);
+			void Join_HTML_Files(const char* List_Filename, const char* Output_Filename);
 			]]}
 		},
 	}
@@ -420,6 +421,7 @@ function generateMainLib()
 	void trimVertSpaces(CImage& inout, int min_gap, int max_gap, int thr_white) ;
 	bool CreateDirectory(const char *PathToCreate);
 	bool DeleteAllFiles(const char* path, const char* mask,bool bConfirm);
+	void Join_HTML_Files(const char* List_Filename, const char* Output_Filename);
 	]])
 	writeDefinitions(bindTargetMainLib, 'Register_mainlib') -- input bindTarget can be non-overlapping subset of entire bindTarget 
 	flushWritten('../luna_mainlib.cpp') -- write to cpp file only when there exist modifications -> no-recompile.

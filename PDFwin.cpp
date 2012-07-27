@@ -390,6 +390,46 @@ void PDFwin::getRectImage_width(int pageNo, int rectNo, int width, CImage& image
 
 
 
+
+
+static void printCSS(FILE *f)
+{
+  // Image flip/flop CSS
+  // Source:
+  // http://stackoverflow.com/questions/1309055/cross-browser-way-to-flip-html-image-via-javascript-css
+  // tested in Chrome, Fx (Linux) and IE9 (W7)
+  static const char css[] =
+    "<style type=\"text/css\">" "\n"
+    "<!--" "\n"
+    ".xflip {" "\n"
+    "    -moz-transform: scaleX(-1);" "\n"
+    "    -webkit-transform: scaleX(-1);" "\n"
+    "    -o-transform: scaleX(-1);" "\n"
+    "    transform: scaleX(-1);" "\n"
+    "    filter: fliph;" "\n"
+    "}" "\n"
+    ".yflip {" "\n"
+    "    -moz-transform: scaleY(-1);" "\n"
+    "    -webkit-transform: scaleY(-1);" "\n"
+    "    -o-transform: scaleY(-1);" "\n"
+    "    transform: scaleY(-1);" "\n"
+    "    filter: flipv;" "\n"
+    "}" "\n"
+    ".xyflip {" "\n"
+    "    -moz-transform: scaleX(-1) scaleY(-1);" "\n"
+    "    -webkit-transform: scaleX(-1) scaleY(-1);" "\n"
+    "    -o-transform: scaleX(-1) scaleY(-1);" "\n"
+    "    transform: scaleX(-1) scaleY(-1);" "\n"
+    "    filter: fliph + flipv;" "\n"
+    "}" "\n"
+    "-->" "\n"
+    "</style>" "\n";
+
+  fwrite( css, sizeof(css)-1, 1, f );
+}
+
+
+
 void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
 {
 	Object info;
@@ -422,7 +462,61 @@ void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
 	int right=int(rect.p2.x*(double)PageWidth+0.5);
 	int bottom=int(rect.p2.y*(double)PageHeight+0.5);
 
+	if(rect.isImage)
+	{
+		CImage image;
+		getRectImage_width( pageNo, rectNo, width,  image);
 
+
+		GooString * ImageFileName = new GooString(FileName);
+		ImageFileName->append(".png");
+
+		FileName->append(".html");
+
+		printf("filename: %s\n",FileName->getCString());
+		printf("Image filename: %s\n",ImageFileName->getCString());
+
+		image.save(ImageFileName->getCString(),-1);
+
+
+		FILE* file;
+		file=fopen(FileName->getCString(), "wt");
+
+		if(file)
+		{
+		      fprintf(file,"<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"\" xml:lang=\"\">\n<head>\n<title></title>\n");
+
+		      fprintf(file, "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>\n");
+
+		      printCSS(file);
+		      fprintf(file,"</head>\n");
+		      fprintf(file,"<body bgcolor=\"#A0A0A0\" vlink=\"blue\" link=\"blue\">\n");
+
+		      fprintf(file,"<img src=\"%s\"/>\n",ImageFileName->getCString());
+
+		      fprintf(file,"</body>\n</html>\n");
+
+			fclose(file);
+		}
+		else
+		{
+			printf("file open error %s\n", FileName->getCString());
+		}
+
+
+//		table.insert(OPF_Table,"<a href=\"")
+//		print(string.format("%s.html",fileName))
+//		table.insert(OPF_Table,string.format("%s.html",fileName))
+//		table.insert(OPF_Table,"\">")
+//		table.insert(OPF_Table,string.format("Page:%05d_Rect:%02d",pageNo,rectNo))
+//		table.insert(OPF_Table,"</a>\n")
+//		string.format("%05d_%02d",pageNo,rectNo)
+
+		delete ImageFileName;
+
+	}
+	else
+	{
 	HtmlOutputDev*   htmlOut = new HtmlOutputDev(_pdfDoc->getCatalog(),FileName->getCString(),
 			  NULL, //title
 			  NULL, //author
@@ -456,6 +550,9 @@ void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
 	_pdfDoc->displayPageSlice(htmlOut, pageNo+1, DPI, DPI, 0, gFalse, gTrue, gFalse, left,top, right-left,bottom-top);
     htmlOut->dumpDocOutline(_pdfDoc);
     delete htmlOut;
+}
+
+
     delete  FileName;
 
 
@@ -564,6 +661,7 @@ PDFwin::PDFwin(int x, int y, int w, int h)
 	mCurrPage=0;
 	mSelectedRect=mRects.end();
 	_filename=" ";
+	mRunning_Update = false;
 }
 
 void PDFwin::load(const char* filename)
@@ -668,6 +766,7 @@ int PDFwin::handle(int event)
 				{
 					mRects.erase(mSelectedRect);
 					mSelectedRect=mRects.end();
+					mSelectedRect--;
 					redraw();
 				}
 			}
@@ -709,6 +808,18 @@ int PDFwin::handle(int event)
 			
 			std::list<SelectionRectangle>::iterator i
 				=findRect(Fl::event_x(), Fl::event_y());
+
+			if (i != mRects.end()) {
+				if (Fl::event_clicks() == 1) {
+					printf("double click\n");
+					if ((*i).isImage) {
+						(*i).isImage = false;
+					} else {
+						(*i).isImage = true;
+					}
+				}
+
+			}
 
 			if(i!=mRects.end())
 			{
@@ -1063,6 +1174,28 @@ void PDFwin::pageChanged()
 			mRect.p2=toDocCoord((*i).right+x, (*i).bottom+y);
 			mRect.updateScreenCoord(*this);
 		}
+
+
+
+		if (mRunning_Update)
+		{
+			mRunning_Update = false;
+		}
+		else
+		{
+		if (There_Are_Saved_Rects())
+			{
+			mRects.clear();
+			Load_SelectionRectangles(mRects);
+			BOOST_FOREACH( SelectionRectangle sel_rect, mRects )
+				{
+				//printf("p1.x %f p1.x %f p1.x %f p1.x %f \n",sel_rect.p1.x,sel_rect.p1.y,sel_rect.p2.x,sel_rect.p2.y);
+				sel_rect.updateScreenCoord(*this);
+				}
+			mSelectedRect=mRects.end();
+			mSelectedRect--;
+			}
+		}
 	}
 }
 
@@ -1106,7 +1239,14 @@ void PDFwin::draw()
 			if(i!=mSelectedRect)
 				type=FL_BORDER_FRAME;
 
+			if (mRect.isImage)
+			{
+			fl_draw_box( type, mRect.left, mRect.top, mRect.Width(), mRect.Height(), FL_RED);
+			}
+			else
+			{
 			fl_draw_box( type, mRect.left, mRect.top, mRect.Width(), mRect.Height(), FL_BLACK);
+			}
 
 			TString temp;
 			temp.format("Crop %d", c);
@@ -1161,8 +1301,19 @@ fl_draw_box( FL_BORDER_FRAME, ww-wCropR, 0, wCropR, hh, FL_BLACK);
 }
 
 
-void PDFwin::Save_SelectionRectangles(void)
+bool PDFwin::There_Are_Saved_Rects(void)
 {
+	  TString sPageNum;
+	  TString sNumRects;
+
+	  int iNumRects;
+#ifdef unix
+	  std::string xml_Filename =  _filename.substr( _filename.find_last_of( '/' ) +1 );
+#else
+	  std::string xml_Filename =  _filename.substr( _filename.find_last_of( '\\' ) +1 );
+#endif
+	  xml_Filename = ".//Saved_Rects//" + xml_Filename.substr( 0, xml_Filename.find_last_of( '.' ) ) + ".xml";
+
 
   // Create an empty property tree object
   using boost::property_tree::ptree;
@@ -1170,22 +1321,154 @@ void PDFwin::Save_SelectionRectangles(void)
 
   try
     {
-      read_xml("filename.xml", pt);
+      read_xml(xml_Filename.c_str(), pt);
+      sPageNum.format("Page%d", mCurrPage);
+
+      sNumRects = sPageNum + "." + "NumRects";
+      iNumRects = pt.get<int>( sNumRects.ptr());
+
+    }
+  catch (...)
+    {
+	  printf("\nFile not found or no rects saved yet\n");
+	  return false;
+    }
+
+  return true;
+}
+
+
+
+
+
+bool PDFwin::Load_SelectionRectangles(std::list<SelectionRectangle>& Sel)
+{
+	  TString sPageNum;
+	  TString sNumRects;
+	  int iNumRects;
+	  int i;
+
+#ifdef unix
+	  std::string xml_Filename =  _filename.substr( _filename.find_last_of( '/' ) +1 );
+#else
+	  std::string xml_Filename =  _filename.substr( _filename.find_last_of( '\\' ) +1 );
+#endif
+	  xml_Filename = ".//Saved_Rects//" + xml_Filename.substr( 0, xml_Filename.find_last_of( '.' ) ) + ".xml";
+
+
+	  //std::list<SelectionRectangle> Saved_Rects2;
+	  SelectionRectangle Sel_Rect;
+
+  // Create an empty property tree object
+  using boost::property_tree::ptree;
+  ptree pt;
+
+  try
+    {
+      read_xml(xml_Filename.c_str(), pt);
+      sPageNum.format("Page%d", mCurrPage);
+
+      sNumRects = sPageNum + "." + "NumRects";
+      iNumRects = pt.get<int>( sNumRects.ptr(),0);
+
+    }
+  catch (...)
+    {
+	  printf("\nFile not found or no rects done yet\n");
+	  return false;
+    }
+
+  try{
+	for(i=1; i <= iNumRects; ++i)
+		{
+        TString sSelRects;
+        TString sRect_Num;
+        sRect_Num.format("Rect_Number%d.", i);
+
+        sSelRects = sPageNum + "." + sRect_Num + "p1_x";
+        Sel_Rect.p1.x = pt.get<double>( sSelRects.ptr());
+
+        sSelRects = sPageNum + "." + sRect_Num + "p1_y";
+        Sel_Rect.p1.y = pt.get<double>( sSelRects.ptr());
+
+        sSelRects = sPageNum + "." + sRect_Num + "p2_x";
+        Sel_Rect.p2.x = pt.get<double>( sSelRects.ptr());
+
+        sSelRects = sPageNum + "." + sRect_Num + "p2_y";
+        Sel_Rect.p2.y = pt.get<double>( sSelRects.ptr());
+
+        sSelRects = sPageNum + "." + sRect_Num + "Is_Image";
+        Sel_Rect.isImage = pt.get<bool>( sSelRects.ptr());
+
+
+        Sel.push_back(Sel_Rect);
+
+		}
+  }
+  catch (...)
+    {
+	  printf("\nopps something wrong here\n");
+	  return false;
+    }
+
+  return true;
+
+}
+
+
+void PDFwin::Save_SelectionRectangles(void)
+{
+	  TString sPageNum;
+	  TString sNumRects;
+	  int sTemp;
+
+	 // CreateDirectory(".//Saved_Rects");
+
+#ifdef unix
+	  std::string xml_Filename =  _filename.substr( _filename.find_last_of( '/' ) +1 );
+#else
+	  std::string xml_Filename =  _filename.substr( _filename.find_last_of( '\\' ) +1 );
+#endif
+	  xml_Filename = ".//Saved_Rects//" + xml_Filename.substr( 0, xml_Filename.find_last_of( '.' ) ) + ".xml";
+
+
+	  printf(xml_Filename.c_str());
+	  printf("\n");
+
+
+	  std::list<SelectionRectangle> Saved_Rects2;
+
+	  printf("Saving Recs\n");
+
+  // Create an empty property tree object
+  using boost::property_tree::ptree;
+  ptree pt;
+
+  try
+    {
+      read_xml(xml_Filename.c_str(), pt);
+      sPageNum.format("Page%d", mCurrPage);
+
+
+      sNumRects = sPageNum + "." + "NumRects";
+      sTemp = pt.get<int>( sNumRects.ptr(),0);
+      printf("\nNumretcs: %d\n",sTemp);
+
     }
   catch (...)
     {
     }
 
 
-  TString sPageNum;
   sPageNum.format("Page%d", mCurrPage);
 
   pt.erase(sPageNum.ptr()); //delete existing rects if there are any.
 
-  TString sNumRects = sPageNum + "." + "NumRects";
+  sNumRects = sPageNum + "." + "NumRects";
   pt.put(sNumRects.ptr(), mRects.size());
 
   int iRec_Count = 0;
+
 
   BOOST_FOREACH( SelectionRectangle sel_rect, mRects )
           {
@@ -1195,14 +1478,20 @@ void PDFwin::Save_SelectionRectangles(void)
             TString sRect_Num;
             sRect_Num.format("Rect_Number%d.", iRec_Count);
 
-            sSelRects = sPageNum + "." + sRect_Num + "left";
-            pt.put(sSelRects.ptr(), sel_rect.left);
-            sSelRects = sPageNum + "." + sRect_Num + "right";
-            pt.put(sSelRects.ptr(), sel_rect.right);
-            sSelRects = sPageNum + "." + sRect_Num + "top";
-            pt.put(sSelRects.ptr(), sel_rect.top);
-            sSelRects = sPageNum + "." + sRect_Num + "bottom";
-            pt.put(sSelRects.ptr(), sel_rect.bottom);
+            sSelRects = sPageNum + "." + sRect_Num + "p1_x";
+            pt.put(sSelRects.ptr(), sel_rect.p1.x);
+
+            sSelRects = sPageNum + "." + sRect_Num + "p1_y";
+            pt.put(sSelRects.ptr(), sel_rect.p1.y);
+
+            sSelRects = sPageNum + "." + sRect_Num + "p2_x";
+            pt.put(sSelRects.ptr(), sel_rect.p2.x);
+
+            sSelRects = sPageNum + "." + sRect_Num + "p2_y";
+            pt.put(sSelRects.ptr(), sel_rect.p2.y);
+
+            sSelRects = sPageNum + "." + sRect_Num + "Is_Image";
+            pt.put(sSelRects.ptr(), sel_rect.isImage);
 
           }
 
@@ -1211,7 +1500,7 @@ void PDFwin::Save_SelectionRectangles(void)
   using boost::property_tree::xml_parser::xml_writer_settings;
 
   xml_writer_settings<char> w(' ', 4);
-  write_xml("filename.xml", pt, std::locale(), w);
+  write_xml(xml_Filename.c_str(), pt, std::locale(), w);
 
 }
 
