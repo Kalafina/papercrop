@@ -59,7 +59,7 @@ function setDefault()
 	default_preset="presets/two-column papers (landscape).lua"
 	scroll_overlap_pixels=40
 	output_format=".png" -- ".jpg", ".png", ".gif" are supported
-	output_to_pdf=true -- output to a pdf or cbz file, instead of multiple image files when possible. (to use cbz search for kobo_wireless)
+	output_to_pdf=false -- output to a pdf or cbz file, instead of multiple image files when possible. (to use cbz search for kobo_wireless)
 	color_depth=device.color_depth or 4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. 
 	force_resolution=true
 	use_4xsupersampling=false -- better quality output for scanned documents, but slower.
@@ -335,7 +335,6 @@ function processPageSubRoutine(imageM, pageNo, width, numRects)
 		win:setStatus("processing"..pageNo.."_"..rectNo)
 		local image=CImage()
 		win:getRectImage_width(pageNo, rectNo, width, image)
-		--win:getRectHTML(pageNo,rectNo,width,"test");
 
 		if image:GetWidth()~=width then
 			-- rectify.
@@ -365,15 +364,9 @@ function processHTMLPageSubRoutine(outdir, pageNo, width, numRects,OPF_Table)
 	
 		local fileName = string.format("%05d_%02d",pageNo,rectNo)
 		win:setStatus("processing"..pageNo.."_"..rectNo)
-		table.insert(OPF_Table,"<a href=\"")
-		print(string.format("%s.html",fileName))	
-		table.insert(OPF_Table,string.format("%s.html",fileName))
-		table.insert(OPF_Table,"\">")
-		--table.insert(OPF_Table,string.format("Page:%05d_Rect:%02d",pageNo,rectNo))
-		table.insert(OPF_Table,"</a>\n")
+		table.insert(OPF_Table,string.format("%s/%s.html",outdir,fileName))
+		table.insert(OPF_Table,"\n")
 		win:getRectHTML(pageNo,rectNo,width,string.format("%s/%s",outdir,fileName));
-
-		--print(width, image:GetWidth())
 
 	end
 end

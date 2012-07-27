@@ -172,6 +172,7 @@ function ctor()
 	panel:create("Choice", "options","",0)
 	setOptionMenu()
 	
+	panel:create("Button", "Save Rect", "Save Rect",0);
 	panel:create("Button", "Process current page", "Process current page",0);
 	panel:widget(0):deactivate();
 
@@ -314,6 +315,10 @@ function onCallback(w, userData)
 		panel:findWidget("Option_Input"):inputValue(processOption(menuText))
 		--print('hihi')
 		return true
+	elseif (w:id()=="Save Rect") then
+	    local outdir=string.sub(win.filename, 1, -5)
+		win:Save_SelectionRectangles();
+		return true
 	elseif(w:id()=="Process current page" or  w:id()=="Process all pages") then
 		panel:findWidget("Process current page"):deactivate();
 		panel:findWidget("Process all pages"):deactivate();
@@ -339,8 +344,6 @@ function onCallback(w, userData)
 		else
 			CreateDirectory(outdir);
 			processPage(outdir, win.currPage, win:getNumRects())
-			--Save_SelectionRectangles();
-			print("do Save Rect Here")
 			if output_to_pdf then
 				panel:findWidget("Convert processed pages to PDF"):activate();
 			end

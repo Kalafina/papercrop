@@ -32,8 +32,9 @@ class SelectionRectangle : public TRect
 {
 public:
 	Double2D  p1, p2;	// doc coord in [0,1] range
+	bool isImage;
 
-	SelectionRectangle (){left=-1;right=0;}	// invalid.
+	SelectionRectangle (){left=-1;right=0;isImage = false;}	// invalid.
 	bool isValid();
 	void updateScreenCoord(PDFwin const& win);
 	int handle(PDFwin const& win, TString const& event);
@@ -82,6 +83,7 @@ public:
 	FlLayout* mLayout;
 
 	TString mOutDir;
+	bool mRunning_Update;
 
 	Int2D toWindowCoord(double x, double y) const;
 	Double2D   toDocCoord(int x, int y) const;
@@ -91,5 +93,7 @@ public:
 	SelectionRectangle& selectedRect()	{return *mSelectedRect;}
 
 	void Save_SelectionRectangles(void);
+	bool Load_SelectionRectangles(std::list<SelectionRectangle>& pSel);
+	bool There_Are_Saved_Rects(void);
 
 };

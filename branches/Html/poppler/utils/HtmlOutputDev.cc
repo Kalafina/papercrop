@@ -1023,30 +1023,29 @@ void HtmlPage::InLineImagedump(FILE *f, int pageNum)
 	int Linelistlen = LineList->getLength();
 	//printf("linelist count %d\n",Linelistlen);
 
+//
+//	for (int i = 0; i < Linelistlen; i++) {
+//		HtmlLines *myline = (HtmlLines*) LineList->del(0);
+//		printf(myline->fLine->getCString());
+////		delete myline;
+//	}
+
+
+
 	for (int i = 0; i < Linelistlen; i++) {
 		HtmlLines *myline = (HtmlLines*) LineList->del(0);
 		fputs(myline->fLine->getCString(), f);
-		//printf(myline->fLine->getCString());
+		printf(myline->fLine->getCString());
 		delete myline;
 	}
 
 	delete LineList;
-	fputs("<hr/>\n", f);
+//	fputs("<hr/>\n", f);
 
 }
 
 void HtmlPage::dump(FILE *f, int pageNum) 
 {
-
-
-	if( noframes )
-	{
-		printf("NoFrames Set \n");
-	}
-	else
-	{
-		printf("NoFrames Not Set \n");
-	}
 
   if (complexMode || singleHtml)
   {
@@ -1061,7 +1060,7 @@ void HtmlPage::dump(FILE *f, int pageNum)
   }
   else
   {
-	printf("dumping open\n");
+	printf("dumping other\n");
     fprintf(f,"<a name=%d></a>",pageNum);
     // Loop over the list of image names on this page
     int listlen=imgList->getLength();
