@@ -14,7 +14,7 @@ cd ~/bin/papercrop
 sh ./ubuntu_installer.sh
 }}}
 
-This will install paperCrop at the current folder where ubuntu_installer.sh is.
+This script installs paperCrop in the HOME/bin folder. 
 
 * How to execute.
 
