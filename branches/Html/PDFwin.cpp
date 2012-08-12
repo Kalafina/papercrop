@@ -428,7 +428,12 @@ static void printCSS(FILE *f)
   fwrite( css, sizeof(css)-1, 1, f );
 }
 
-
+void PDFwin::NextPage(void)
+{
+	mCurrPage=(mCurrPage+1)%mModel->_pdfDoc->getNumPages();
+	pageChanged();
+	redraw();
+}
 
 void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
 {
@@ -472,10 +477,6 @@ void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
 		ImageFileName->append(".png");
 
 		FileName->append(".html");
-
-		printf("filename: %s\n",FileName->getCString());
-		printf("Image filename: %s\n",ImageFileName->getCString());
-
 		image.save(ImageFileName->getCString(),-1);
 
 
@@ -545,10 +546,10 @@ void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
 
 
 
-	printf("page: %d DPI: %f left: %d top %d width %d height %d",pageNo+1, DPI, left,top, right-left,bottom-top);
 
 	_pdfDoc->displayPageSlice(htmlOut, pageNo+1, DPI, DPI, 0, gFalse, gTrue, gFalse, left,top, right-left,bottom-top);
-    htmlOut->dumpDocOutline(_pdfDoc);
+    printf("DPI %f left %d top %d right-left:%d bottom-top:%d",DPI,left,top, right-left,bottom-top);
+	htmlOut->dumpDocOutline(_pdfDoc);
     delete htmlOut;
 }
 

@@ -636,8 +636,26 @@ void HtmlPage::coalesce() {
     } else
     {
     	vertOverlap = 0;
-    } 
-    
+    }
+
+	GBool Do_HTML_Line_Break = addLineBreak;
+	GBool hyphenated = str1->text[str1->len - 1] == (Unicode)'-';
+	GBool EndOfSentance = str1->text[str1->len - 1] == (Unicode)'.';
+
+//TODO: More work needed if the paragraph has an indentation.
+
+	if (hyphenated && addLineBreak)
+	{
+		--str1->len; // remove Hyphen
+		str1->htext->del(str1->htext->getLength()-1);
+		Do_HTML_Line_Break = false;
+	}
+
+	if (!EndOfSentance)
+	{
+		Do_HTML_Line_Break = false;
+	}
+
     // Combine strings if:
     //  They appear to be the same font (complex mode only) && going in the same direction AND at least one of the following:
     //  1.  They appear to be part of the same line of text
@@ -679,13 +697,18 @@ void HtmlPage::coalesce() {
 					str1->size * sizeof(double));
       if (addSpace) {
 		  str1->text[str1->len] = 0x20;
-		  str1->htext->append(xml?" ":"&#160;");
+		  //str1->htext->append(xml?" ":"&#160;");
+		  str1->htext->append(xml?" ":" ");
 		  str1->xRight[str1->len] = str2->xMin;
 		  ++str1->len;
       }
       if (addLineBreak) {
 	  str1->text[str1->len] = '\n';
-	  str1->htext->append("<br/>");
+	  if (Do_HTML_Line_Break)
+	  	  {
+		  str1->htext->append("<br/>");
+	  	  }
+
 	  str1->xRight[str1->len] = str2->xMin;
 	  ++str1->len;
 	  str1->yMin = str2->yMin;
