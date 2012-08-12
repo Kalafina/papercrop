@@ -43,6 +43,7 @@ bindTargetMainLib={
 			void setCurPage(int pageNo);
 			void pageChanged();
 			void Save_SelectionRectangles(void);
+			void NextPage(void);
 			void redraw();
 			void deleteAllFiles();
 			void deleteAllFilesWithoutConfirm();

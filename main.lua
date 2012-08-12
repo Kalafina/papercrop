@@ -318,6 +318,7 @@ function onCallback(w, userData)
 	elseif (w:id()=="Save Rect") then
 	    local outdir=string.sub(win.filename, 1, -5)
 		win:Save_SelectionRectangles();
+		win:NextPage();
 		return true
 	elseif(w:id()=="Process current page" or  w:id()=="Process all pages") then
 		panel:findWidget("Process current page"):deactivate();

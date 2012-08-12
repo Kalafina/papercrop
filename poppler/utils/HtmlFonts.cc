@@ -269,7 +269,8 @@ GooString* HtmlFont::HtmlFilter(Unicode* u, int uLen,GBool xml) {
 //	case 64257: tmp->append("&#64257;");  break;
 
 
-	case ' ': tmp->append( !xml && ( i+1 >= uLen || !tmp->getLength() || tmp->getChar( tmp->getLength()-1 ) == ' ' ) ? "&#160;" : " " );
+	//case ' ': tmp->append( !xml && ( i+1 >= uLen || !tmp->getLength() || tmp->getChar( tmp->getLength()-1 ) == ' ' ) ? "&#160;" : " " );
+	case ' ': tmp->append( !xml && ( i+1 >= uLen || !tmp->getLength() || tmp->getChar( tmp->getLength()-1 ) == ' ' ) ? " " : " " );
 	          break;
 	default:  
 	  {

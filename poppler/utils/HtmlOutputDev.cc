@@ -636,8 +636,51 @@ void HtmlPage::coalesce() {
     } else
     {
     	vertOverlap = 0;
-    } 
-    
+    }
+
+
+#if 0
+	{
+
+	    printf("str1 x=%f..%f  y=%f..%f  size=%2d '",
+		   str1->xMin, str1->xMax, str1->yMin, str1->yMax,
+		   (int)(str1->yMax - str1->yMin));
+	    for (i = 0; i < str1->len; ++i) {
+	      fputc(str1->text[i] & 0xff, stdout);
+	    }
+	    printf("'\n");
+	    printf("str2 x=%f..%f  y=%f..%f  size=%2d '",
+		   str2->xMin, str2->xMax, str2->yMin, str2->yMax,
+		   (int)(str2->yMax - str2->yMin));
+	    for (i = 0; i < str2->len; ++i) {
+	      fputc(str2->text[i] & 0xff, stdout);
+	    }
+	    printf("'\n");
+	  }
+
+#endif
+
+
+
+
+	GBool Do_HTML_Line_Break = addLineBreak;
+	GBool hyphenated = str1->text[str1->len - 1] == (Unicode)'-';
+	GBool EndOfSentance = str1->text[str1->len - 1] == (Unicode)'.';
+
+//TODO: More work needed if the paragraph has an indentation.
+
+	if (hyphenated && addLineBreak)
+	{
+		--str1->len; // remove Hyphen
+		str1->htext->del(str1->htext->getLength()-1);
+		Do_HTML_Line_Break = false;
+	}
+
+	if (!EndOfSentance)
+	{
+		Do_HTML_Line_Break = false;
+	}
+
     // Combine strings if:
     //  They appear to be the same font (complex mode only) && going in the same direction AND at least one of the following:
     //  1.  They appear to be part of the same line of text
@@ -679,13 +722,18 @@ void HtmlPage::coalesce() {
 					str1->size * sizeof(double));
       if (addSpace) {
 		  str1->text[str1->len] = 0x20;
-		  str1->htext->append(xml?" ":"&#160;");
+		  //str1->htext->append(xml?" ":"&#160;");
+		  str1->htext->append(xml?" ":" ");
 		  str1->xRight[str1->len] = str2->xMin;
 		  ++str1->len;
       }
       if (addLineBreak) {
 	  str1->text[str1->len] = '\n';
-	  str1->htext->append("<br/>");
+	  if (Do_HTML_Line_Break)
+	  	  {
+		  str1->htext->append("<br/>");
+	  	  }
+
 	  str1->xRight[str1->len] = str2->xMin;
 	  ++str1->len;
 	  str1->yMin = str2->yMin;
@@ -1023,24 +1071,15 @@ void HtmlPage::InLineImagedump(FILE *f, int pageNum)
 	int Linelistlen = LineList->getLength();
 	//printf("linelist count %d\n",Linelistlen);
 
-//
-//	for (int i = 0; i < Linelistlen; i++) {
-//		HtmlLines *myline = (HtmlLines*) LineList->del(0);
-//		printf(myline->fLine->getCString());
-////		delete myline;
-//	}
-
-
-
 	for (int i = 0; i < Linelistlen; i++) {
 		HtmlLines *myline = (HtmlLines*) LineList->del(0);
 		fputs(myline->fLine->getCString(), f);
-		printf(myline->fLine->getCString());
+		//printf(myline->fLine->getCString());
 		delete myline;
 	}
 
 	delete LineList;
-//	fputs("<hr/>\n", f);
+	fputs("<hr/>\n", f);
 
 }
 

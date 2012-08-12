@@ -95,5 +95,6 @@ public:
 	void Save_SelectionRectangles(void);
 	bool Load_SelectionRectangles(std::list<SelectionRectangle>& pSel);
 	bool There_Are_Saved_Rects(void);
+	void NextPage(void);
 
 };
