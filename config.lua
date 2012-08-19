@@ -358,7 +358,7 @@ function processPageSubRoutine(imageM, pageNo, width, numRects)
 end
 
 -- concatenate rectangles in a page vertically 
-function processHTMLPageSubRoutine(outdir, pageNo, width, numRects,OPF_Table)
+function processHTMLPageSubRoutine(outdir, pageNo, width, TextOnly,numRects,OPF_Table)
 
 	for rectNo=0, numRects-1 do
 	
@@ -366,7 +366,7 @@ function processHTMLPageSubRoutine(outdir, pageNo, width, numRects,OPF_Table)
 		win:setStatus("processing"..pageNo.."_"..rectNo)
 		table.insert(OPF_Table,string.format("%s/%s.html",outdir,fileName))
 		table.insert(OPF_Table,"\n")
-		win:getRectHTML(pageNo,rectNo,width,string.format("%s/%s",outdir,fileName));
+		win:getRectHTML(pageNo,rectNo,width,TextOnly,string.format("%s/%s",outdir,fileName));
 
 	end
 end
