@@ -25,7 +25,7 @@ function processPage(outdir, pageNo, numRects)
 	str = table.concat(OPF_Table,'')
 	--util.iterateFile(string.format("%s/List.text",outdir),aarons_fun)
 	util.writeFile(string.format("%s/List.text",outdir), str)
-	Join_HTML_Files(string.format("%s/List.text",outdir),string.format("%s/Testout.html",outdir)) 
+	Join_HTML_Files(string.format("%s/List.text",outdir),string.format("%s/%s.html",outdir,basename(outdir))) 
     print("got here")
 	return 1
 end
@@ -53,7 +53,7 @@ function processAllPages(outdir)
 	str = table.concat(OPF_Table,'')
 	util.writeFile(string.format("%s/List.text",outdir), str) 
 	--util.iterateFile(string.format("%s/List.text",outdir))
-	Join_HTML_Files(string.format("%s/List.text",outdir),string.format("%s/Testoutfull.html",outdir)) 
+	Join_HTML_Files(string.format("%s/List.text",outdir),string.format("%s/%s.html",outdir,basename(outdir))) 
     print("got here")
 	
 	--finalizeOutput(outdir)
