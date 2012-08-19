@@ -17,7 +17,7 @@ function processPage(outdir, pageNo, numRects)
 	--table.insert(OPF_Table,"<html>\n")
 	--table.insert(OPF_Table,"<body>\n")
  
-	processHTMLPageSubRoutine(outdir, pageNo, width,false, numRects,OPF_Table)
+	processHTMLPageSubRoutine(outdir, pageNo, width,true, numRects,OPF_Table)
 
 	--table.insert(OPF_Table,"</body>\n")
 	--table.insert(OPF_Table,"</html>\n")
@@ -41,7 +41,7 @@ function processAllPages(outdir)
 	
 	while pageNo<win:getNumPages() do
 		win:setCurPage(pageNo)
-		if processHTMLPageSubRoutine(outdir, pageNo, width,false, win:getNumRects(),OPF_Table)==0 then
+		if processHTMLPageSubRoutine(outdir, pageNo, width,true, win:getNumRects(),OPF_Table)==0 then
 			return 0
 		end
 		pageNo=pageNo+1

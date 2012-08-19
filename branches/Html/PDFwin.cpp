@@ -435,7 +435,7 @@ void PDFwin::NextPage(void)
 	redraw();
 }
 
-void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
+void PDFwin::getRectHTML(int pageNo, int rectNo,int width,bool TextOnly,const char * html)
 {
 	Object info;
 	static char extension[5]="png";
@@ -530,7 +530,7 @@ void PDFwin::getRectHTML(int pageNo, int rectNo,int width,const char * html)
 			  false, //  fcomplexMode,
 			  true, // finlineImages,
 			  false, // fsingleHtml,
-			  false, // fignore,
+			  TextOnly, // fignore,
 			  false, // fprintCommands,
 			  false, // fprintHtml,
 			  true, // fnoframes,
