@@ -1717,8 +1717,8 @@ ClipResult testRect(GfxState *state, int rectXMin, int rectYMin,
 
 	state->getClipBBox(&xMin,&yMin,&xMax,&yMax);
 
-	//printf ("Test Rect: xMin:%f yMin:%f xMax:%f yMax:%f\n" ,xMin,yMin,xMax,yMax );
-	//printf ("Test Rect: rectXMin:%d rectYMin:%d rectXMax:%d  rectYMax:%d \n" ,rectXMin, rectYMin,rectXMax, rectYMax);
+	printf ("Test Rect: xMin:%f yMin:%f xMax:%f yMax:%f\n" ,xMin,yMin,xMax,yMax );
+	printf ("Test Rect: rectXMin:%d rectYMin:%d rectXMax:%d  rectYMax:%d \n" ,rectXMin, rectYMin,rectXMax, rectYMax);
 
 
   // This tests the rectangle:
@@ -1729,17 +1729,17 @@ ClipResult testRect(GfxState *state, int rectXMin, int rectYMin,
   //     y = [yMin, yMax)
   if ((double)(rectXMax + 1) <= xMin || (double)rectXMin >= xMax ||
       (double)(rectYMax + 1) <= yMin || (double)rectYMin >= yMax) {
-	  //printf("all outside\n");
+	  printf("all outside\n");
     return ClipAllOutside;
   }
   if ((double)rectXMin >= xMin && (double)(rectXMax + 1) <= xMax &&
       (double)rectYMin >= yMin && (double)(rectYMax + 1) <= yMax //&&
       //length == 0  todo do I need this
       ) {
-	  //printf("all inside\n");
+	  printf("all inside\n");
     return ClipAllInside;
   }
-  //printf("Clip Partial\n");
+  printf("Clip Partial\n");
   return ClipPartial;
 }
 
@@ -1794,7 +1794,19 @@ void HtmlOutputDev::drawImage(GfxState *state, Object *ref, Stream *str,
 	        OutputDev::drawImage(state, ref, str, width, height, colorMap, interpolate,
 	    			 maskColors, inlineImg);
 	        return;
-	    }
+	       }
+
+
+		if ( clipRes == ClipPartial)  {  //Ditch image
+		        OutputDev::drawImage(state, ref, str, width, height, colorMap, interpolate,
+		    			 maskColors, inlineImg);
+		        return;
+		}
+
+
+
+
+
 	  }
 
 	  //todo: else

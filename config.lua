@@ -371,6 +371,48 @@ function processHTMLPageSubRoutine(outdir, pageNo, width, TextOnly,numRects,OPF_
 	end
 end
 
+function processImageForOCR(outdir, pageNo,numRects,OPF_Table)
+
+	for rectNo=0, numRects-1 do
+	
+		local imageM=CImage()
+		local Is_It_A_Image_Rect = win:Rect_Is_Image(rectNo);
+		
+		local fileName = string.format("%05d_%03d",pageNo,rectNo)
+		local PNG_FileName = string.format("%s/%05d_%03d.png",outdir,pageNo,rectNo)
+		local HTML_FileName = string.format("%s/%05d_%03d.html",outdir,pageNo,rectNo)
+		local Text_FileName = string.format("%s/%05d_%03d.txt",outdir,pageNo,rectNo)
+		local Output_FileName = string.format("%s/%05d_%03d",outdir,pageNo,rectNo)
+		
+		win:setStatus("processing"..pageNo.."_"..rectNo)
+		table.insert(OPF_Table,string.format("%s/%s.html",outdir,fileName))
+		table.insert(OPF_Table,"\n")
+		
+		if Is_It_A_Image_Rect then
+			win:getRectHTML(pageNo,rectNo,600,false,string.format("%s/%s",outdir,fileName));
+		
+		else
+			win:getRectHTML_OCR(pageNo,rectNo,imageM);
+			postprocessImage(imageM)
+			imageM:save(PNG_FileName,8)
+			--/usr/bin/tesseract /home/aaron/dev_paper/Workspace/Html/091-091_maddog/00000_000.png hocr
+			--out = os.execute(string.format("\"/usr/bin/tesseract %s  testout \"",PNG_FileName))
+    		local OCR_CMD_Line =string.format("/usr/local/bin/tesseract \"%s\" \"%s\" ",PNG_FileName,Output_FileName)
+    		print (OCR_CMD_Line)
+			out = os.execute(OCR_CMD_Line)
+    		print(out)
+    		win:Text_To_HTML(Text_FileName,HTML_FileName);
+			
+		end
+		
+
+		
+
+	end
+end
+
+
+
 function splitImage(imageM, height, outdir, pageNo, rotateRight)
 	if device.output_format==".xml" then
 		local pageNo=book_pages.cache.pages:back()

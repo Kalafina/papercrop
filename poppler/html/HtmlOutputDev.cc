@@ -377,6 +377,44 @@ void HtmlPage::addChar(GfxState *state, double x, double y,
   double x1, y1, w1, h1, dx2, dy2, sp;
   int n, i;
 
+  //TODO. Dirty Hack.  I need to fix this up.
+  static char LastCharWasDouble = 0;
+
+  if (LastCharWasDouble && (u[0] == 0x20))
+  {
+	  return;
+
+  }
+  LastCharWasDouble = 0;
+
+
+  if (uLen == 1)
+  {
+	  //printf("addchar:%c\n",(char)u[0]);
+  }
+  else
+  {
+	  if ((uLen ==2) && (u[0]==0x66) && (u[1] == 0x69))
+	  {
+		  LastCharWasDouble = 1;
+ 	  }
+	  else 	  if ((uLen ==2) && (u[0]==0x66) && (u[1] == 0x6C))
+	  {
+		  LastCharWasDouble = 1;
+ 	  }
+	  else
+	  {
+
+	  printf("addcharUni:");
+	  for (unsigned i = 0; i < uLen; i++)
+	  {
+	  printf("0x%X ",u[i]);
+	  }
+	  printf("\n");
+	  }
+  }
+
+
   //copied from TextOutputDev
   // subtract char and word spacing from the dx,dy values
   sp = state->getCharSpace();
@@ -642,6 +680,22 @@ void HtmlPage::coalesce() {
 	GBool hyphenated = str1->text[str1->len - 1] == (Unicode)'-';
 	GBool EndOfSentance = str1->text[str1->len - 1] == (Unicode)'.';
 
+#if 0 //~ for debugging
+
+    for (i = 0; i < str1->len; ++i) {
+      fputc(str1->text[i] & 0xff, stdout);
+    }
+    printf("'\n");
+
+	if (addLineBreak)
+	{
+	    printf("Line Break Set\n");
+	    printf("\n------------------------------------------------------------\n\n");
+	}
+
+
+#endif
+
 //TODO: More work needed if the paragraph has an indentation.
 
 	if (hyphenated && addLineBreak)
@@ -681,22 +735,24 @@ void HtmlPage::coalesce() {
 	str1->dir == str2->dir // text direction the same
        ) 
     {
-//      printf("yes\n");
+      //printf("yes\n");
       n = str1->len + str2->len;
-      if ((addSpace = horSpace > wordBreakThreshold * space)) {
+      if ((addSpace = abs(horSpace) > wordBreakThreshold * space)) {
         ++n;
       }
       if (addLineBreak) {
         ++n;
       }
-  
+
+
       str1->size = (n + 15) & ~15;
       str1->text = (Unicode *)grealloc(str1->text,
 				       str1->size * sizeof(Unicode));
       str1->xRight = (double *)grealloc(str1->xRight,
 					str1->size * sizeof(double));
       if (addSpace) {
-		  str1->text[str1->len] = 0x20;
+
+    	   str1->text[str1->len] = 0x20;
 		  //str1->htext->append(xml?" ":"&#160;");
 		  str1->htext->append(xml?" ":" ");
 		  str1->xRight[str1->len] = str2->xMin;
@@ -766,7 +822,7 @@ void HtmlPage::coalesce() {
       str1->yxNext = str2->yxNext;
       delete str2;
     } else { // keep strings separate
-//      printf("no\n"); 
+     // printf("no\n");
       GBool finish_a = str1->getLink() != NULL;
       GBool finish_bold   = hfont1->isBold();
       GBool finish_italic = hfont1->isItalic();
@@ -1069,7 +1125,7 @@ void HtmlPage::dump(FILE *f, int pageNum)
   }
   else if (inlineImages)
   {
-	  printf("dumping inlineImages\n");
+	  //printf("dumping inlineImages\n");
 	InLineImagedump(f, pageNum);
   }
   else
