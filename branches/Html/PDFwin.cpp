@@ -26,10 +26,13 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <vector>
 
 #include "utility/FlLayout.h"
+
 #include "utility/FltkAddon.h"
 
 // poppler headers
@@ -315,10 +318,12 @@ int PDFwin::getNumPages()
 {
 	return mModel->_pdfDoc ->getNumPages();
 }
+
 int PDFwin::getNumRects()
 {
 	return mRects.size();
 }
+
 
 SelectionRectangle& find(std::list<SelectionRectangle>& mRects, int rectNo)
 {
@@ -339,6 +344,19 @@ SelectionRectangle& find(std::list<SelectionRectangle>& mRects, int rectNo)
 	return *R;
 }
 
+
+bool PDFwin::Rect_Is_Image(int RectNum)
+{
+	SelectionRectangle& rect=::find(mRects, RectNum);
+	if (rect.isImage)
+		{
+		return	(true);
+		}
+	else
+		{
+		return (false);
+		}
+}
 
 double PDFwin::getDPI_width(int pageNo, int rectNo, int width)
 {
@@ -428,6 +446,20 @@ static void printCSS(FILE *f)
   fwrite( css, sizeof(css)-1, 1, f );
 }
 
+
+static void printHtml_Headder(FILE *f)
+{
+	fprintf(f,"<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"\" xml:lang=\"\">\n<head>\n<title></title>\n");
+
+    fprintf(f, "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>\n");
+
+    printCSS(f);
+    fprintf(f,"</head>\n");
+    fprintf(f,"<body bgcolor=\"#A0A0A0\" vlink=\"blue\" link=\"blue\">\n");
+
+}
+
+
 void PDFwin::NextPage(void)
 {
 	mCurrPage=(mCurrPage+1)%mModel->_pdfDoc->getNumPages();
@@ -472,38 +504,34 @@ void PDFwin::getRectHTML(int pageNo, int rectNo,int width,bool TextOnly,const ch
 		CImage image;
 		getRectImage_width( pageNo, rectNo, width,  image);
 
-
 		GooString * ImageFileName = new GooString(FileName);
 		ImageFileName->append(".png");
 
 		FileName->append(".html");
 		image.save(ImageFileName->getCString(),-1);
 
-
 		FILE* file;
 		file=fopen(FileName->getCString(), "wt");
 
 		if(file)
-		{
-		      fprintf(file,"<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"\" xml:lang=\"\">\n<head>\n<title></title>\n");
+			{
+			fprintf(file,"<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"\" xml:lang=\"\">\n<head>\n<title></title>\n");
 
-		      fprintf(file, "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>\n");
+		    fprintf(file, "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>\n");
 
-		      printCSS(file);
-		      fprintf(file,"</head>\n");
-		      fprintf(file,"<body bgcolor=\"#A0A0A0\" vlink=\"blue\" link=\"blue\">\n");
+		    printCSS(file);
+		    fprintf(file,"</head>\n");
+		    fprintf(file,"<body bgcolor=\"#A0A0A0\" vlink=\"blue\" link=\"blue\">\n");
 
-		      fprintf(file,"<img src=\"%s\"/>\n",ImageFileName->getCString());
+		    fprintf(file,"<img src=\"%s\"/><br/>\n",ImageFileName->getCString());
+		    fprintf(file,"</body>\n</html>\n");
 
-		      fprintf(file,"</body>\n</html>\n");
-
-			fclose(file);
-		}
+		    fclose(file);
+			}
 		else
-		{
+			{
 			printf("file open error %s\n", FileName->getCString());
-		}
-
+			}
 
 //		table.insert(OPF_Table,"<a href=\"")
 //		print(string.format("%s.html",fileName))
@@ -514,7 +542,6 @@ void PDFwin::getRectHTML(int pageNo, int rectNo,int width,bool TextOnly,const ch
 //		string.format("%05d_%02d",pageNo,rectNo)
 
 		delete ImageFileName;
-
 	}
 	else
 	{
@@ -540,23 +567,153 @@ void PDFwin::getRectHTML(int pageNo, int rectNo,int width,bool TextOnly,const ch
 			  false, // fnoMerge,
 			  10.0/100.0, // fwordBreakThreshold
 
+
 			  pageNo+1,
 			  false  //doOutline
 			  );
 
-
-
-
 	_pdfDoc->displayPageSlice(htmlOut, pageNo+1, DPI, DPI, 0, gFalse, gTrue, gFalse, left,top, right-left,bottom-top);
-    printf("DPI %f left %d top %d right-left:%d bottom-top:%d",DPI,left,top, right-left,bottom-top);
+    //printf("DPI %f left %d top %d right-left:%d bottom-top:%d",DPI,left,top, right-left,bottom-top);
 	htmlOut->dumpDocOutline(_pdfDoc);
     delete htmlOut;
 }
-
-
     delete  FileName;
+}
 
 
+void PDFwin::Text_To_HTML(const char* Text_Filename, const char* HTML_Filename)
+{
+	std::string line;
+	std::vector<std::string> lines;
+	std::ifstream Text_File(Text_Filename);
+
+	std::string This_line;
+	std::string Next_line;
+	std::string Saved_line;
+
+
+	//printf("FileName is %s \n",Text_Filename);
+
+	  if(Text_File.is_open())
+	  {
+		  //printf("In Text To Html is open \n");
+
+	    if(Text_File.good())
+	    {
+	    	printf("In Text To Html good \n");
+    	 while (getline(Text_File, line))
+    		 {
+    		// printf("%s\n",line.c_str());
+   		    lines.push_back(line);
+    		 }
+	    }
+	    Text_File.close();
+	  }
+
+	  //Saved_line = boost::algorithm::trim(lines[0]);
+
+//TODO if size is one
+	  Saved_line = boost::algorithm::trim_copy(lines[0]);  //TODO maybe only trim left
+	  bool AddSpace;
+	  bool AddNewLine;
+	  for (int i=1; i<lines.size(); i++)
+		  {
+		  AddNewLine = false;
+		  AddSpace = true;
+
+	      Next_line = boost::algorithm::trim_copy(lines[i]);
+
+	      if (boost::algorithm::ends_with(Saved_line,"-"))
+	      	  {
+	    	  if (Saved_line.size () > 0)  Saved_line.resize (Saved_line.size () - 1); // remove last char which is the hyphen
+	    	  AddSpace = false;
+	      	  }
+
+	      if (boost::algorithm::ends_with(Saved_line,".") )
+	      	  {
+	    	  AddNewLine = true;
+	      	  }
+
+
+
+	      if (AddNewLine)
+	      {
+	    	  Saved_line = Saved_line + "<br/>\n" + Next_line;
+	      }
+	      else if (AddSpace)
+      	  {
+    	  Saved_line = Saved_line + " " + Next_line;
+      	  }
+	      else{
+	    	  Saved_line = Saved_line + Next_line;
+	      	  }
+
+
+
+		  }
+
+
+		FILE* file;
+		file=fopen(HTML_Filename, "wt");
+		if (file)
+		{
+	    printHtml_Headder(file);
+
+	    fprintf(file,"<a name=29></a>");
+
+
+	    //printf("%s\n",Saved_line.c_str());
+	    fprintf(file,"%s",Saved_line.c_str());
+
+	    fprintf(file,"</body>\n</html>\n");
+		fclose(file);
+		}
+	else
+		{
+		printf("file open error %s\n",HTML_Filename);
+		}
+
+
+
+
+
+
+//	 string line;
+//
+//     Save_First_File(line, List_File, Output_Filename);
+//
+//	 infile.close();
+
+
+}
+
+void PDFwin::getRectHTML_OCR(int pageNo, int rectNo,CImage& image)
+{
+
+	SelectionRectangle& rect=::find(mRects, rectNo);
+
+	PDFDoc* _pdfDoc=mModel->_pdfDoc ;
+	SplashOutputDev* _outputDev=mModel->_outputDev;
+
+
+	double DPI = 300;
+	double PageWidth = mModel->calcWidth_DPI(DPI,pageNo);
+	double PageHeight = mModel->calcHeight_DPI(DPI,pageNo);
+	int left=int(rect.p1.x*(double)PageWidth+0.5);
+	int top=int(rect.p1.y*(double)PageHeight+0.5);
+	int right=int(rect.p2.x*(double)PageWidth+0.5);
+	int bottom=int(rect.p2.y*(double)PageHeight+0.5);
+
+//	Image_Rect = rect.isImage;
+//	Is_A_Image_Rect = true;
+    //getRectImage_width( pageNo, rectNo, 800,  image);
+
+	_pdfDoc->displayPageSlice(_outputDev, pageNo+1, DPI, DPI, 0, gFalse, gTrue, gFalse, left,top, right-left,bottom-top);
+
+	SplashBitmap* bmp=_outputDev->takeBitmap();
+
+	image.SetData(bmp->getWidth(), bmp->getHeight(), bmp->getDataPtr(), bmp->getRowSize());
+	delete bmp;
 }
 
 double PDFwin::getDPI_height(int pageNo, int rectNo, int height)
@@ -1331,7 +1488,7 @@ bool PDFwin::There_Are_Saved_Rects(void)
     }
   catch (...)
     {
-	  printf("\nFile not found or no rects saved yet\n");
+	  //printf("\nFile not found or no rects saved yet\n");
 	  return false;
     }
 
@@ -1375,7 +1532,7 @@ bool PDFwin::Load_SelectionRectangles(std::list<SelectionRectangle>& Sel)
     }
   catch (...)
     {
-	  printf("\nFile not found or no rects done yet\n");
+	  //printf("\nFile not found or no rects done yet\n");
 	  return false;
     }
 

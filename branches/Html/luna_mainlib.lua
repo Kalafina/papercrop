@@ -31,6 +31,8 @@ bindTargetMainLib={
 			void getRectSize(int pageNo, int rectNo, SelectionRectangle& rect);
 			void getRectImage_width(int pageNo, int rectNo, int width, CImage& image);
 			void getRectHTML(int pageNo, int rectNo,int width,bool TextOnly,const char* html);
+			void Text_To_HTML(const char* Text_Filename, const char* HTML_Filename);
+			void getRectHTML_OCR(int pageNo, int rectNo,CImage& image);
 			void getRectImage_height(int pageNo, int rectNo, int height, CImage& image);
 			void load(const char* filename);
 			double getDPI_height(int pageNo, int rectNo, int height);
@@ -38,6 +40,7 @@ bindTargetMainLib={
 			void setStatus(const char* o);
 			int getNumPages();
 			int getNumRects();
+			bool Rect_Is_Image(int RectNum);
 			double pageCropWidth(int pageNo);
 			double pageCropHeight(int pageNo);
 			void setCurPage(int pageNo);

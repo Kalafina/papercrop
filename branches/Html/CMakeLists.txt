@@ -5,6 +5,8 @@ cmake_minimum_required(VERSION 2.6)
 
 project (paperCrop)
 
+add_definitions(-DDISABLE_OUTLINE)
+
 set(LUNA_GEN ${paperCrop_SOURCE_DIR}/luna_gen.lua)
 #set(LUA ${paperCrop_SOURCE_DIR}/lua)
 

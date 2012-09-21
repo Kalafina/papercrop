@@ -20,7 +20,7 @@ set(POPPLER_MINOR_VERSION "20")
 set(POPPLER_MICRO_VERSION "0")
 set(POPPLER_VERSION "${POPPLER_MAJOR_VERSION}.${POPPLER_MINOR_VERSION}.${POPPLER_MICRO_VERSION}")
  
- #add_definitions(-DDISABLE_OUTLINE)
+ add_definitions(-DDISABLE_OUTLINE)
  
 # command line switches
 option(ENABLE_XPDF_HEADERS "Install unsupported xpdf headers." OFF)

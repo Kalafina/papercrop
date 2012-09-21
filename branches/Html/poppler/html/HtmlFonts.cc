@@ -288,6 +288,8 @@ GooString* HtmlFont::HtmlFilter(Unicode* u, int uLen,GBool xml) {
 	      	  {
 	      tmp->append(buf, n); 
 	  }
+//	      printf("filter:%s:\n",tmp->getCString() );
+
       }
     }
   }

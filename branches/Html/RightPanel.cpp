@@ -92,6 +92,7 @@ void Save_Other_Files(std::ofstream & outfile,std::ifstream & List_File)
 	while (!List_File.eof())
 		{
 			 getline (List_File,line);   // get next file name
+			 //printf("Got other file: %s \n",line.c_str());
 			 Save_Other_File(outfile,line);
 		}
 }
@@ -106,6 +107,7 @@ void Save_First_File(std::string FileName, std::ifstream & List_File, std::strin
 
   if(infile.is_open())
   {
+	//printf("Save_First_File\n");
     //while (file.good())
     while (!infile.eof())
     {
@@ -122,6 +124,10 @@ void Save_First_File(std::string FileName, std::ifstream & List_File, std::strin
     }
     infile.close();
   }
+  else
+  {
+	  printf("Could not open %s\n",FileName.c_str());
+  }
 }
 
 void Join_HTML_Files(const char* List_Filename, const char* Output_Filename)
@@ -129,16 +135,27 @@ void Join_HTML_Files(const char* List_Filename, const char* Output_Filename)
   std::string line;
   std::ifstream List_File(List_Filename);
 
+  //printf("Joining Files. List File: %s  Output File : %s\n",List_Filename,Output_Filename);
+
+
   if(List_File.is_open())
   {
     if(List_File.good())
     {
       getline(List_File, line);
+      //printf("Got file: %s \n",line.c_str());
       Save_First_File(line, List_File, Output_Filename);
+    }
+    else
+    {
+    printf("List_File not good\n");
     }
     List_File.close();
   }
-
+  else
+  {
+   printf("Could not open List File\n");
+  }
 }
 
 
