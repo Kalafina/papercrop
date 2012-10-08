@@ -13,11 +13,18 @@ if not os.path.exists(PAPERCROP_PATH):
 	print('PaperCrop Error! Cannot find paperCrop', HOME, PAPERCROP_PATH)
 
 def do_papercrop (fn):
-	print("Do papercrop")
-	# print(document.get_title())
-	# print(document.get_authors())
-	print('cd "'+PAPERCROP_PATH+'";./paperCrop "filename=\''+CWD+'/'+fn+'\'"&')
-	os.system('cd "'+PAPERCROP_PATH+'";./paperCrop "filename=\''+CWD+'/'+fn+'\'"&')
+	if fn[0:2]=='~/':
+		cmd='cd "'+PAPERCROP_PATH+'";./paperCrop "filename=\''+HOME+'/'+fn+'\'"&'
+	elif fn[0:1]=='/':
+		cmd='cd "'+PAPERCROP_PATH+'";./paperCrop "filename=\''+fn+'\'"&'
+	else:
+		cmd='cd "'+PAPERCROP_PATH+'";./paperCrop "filename=\''+CWD+'/'+fn+'\'"&'
+
+	print('$ '+cmd)
+	print(' ')
+	print('Launching paperCrop ...')
+	print('You can ignore Xdbe error')
+	os.system(cmd)
 
 	return True
 
