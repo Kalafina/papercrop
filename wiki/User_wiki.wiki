@@ -31,7 +31,7 @@ You can refer to the Makefile to see what dependencies are required.
 {{{
    cat Makefile | grep install
 }}}
-You might need to modify those lines depending on the distro:
+The package names might differ depending on the distro.
 After installing dependencies, make and then make install:
 {{{
    make
