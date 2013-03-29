@@ -16,6 +16,28 @@ sh ./ubuntu_installer.sh
 
 This script installs paperCrop in the HOME/bin folder. 
 
+* How to install (other linux distros such as fedora)
+
+First install subversion, and then checkout the papercrop repository anywhere:
+{{{
+   svn checkout http://papercrop.googlecode.com/svn/trunk papercrop
+}}}
+Install dependencies, for example:
+{{{
+   cd papercrop
+   make install_dependencies_fedora
+}}}
+You can refer to the Makefile to see what dependencies are required.
+{{{
+   cat Makefile | grep install
+}}}
+You might need to modify those lines depending on the distro:
+After installing dependencies, make and then make install:
+{{{
+   make
+   make install
+}}}
+
 * How to execute.
 
 1. Easy way:
@@ -23,6 +45,10 @@ This script installs paperCrop in the HOME/bin folder.
 Assuming ~/bin is in the path, simply type in a terminal
 {{{
 paperCrop aaa.pdf
+}}}
+Or, you can use
+{{{
+~/bin/paperCrop aaa.pdf
 }}}
 Here, paperCrop is a python script located in your ~/bin.
 
@@ -32,8 +58,7 @@ Run "papercrop" in the "~/bin/papercrop/paperCrop_source".
 
 3. Alternative way in a terminal:
 {{{
-cd ~/bin/papercrop
-./paperCropLauncher
+~/bin/paperCrop
 }}}
 
 * How to update to the latest version.
@@ -44,6 +69,14 @@ cd ~/bin/papercrop
 sh ./ubuntu_installer.sh
 }}}
 Update is usually much faster than first-install.
+
+Or if you didn't use the script
+{{{
+cd papercrop
+svn update .
+make
+make install
+}}}
 
 * The following error message appeared while updating:
 {{{
