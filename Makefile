@@ -29,6 +29,7 @@ install_dependencies_ubuntu11.10:
 
 install_dependencies_fedora:
 	sudo yum install DevIL-devel fltk-devel fltk-static fontconfig-devel freeimage-devel lua-devel libpng-devel libpng10-devel boost-devel libxml2-devel ogre-devel gsl-devel luabind-devel fltk-fluid fltk lcms-devel lcms-libs poppler-devel
+	sudo yum install libjpeg-turbo-devel
 
 install: 
 	if test -d $(SOURCE_DIR); then echo "Test passed"; else mkdir -p ~/bin/papercrop; fi
