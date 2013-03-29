@@ -14,11 +14,11 @@ if not os.path.exists(PAPERCROP_PATH):
 
 def do_papercrop (fn):
 	if fn[0:2]=='~/':
-		cmd='cd "'+PAPERCROP_PATH+'";./paperCrop "filename=\''+HOME+'/'+fn+'\'"&'
+		cmd='cd "'+PAPERCROP_PATH+'";./paperCrop_console "filename=\''+HOME+'/'+fn+'\';auto=true"&'
 	elif fn[0:1]=='/':
-		cmd='cd "'+PAPERCROP_PATH+'";./paperCrop "filename=\''+fn+'\'"&'
+		cmd='cd "'+PAPERCROP_PATH+'";./paperCrop_console "filename=\''+fn+'\';auto=true"&'
 	else:
-		cmd='cd "'+PAPERCROP_PATH+'";./paperCrop "filename=\''+CWD+'/'+fn+'\'"&'
+		cmd='cd "'+PAPERCROP_PATH+'";./paperCrop_console "filename=\''+CWD+'/'+fn+'\';auto=true"&'
 
 	print('$ '+cmd)
 	print(' ')
@@ -33,4 +33,3 @@ if len(sys.argv)>1:
 	do_papercrop(sys.argv[1])
 else:
 	print('usage: paperCrop filename')
-	os.system('cd "'+PAPERCROP_PATH+'";./paperCrop&')

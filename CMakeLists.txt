@@ -10,6 +10,10 @@ set(LUNA_GEN ${paperCrop_SOURCE_DIR}/luna_gen.lua)
 
 include(${paperCrop_SOURCE_DIR}/modules.cmake)
 
+if(CONSOLE)
+	add_definitions(-DNO_SHOW_WIN)
+endif()
+
 if(UNIX)
   if(CMAKE_BUILD_TYPE MATCHES Release)
 	add_definitions(-DNDEBUG)
@@ -23,7 +27,7 @@ if(UNIX)
 else()
   add_definitions(-D_SCL_SECURE_NO_DEPRECATE -D__WIN32__ -DHPDF_DLL)
 
-  message("Windows OS")
+  message("Windows OS") 
 endif()
 
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
@@ -34,9 +38,7 @@ if(UNIX)
   set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}")
   # set(LUA_INCLUDE "/usr/include/lua5.1" )
   # set(LUA_LIB "${paperCrop_SOURCE_DIR}/../Lua5.1.4/src" "${paperCrop_SOURCE_DIR}/../lua-5.1.4/src")
-  # set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_44_0")
   include(FindPkgConfig)
-  #find_package(Boost REQUIRED)
   find_package(FLTK REQUIRED)
   find_package(Lua51 REQUIRED)
   # find_package(Luabind REQUIRED)
@@ -46,19 +48,22 @@ if(UNIX)
   set(image_INCLUDE) # all in /usr/include 
   message("include directories:")
   message(${LUA_INCLUDE_DIR} "\n")
-  #message(${Boost_INCLUDE_DIR} "\n")
   message(${FLTK_INCLUDE_DIR} "\n")
   message(${DevIL_INCLUDE_DIR} "\n")
   #  message(${Luabind_INCLUDE_DIR} "\n")
   message(${FLTK_LIBRARIES} "\n")
   message(${Fontconfig_LIBRARIES} "\n")
+  message("poppler:")
   message(${poppler_INCLUDE_DIRS} "\n")
+  message(${poppler_LIBRARIES} "\n")
   message(${DevIL_INCLUDE_DIRS} "\n")
 
+  if(NOT poppler_LIBRARIES) # if empty
+	  set(poppler_LIBRARIES poppler) # set default
+  endif()
 else()
   set(LUA_INCLUDE "${paperCrop_SOURCE_DIR}/../Lua5.1.4/include")
   set(LUA_LIB "${paperCrop_SOURCE_DIR}/../lua5.1.4/lua5.1.lib")
-  #set(boost_INCLUDE "${paperCrop_SOURCE_DIR}/../boost_1_34_1")
   set(image_INCLUDE 
 	"${paperCrop_SOURCE_DIR}/devil/include"
 	"${paperCrop_SOURCE_DIR}/FreeImage/Dist"
@@ -95,31 +100,37 @@ endif()
 
 
 if(UNIX)
-  include_directories(
-	${LUA_INCLUDE_DIR}
-	#${Luabind_INCLUDE_DIR}
-	#${Boost_INCLUDE}
-	${FLTK_INCLUDE_DIR}
-	${paperCrop_SOURCE_DIR}
-	#${paperCrop_SOURCE_DIR}/../FLTK  # fltk would be in /usr/include
-	${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
-	${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
-	#${paperCrop_SOURCE_DIR}/luabind-0.9
-	# ${paperCrop_SOURCE_DIR}/poppler/goo
-	# ${paperCrop_SOURCE_DIR}/poppler/poppler
-	# ${paperCrop_SOURCE_DIR}/poppler/splash	
-	# ${paperCrop_SOURCE_DIR}/poppler/
-	${poppler_INCLUDE_DIRS}
-	${DevIL_INCLUDE_DIRS}
-	./include 
-	.
-	./unix
-	)
+	if(CONSOLE)
+		include_directories(
+			${LUA_INCLUDE_DIR}
+			${paperCrop_SOURCE_DIR}
+			${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
+			${poppler_INCLUDE_DIRS}
+			/usr/include/poppler
+			${DevIL_INCLUDE_DIRS}
+			./include 
+			.
+			./unix
+			)
+	else()
+		include_directories(
+			${LUA_INCLUDE_DIR}
+			${FLTK_INCLUDE_DIR}
+			${paperCrop_SOURCE_DIR}
+			${paperCrop_SOURCE_DIR}/fltk/Fl_Native_File_Chooser-0.84
+			${paperCrop_SOURCE_DIR}/libharu-2.0.8/include
+			${poppler_INCLUDE_DIRS}
+			/usr/include/poppler
+			${DevIL_INCLUDE_DIRS}
+			./include 
+			.
+			./unix
+			)
+	endif()
 else()
   include_directories(
 
 	${LUA_INCLUDE}
-	#${boost_INCLUDE}
 	${paperCrop_SOURCE_DIR}	
 	${image_INCLUDE}
 	${paperCrop_SOURCE_DIR}/../fltk
@@ -151,6 +162,7 @@ if(UNIX)
 	${Fontconfig_LIBRARY_DIRS}
 	${poppler_LIBRARY_DIRS}
 	${DevIL_LIBRARY_DIRS}
+	/usr/lib/
 	)
 else()
 	#link_directories(${paperCrop_SOURCE_DIR}/build/luabind-0.9/release)
@@ -272,11 +284,20 @@ set(src
   )
 
 
+if(CONSOLE)
+	add_executable(paperCrop
+		${src}
+		${ctarget}
+		"./console/dummies.cpp"
+		)
+else()
+	add_executable(paperCrop
+		${src}
+		${ctarget}
+		${FILE_CHOOSER}
+		)
+endif()
 
-add_executable(paperCrop
-  ${src}
-  ${ctarget}
-  )
 
 if(UNIX)
 

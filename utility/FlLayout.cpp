@@ -582,6 +582,11 @@ int FlLayout::work(TString const& workname, OR::LUAStack& L)
 		L>>bn>>value;
 		findValuator(bn)->value(value);
 	}
+	else if(workname=="exit")
+	{
+		printf("exitting\n");
+		exit(0);
+	}
 	return 0;
 }
 

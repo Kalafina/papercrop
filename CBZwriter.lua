@@ -109,7 +109,7 @@ do
 		else
 			cmd='java -cp bin;lib/iText.jar;lib/iText-xtra.jar PdfCrop "'..src..'" "'..tgt..'" "'..xml..'"'
  		end
-		execute("cd pdfCrop", cmd);
+		os.execute2("cd pdfCrop", cmd);
 	end
 	function XMLwriter:init()
 		-- compatibility function. does nothing
