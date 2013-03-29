@@ -37,7 +37,7 @@ After installing dependencies, make and then make install:
    make
    make install
 }}}
-This script installs paperCrop in the ~/bin folder. 
+This installs paperCrop in the ~/bin folder. 
 
 * How to execute.
 
