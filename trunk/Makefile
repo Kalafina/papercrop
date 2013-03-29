@@ -24,8 +24,13 @@ clean:
 
 
 install_dependencies_ubuntu11.10:
-	sudo apt-get install libpoppler-dev libdevil-dev libfontconfig-dev libfltk1.1-dev libdevil-dev libfreeimage-dev liblua5.1-dev libpng12-dev lua5.1 cmake g++ libxml2-dev libgsl0-dev 
-	sudo apt-get install openjdk-7-jre
+	sudo apt-get install libpoppler-dev libdevil-dev libfontconfig-dev libfltk1.1-dev libdevil-dev libfreeimage-dev liblua5.1-dev libpng12-dev lua5.1 cmake g++ libxml2-dev libgsl0-dev openjdk-7-jre
+
+install_dependencies_ubuntu12.04:
+	make install_dependencies_ubuntu11.10
+
+install_dependencies_ubuntu12.10:
+	make install_dependencies_ubuntu11.10
 
 install_dependencies_fedora:
 	sudo yum install DevIL-devel fltk-devel fltk-static fontconfig-devel freeimage-devel lua-devel libpng-devel libpng10-devel boost-devel libxml2-devel ogre-devel gsl-devel luabind-devel fltk-fluid fltk lcms-devel lcms-libs poppler-devel
