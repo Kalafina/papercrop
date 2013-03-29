@@ -120,7 +120,7 @@ public:
 #ifdef USE_NULLOUTPUTDEV
 		_nullOutputDev=new NullOutputDev();
 #endif
-#if POPPLER_VERSION_0_20
+#ifdef POPPLER_VERSION
 		_outputDev->startDoc(_pdfDoc);
 #else
 		_outputDev->startDoc(_pdfDoc->getXRef());
@@ -275,7 +275,7 @@ public:
 #ifdef USE_FONT_DETECTION
 		if(_textCacheState!=-1)
 		{
-			// ĳ�� �ϸ� �ȵɵ�.. �ʹ� ����. �׳� �׸����?.
+			// ĳ�� �ϸ� �ȵɵ�.. �ʹ� ����. �׳� �׸���???.
 			//printf("%c", c);
 			//fflush(stdout);
 			const int MAX_CHAR_PER_PAGE=30000;
