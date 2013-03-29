@@ -201,6 +201,12 @@ function ctor()
 		win:load(filename)
 		filename=nil
 	end
+	if auto then
+		print("Automatic processing:")
+		g_automatic_mode=true
+		onCallback(panel:findWidget("Process all pages"), nil)
+		panel('exit',0)
+	end
 end
 function dtor()
 	print('')

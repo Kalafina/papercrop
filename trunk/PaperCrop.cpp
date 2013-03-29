@@ -63,9 +63,11 @@ int main(int argc, char* argv[])
 #endif
 {
 
+#ifndef NO_SHOW_WIN
 	if (!Fl::visual(FL_DOUBLE|FL_INDEX))
 		printf("Xdbe not supported, faking double buffer with pixmaps.\n"); 
 	Fl::scheme("plastic");
+#endif
 
 	ilInit();
 	iluInit();
@@ -78,6 +80,7 @@ int main(int argc, char* argv[])
 
 	MainWin win("PaperCrop");
 
+#ifndef NO_SHOW_WIN
 	win.show();
 
 	for (;;) 
@@ -96,6 +99,7 @@ int main(int argc, char* argv[])
 		win.onIdle();
 	}
 
-	return 1;
+#endif
+	return 0;
 
 }

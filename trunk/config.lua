@@ -155,23 +155,25 @@ function book_pages:writeToFile(outdir)
 			if string.sub(fn,-3)=="xml" then
 				fn=string.sub(fn,1,-4).."pdf"
 			end
-			local fn2=Fltk.ChooseFile('save as '.. os.filename(fn)..'?', fn, '*.'..string.sub(fn,-3), true)
-			print(fn,fn2)
-			if fn and fn~=fn2 and fn2 then
-				if os.isUnix() then
-					local cmd='cp "'..fn..'" "'..fn2..'"'
-					print(cmd)
-					os.execute(cmd)
+			if not g_automatic_mode then
+				local fn2=Fltk.ChooseFile('save as '.. os.filename(fn)..'?', fn, '*.'..string.sub(fn,-3), true)
+				print(fn,fn2)
+				if fn and fn~=fn2 and fn2 then
+					if os.isUnix() then
+						local cmd='cp "'..fn..'" "'..fn2..'"'
+						print(cmd)
+						os.execute(cmd)
+					else
+						local fn3=string.gsub(fn,"/", "\\")
+						local fn4=string.gsub(fn2,"/", "\\")
+						local cmd='move /Y "'..fn3..'" "'..fn4..'"'
+						print(cmd)
+						os.execute(cmd)
+					end
+					win:setStatus('saved as '..fn2)
 				else
-					local fn3=string.gsub(fn,"/", "\\")
-					local fn4=string.gsub(fn2,"/", "\\")
-					local cmd='move /Y "'..fn3..'" "'..fn4..'"'
-					print(cmd)
-					os.execute(cmd)
+					win:setStatus('Saved as '..fn)
 				end
-				win:setStatus('saved as '..fn2)
-			else
-				win:setStatus('Saved as '..fn)
 			end
 		end
 

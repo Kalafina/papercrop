@@ -232,7 +232,9 @@ RightPanel::~RightPanel(void)
 }
 
 
+#ifndef NO_SHOW_WIN
 #include <FL/Fl_Native_File_Chooser.H>
+#endif
 void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int userData)
 {
 #ifdef USE_LUABIND
@@ -290,6 +292,7 @@ void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int 
 	}
 	else if(w.mId=="Load a PDF file")
 	{
+#ifndef NO_SHOW_WIN
 		Fl_Native_File_Chooser *chooser = new Fl_Native_File_Chooser();
 		chooser->type(Fl_Native_File_Chooser::BROWSE_FILE);   // let user browse a single file
 		chooser->title("Open a file");                        // optional title
@@ -313,9 +316,11 @@ void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int 
 			mPDFwin->load(fn);
 
 		}
+#endif
 	}
 	else if(w.mId=="Batch process")
 	{
+#ifndef NO_SHOW_WIN
 		Fl_Native_File_Chooser *chooser = new Fl_Native_File_Chooser();
 		chooser->type(Fl_Native_File_Chooser::BROWSE_MULTI_FILE);   // let user browse a single file
 		chooser->title("Open files");                        // optional title
@@ -347,5 +352,6 @@ void RightPanel::onCallback(FlLayout::Widget const& w, Fl_Widget * pWidget, int 
 				onCallback(findWidget("Process all pages"), w.widgetRaw(), 0);
 			}
 		}
+#endif
 	}
 }
