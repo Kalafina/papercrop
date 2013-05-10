@@ -677,6 +677,7 @@ void HtmlPage::coalesce() {
     }
 
 	GBool Do_HTML_Line_Break = addLineBreak;
+	GBool Surpress_Html_Space = gFalse;
 	GBool hyphenated = str1->text[str1->len - 1] == (Unicode)'-';
 	GBool EndOfSentance = str1->text[str1->len - 1] == (Unicode)'.';
 
@@ -703,6 +704,8 @@ void HtmlPage::coalesce() {
 		--str1->len; // remove Hyphen
 		str1->htext->del(str1->htext->getLength()-1);
 		Do_HTML_Line_Break = false;
+		Surpress_Html_Space = gTrue;
+		//printf("No HTML Line Break\n");
 	}
 
 	if (!EndOfSentance)
@@ -754,7 +757,14 @@ void HtmlPage::coalesce() {
 
     	   str1->text[str1->len] = 0x20;
 		  //str1->htext->append(xml?" ":"&#160;");
-		  str1->htext->append(xml?" ":" ");
+    	   if (!Surpress_Html_Space)
+    	   	   {
+    		   str1->htext->append(xml?" ":" ");
+    	   	   }
+//    	   else
+//    	   	   {
+//    		   printf("Surpress Html Space\n");
+//    	   	   }
 		  str1->xRight[str1->len] = str2->xMin;
 		  ++str1->len;
       }
