@@ -906,6 +906,32 @@ int PDFwin::handle(int event)
 	case FL_KEYUP:
 		if(mModel)
 		{
+
+#ifdef __ARM_ARCH_7A__
+// Change keys for ARM Chromebook.
+			if (Fl::event_key()== '.')
+			{
+				mCurrPage=(mCurrPage+1)%mModel->_pdfDoc->getNumPages();
+				pageChanged();
+				redraw();
+			}
+			else if(Fl::event_key()== ',')
+			{
+				mCurrPage=(mCurrPage+mModel->_pdfDoc->getNumPages()-1)%mModel->_pdfDoc->getNumPages();
+				pageChanged();
+				redraw();
+			}
+			else if(Fl::event_key()==FL_BackSpace)
+			{
+				if(mSelectedRect!=mRects.end())
+				{
+					mRects.erase(mSelectedRect);
+					mSelectedRect=mRects.end();
+					mSelectedRect--;
+					redraw();
+				}
+			}
+#else
 			if(Fl::event_key()==FL_Page_Down)
 			{
 				mCurrPage=(mCurrPage+1)%mModel->_pdfDoc->getNumPages();
@@ -928,6 +954,7 @@ int PDFwin::handle(int event)
 					redraw();
 				}
 			}
+#endif
 		}
 		break;
 	case FL_ENTER:
