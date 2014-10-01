@@ -1,6 +1,34 @@
 
 require('mylib')
+do 
+	ImageWriter=LUAclass()
 
+
+	function ImageWriter:__init(fn)
+		self.filename=fn
+		self.numPages=0
+
+		if os.isFileExist(fn) then
+			os.execute('rm -rf "'..fn..'/*"')
+		end
+		os.createDir(fn)
+	end
+
+	function ImageWriter:addPage(image, color_depth)
+		local fn=string.format("Page%04d"..device.output_format,self.numPages+1)
+		image:save(self.filename..'/'..fn, color_depth)
+		self.numPages=self.numPages+1
+	end
+	function ImageWriter:save()
+	end
+	function ImageWriter:init()
+		-- compatibility function. does nothing
+	end
+	function ImageWriter:addPageColor(image)
+		-- compatibility function
+		self:addPage(image,color_depth)
+	end
+end
 CBZwriter=LUAclass()
 
 
