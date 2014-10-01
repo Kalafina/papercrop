@@ -22,7 +22,7 @@ vector_PDF={600,800,output_format=".xml"
 		["(portrait) vertical scroll (outputs multiple images)"]=true}
 	, device_name="vector PDF"
 	}
-
+sharp_memo_pad={600,700, output_format=".bmp", color_depth=4, move_to_folder_linux='/media/READER/IMPORT'}
 sony_PRS_T1={594-2-2-2-2-2,733-4-3-3-2-5-2+8+8+8+8, landscapeRotate='rotateLeft', mark_corners=true, move_to_folder_linux='/media/READER/Books'}
 -- other kindles, sony readers, etc -- Please let me know if you know. I've got many e-mails asking about this.
 
@@ -39,8 +39,9 @@ device={600,800} -- {device_width, device_height}
 --device=cybook
 --device=android
 --device=sony_PRS_T1
+device=sharp_memo_pad
 -- all of the above devices rasterizes PDF to images
-device=vector_PDF
+--device=vector_PDF
 
 ---------------------------------------------------------------------
 -- default options
@@ -52,7 +53,7 @@ function setDefault()
 	device.default_split=device.default_split or '(outputs multiple images)'
 	default_preset="presets/two-column papers (landscape).lua"
 	scroll_overlap_pixels=40
-	output_format=".png" -- ".jpg", ".png", ".gif" are supported
+	output_format=".png" -- ".jpg", ".png", ".gif", ".bmp" are supported
 	output_to_pdf=true -- output to a pdf or cbz file, instead of multiple image files when possible. (to use cbz search for kobo_wireless)
 	color_depth=device.color_depth or 4 -- 2 (4grey) or 4 (16grey) or 8 (256grey) or 24 (color) -- Settings 2 and 4 apply dithering. 
 	force_resolution=true
@@ -107,6 +108,15 @@ function book_pages:init(part_nr,outdir)
 	if device and device.output_format==".cbz" then
 		self.filename=outdir.."_"..tostring(part_nr)..".cbz"
 		self.outpdf=CBZwriter:new(self.filename)
+	elseif device and (
+		device.output_format==".bmp" or
+		device.output_format==".jpg" or
+		device.output_format==".gif" or
+		device.output_format==".png" 
+		)
+		then
+		self.filename=outdir.."_"..tostring(part_nr)
+		self.outpdf=ImageWriter:new(self.filename)
 	elseif device and device.output_format==".xml" then
 		self.filename=outdir.."_"..tostring(part_nr)..".xml"
 		self.outpdf=XMLwriter:new(self.filename,self, outdir)
